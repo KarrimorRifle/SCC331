@@ -51,13 +51,14 @@ const handleScroll = (event) => {
           transform: `scale(${zoomLevel}) translate(${mapPosition.x}px, ${mapPosition.y}px)`,
         }"
       >
-        <img src="@/assets/terminal-map.png" alt="Airport Map" class="map" />
+        <img src="@/assets/terminal-map.png" alt="Airport Map" class="map" @dragstart.prevent/>
         <OverlayArea
           v-for="(area, index) in overlayAreas"
           :key="index"
           v-model:position="area.position"
           :label="area.label"
           :color="area.color"
+          :zoomLevel="zoomLevel"
         />
       </div>
     </div>
@@ -113,5 +114,6 @@ const handleScroll = (event) => {
   width: 100%;
   height: auto;
   object-fit: contain;
+  user-select: none;
 }
 </style>

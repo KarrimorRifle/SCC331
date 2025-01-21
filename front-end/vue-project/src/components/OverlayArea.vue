@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref } from 'vue';
 
 // Define props and emits
 const props = defineProps({
@@ -8,6 +8,10 @@ const props = defineProps({
   position: {
     type: Object,
     default: () => ({ top: 0, left: 0, width: 100, height: 100 }),
+  },
+  zoomLevel: {
+    type: Number,
+    default: 1,
   },
 });
 
@@ -22,9 +26,10 @@ const resizeStart = ref({ x: 0, y: 0 });
 // Start Dragging
 const startDrag = (event: MouseEvent) => {
   dragging.value = true;
+  // Calculate drag offset, accounting for the zoom level
   dragOffset.value = {
-    x: event.clientX - props.position.left,
-    y: event.clientY - props.position.top,
+    x: (event.clientX - props.position.left * props.zoomLevel),
+    y: (event.clientY - props.position.top * props.zoomLevel),
   };
 };
 
@@ -33,8 +38,9 @@ const drag = (event: MouseEvent) => {
   if (dragging.value) {
     emit('update:position', {
       ...props.position,
-      top: event.clientY - dragOffset.value.y,
-      left: event.clientX - dragOffset.value.x,
+      // Normalize the position changes by the zoom level
+      top: (event.clientY - dragOffset.value.y) / props.zoomLevel,
+      left: (event.clientX - dragOffset.value.x) / props.zoomLevel,
     });
   }
 };
@@ -59,8 +65,9 @@ const resize = (event: MouseEvent) => {
   if (resizing.value) {
     emit('update:position', {
       ...props.position,
-      width: props.position.width + (event.clientX - resizeStart.value.x),
-      height: props.position.height + (event.clientY - resizeStart.value.y),
+      // Adjust resizing for zoom level
+      width: props.position.width + (event.clientX - resizeStart.value.x) / props.zoomLevel,
+      height: props.position.height + (event.clientY - resizeStart.value.y) / props.zoomLevel,
     });
     resizeStart.value = { x: event.clientX, y: event.clientY };
   }
@@ -91,7 +98,7 @@ const endResize = () => {
     @mouseup="endDrag"
     @mouseleave="endDrag"
   >
-    <span>{{ label }}</span>
+    <span class="overlay-area-label">{{ label }}</span>
     <!-- Resize Handle -->
     <div
       class="resize-handle"
@@ -115,6 +122,11 @@ const endResize = () => {
   cursor: grabbing;
 }
 
+.overlay-area-label{
+    user-select: none;
+    color: black;
+    font-weight: bold;
+}
 .resize-handle {
   position: absolute;
   width: 10px;
