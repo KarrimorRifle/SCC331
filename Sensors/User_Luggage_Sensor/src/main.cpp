@@ -3,9 +3,10 @@
 
 /*
  * Listen for BLE Broadcasts
- * Take details of first BLE Broadcast
+ * Take details of BLE Broadcasts
  * Stop listening for BLE Broadcasts
- * Make BLE Broadcast with details received
+ * Determine which signal received was the strongest
+ * Copy the MajorID and send to server
 */
 
 /*
@@ -14,28 +15,27 @@
 */
 
 #define SCAN_DURATION 3000
-#define WAIT_DURATION 20000 
+#define WAIT_DURATION 20000
 
 unsigned long lastActionTime = 0;
 bool isScanning = false;
 
-int oldMajorID = -1; // The room the user / luggage is currently in, according to the majorID picked up 
+int oldMajorID = -1; // The room the user / luggage is currently in, according to the majorID picked up
 
 int minorID = 1; // Unique integer identifier for this sensor; change for each sensor.
 bool isLuggage = false; // Determines whether the sensor is luggage or a user.
 
+int strongestMajorID = -1;
+int strongestRSSI = -1;
+
 void advertisementCallback(BLEAdvertisement *adv) {
   if (adv->isIBeacon()) {
     int majorID = adv->getIBeaconMajorID();
+    int rssi = adv->getRssi();
 
-    // Stop scanning to prevent detecting other room sensors:
-    BTstack.stopBLEScanning();
-    isScanning = false;
-
-    // TODO send majorID to the server (if needed):
-    if (oldMajorID != majorID){
-      oldMajorID = majorID;
-      // TODO
+    if (rssi > strongestRSSI) {
+      strongestRSSI = rssi;
+      strongestMajorID = majorID;
     }
   }
 }
@@ -46,7 +46,7 @@ void setup(void) {
   BTstack.setup();
   BTstack.setBLEAdvertisementCallback(advertisementCallback);
 
-  Serial.println("Waiting to start scanning.")
+  Serial.println("Waiting to start scanning...");
 
   // TODO setup colour system
 }
@@ -56,20 +56,32 @@ void loop(void) {
 
   // Start scanning if not currently scanning and the wait period has elapsed:
   if (!isScanning && (currentTime - lastActionTime >= WAIT_DURATION)) {
+    Serial.println("Starting scan...");
     BTstack.startBLEScanning();
 
+    // Reset the strongest signal tracking variables:
+    strongestMajorID = -1;
+    strongestRSSI = -1;
+
     isScanning = true;
-    lastActionTime = currentTime; // Reset the timer
+    lastActionTime = currentTime;
   }
 
   // Stop scanning after the scan duration:
   if (isScanning && (currentTime - lastActionTime >= SCAN_DURATION)) {
+    Serial.println("Stopping scan...");
     BTstack.stopBLEScanning();
 
+    // After scanning, process the strongest signal:
+    if (strongestMajorID != -1 && strongestRSSI != -1) {
+      // Update MajorID:
+      if (oldMajorID != strongestMajorID) {
+        oldMajorID = strongestMajorID;
+        // TODO: Send the new MajorID to the server (if needed)
+      }
+    }
     isScanning = false;
-    lastActionTime = currentTime; // Reset the timer
+    lastActionTime = currentTime;
   }
-
   BTstack.loop();
 }
-
