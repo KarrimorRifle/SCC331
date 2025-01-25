@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Adafruit_NeoPixel.h>
 
 /*
  * Listen for BLE Broadcasts
@@ -16,14 +17,13 @@
  * Two Picos that have the same colour = User & Luggage Pair 
 */
 
-// Colour definitions:
-#define RED_PIN 2
-#define GREEN_PIN 3
-#define BLUE_PIN 4
-// Change these per sensor:
-#define RED_BRIGHTNESS 255
-#define GREEN_BRIGHTNESS 0
-#define BLUE_BRIGHTNESS 0
+// For LED Stuff:
+#define PIN_WS2812B  6  // The ESP8266 pin that connects to WS2812B
+#define NUM_PIXELS   3  // The number of LEDs (pixels) on WS2812B
+Adafruit_NeoPixel WS2812B(NUM_PIXELS, PIN_WS2812B, NEO_GRB + NEO_KHZ800);
+
+// Colour of our sensor (change for each luggage sensor pair)
+uint32_t colour = WS2812B.Color(255, 0, 0);
 
 //-- defines OLED screen dimensions ---
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -34,8 +34,8 @@
 //creates OLED display object "display"
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define SCAN_DURATION 3000
-#define WAIT_DURATION 20000
+#define SCAN_DURATION 15000
+#define WAIT_DURATION 5000
 
 unsigned long lastActionTime = 0;
 bool isScanning = false;
@@ -71,6 +71,12 @@ void setup(void) {
     Serial.println("SSD1306 allocation failed");
     for (;;);
   }
+
+  // Colour System:
+  WS2812B.begin(); // initializes WS2812B strip object (REQUIRED)
+  WS2812B.setPixelColor(1, colour);
+  WS2812B.show();
+
   // Update display:
   display.clearDisplay();
   display.setTextSize(1);     
@@ -78,25 +84,16 @@ void setup(void) {
   display.setCursor(0, 0);
   display.println("Setup complete.");
   display.println("Waiting to start scanning..");
-  display.println("Room ID: " + oldMajorID);
+  display.println("Room ID: " + String(oldMajorID));
   display.display(); 
-
-  // Colour System:
-  pinMode(RED_PIN, OUTPUT);
-  pinMode(GREEN_PIN, OUTPUT);
-  pinMode(BLUE_PIN, OUTPUT);
-
-  analogWrite(RED_PIN, RED_BRIGHTNESS);
-  analogWrite(GREEN_PIN, GREEN_BRIGHTNESS);
-  analogWrite(BLUE_PIN, BLUE_BRIGHTNESS);
 }
 
 void loop(void) {
   unsigned long currentTime = millis();
+  Serial.println("Reached loop");
 
   // Start scanning if not currently scanning and the wait period has elapsed:
   if (!isScanning && (currentTime - lastActionTime >= WAIT_DURATION)) {
-    Serial.println("Starting scan...");
     BTstack.bleStartScanning();
 
     // Reset the strongest signal tracking variables:
@@ -111,7 +108,7 @@ void loop(void) {
     display.setCursor(0, 0);
     display.println("Status: Scanning!");
     display.println("Scanning for BLE signal!");
-    display.println("Room ID: " + oldMajorID);
+    display.println("Room ID: " + String(oldMajorID));
     display.display(); 
   }
 
@@ -136,7 +133,7 @@ void loop(void) {
     display.setCursor(0, 0);
     display.println("Status: Idle.");
     display.println("Waiting to scan..");
-    display.println("Room ID: " + oldMajorID);
+    display.println("Room ID: " + String(oldMajorID));
     display.display(); 
   }
   BTstack.loop();
