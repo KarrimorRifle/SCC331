@@ -67,7 +67,7 @@ void setup(void) {
   BTstack.setBLEAdvertisementCallback(advertisementCallback);
 
   // Initialise the OLED display:
-  if (!display.begin(SSD1306_I2C_ADDRESS, SCREEN_ADDRESS)) {
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println("SSD1306 allocation failed");
     for (;;);
   }
@@ -97,7 +97,7 @@ void loop(void) {
   // Start scanning if not currently scanning and the wait period has elapsed:
   if (!isScanning && (currentTime - lastActionTime >= WAIT_DURATION)) {
     Serial.println("Starting scan...");
-    BTstack.startBLEScanning();
+    BTstack.bleStartScanning();
 
     // Reset the strongest signal tracking variables:
     strongestMajorID = -1;
@@ -118,7 +118,7 @@ void loop(void) {
   // Stop scanning after the scan duration:
   if (isScanning && (currentTime - lastActionTime >= SCAN_DURATION)) {
     Serial.println("Stopping scan...");
-    BTstack.stopBLEScanning();
+    BTstack.bleStopScanning();
 
     // After scanning, process the strongest signal:
     if (strongestMajorID != -1 && strongestRSSI != -1) {
