@@ -7,6 +7,7 @@
 #include "BH1745NUC.h"      //light level
 #include <Adafruit_GFX.h>       //OLED display support library
 #include <Adafruit_SSD1306.h>   //OLED display library
+#include <ArduinoJson.h>
 
 //--- defines OLED screen dimensions ---
 #define SCREEN_WIDTH 128        // OLED display width, in pixels
@@ -132,14 +133,24 @@ void loop() {
 
 void enivronmentalData(){
   bme68xData data;
+  JsonDocument doc;
   bme.fetchData();
   while(bme.getData(data));
   bh1745nuc.read();
   float sound = readSoundSamples();
-
-  //csv json file
-  String dataLine = "Enivronmental Data:\n\tRoom " + String(room) + ", \n\tlight: " + bh1745nuc.clear + ", \n\tsound: " + sound + ", \n\ttemp: " + String(data.temperature-4.49);     
+  String temperature =  String(data.temperature-4.49);
+  String light = String(bh1745nuc.clear);
+  String dataLine = "Enivronmental Data:\n\tRoom " + String(room) + ", \n\tlight: " + light + ", \n\tsound: " + sound + ", \n\ttemp: " + temperature;     
   
+  //csv json file
+  doc["Room"] = String(room);
+  doc["Light"] = light;
+  doc["Sound"] = String(sound);
+  doc["Temperature"] = temperature;
+
+  //sends the Json file to the serial port
+  serializeJsonPretty(doc, Serial);
+
   display.clearDisplay();
   display.setCursor(0,0);
   display.println(dataLine);
