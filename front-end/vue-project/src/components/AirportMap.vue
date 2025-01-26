@@ -4,7 +4,13 @@ import { reactive, ref } from 'vue';
 
 // Reactive overlay areas
 const overlayAreas = reactive([
-  { label: 'Area 1', color: '#F18C8E', position: { top: 50, left: 50, width: 150, height: 150 } },
+  { 
+    label: 'Area 1', 
+    color: '#F18C8E', 
+    position: { top: 50, left: 50, width: 150, height: 150 },
+    people: [{ position: { top: 20, left: 30 }, color: '#4caf50' }],
+    luggage: [{ position: { top: 70, left: 100 }, color: '#f44336' }],
+  },
   { label: 'Area 2', color: '#F0B7A4', position: { top: 200, left: 100, width: 150, height: 150 } },
   { label: 'Area 3', color: '#F1D1B5', position: { top: 400, left: 50, width: 150, height: 150 } },
   { label: 'Area 4', color: '#568EA6', position: { top: 300, left: 300, width: 150, height: 150 } },
@@ -59,6 +65,8 @@ const handleScroll = (event) => {
           :label="area.label"
           :color="area.color"
           :zoomLevel="zoomLevel"
+          :people="area.people"
+          :luggage="area.luggage"
         />
       </div>
     </div>
@@ -115,5 +123,6 @@ const handleScroll = (event) => {
   height: auto;
   object-fit: contain;
   user-select: none;
+  filter: brightness(50%);
 }
 </style>

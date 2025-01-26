@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PersonMarker from "./ObjectMarker/PersonMarker.vue"
+import LuggageMarker from "./ObjectMarker/LuggageMarker.vue";
 import { ref } from 'vue';
 
 // Define props and emits
@@ -13,8 +15,17 @@ const props = defineProps({
     type: Number,
     default: 1,
   },
+  people: {
+    type: Array,
+    default: () => [],
+  },
+  luggage: {
+    type: Array,
+    default: () => [],
+  },
 });
 
+console.log("overlay areas people props: ", props.people);
 const emit = defineEmits(['update:position']);
 
 // Local states
@@ -99,6 +110,21 @@ const endResize = () => {
     @mouseleave="endDrag"
   >
     <span class="overlay-area-label">{{ label }}</span>
+
+    <PersonMarker
+      v-for="(person, index) in props.people"
+      :key="'person-' + index"
+      :position="person.position"
+      :color="person.color"
+    />
+
+    <LuggageMarker
+      v-for="(item, index) in props.luggage"
+      :key="'luggage-' + index"
+      :position="item.position"
+      :color="item.color"
+    />
+
     <!-- Resize Handle -->
     <div
       class="resize-handle"
@@ -116,6 +142,7 @@ const endResize = () => {
   align-items: center;
   justify-content: center;
   cursor: grab;
+  overflow: hidden;
 }
 
 .overlay-area:active {
