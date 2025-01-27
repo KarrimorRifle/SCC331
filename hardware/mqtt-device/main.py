@@ -1,6 +1,13 @@
 from umqtt.simple import MQTTClient
+from lib.ubeacon.ibeacon import IBeacon
 import network
+import bluetooth
 
+beacon = IBeacon(uuid="12345678-1234-5678-1234-567812345678", major=1, minor=1)
+
+ble = bluetooth.BLE()
+ble.active(True)
+ble.gap_advertise(250_000, adv_data=beacon.adv_data, resp_data=beacon.resp_bytes, connectable=False)
 
 ssid = "grp3"
 password = "eqdf2376"
@@ -27,5 +34,8 @@ while station.isconnected() == False:
 client = MQTTClient(client_uid, mqtt_server, user = mqtt_user, password = mqtt_password)
 client.connect()
 
-client.publish(topic_to_publish, "hello world!")
-print("published")
+
+while (True):
+    client.publish(topic_to_publish, "hello world!")
+    print("published")
+    print("")
