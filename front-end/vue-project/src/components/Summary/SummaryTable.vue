@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import PersonMarker from '../ObjectMarker/PersonMarker.vue';
+import LuggageMarker from '../ObjectMarker/LuggageMarker.vue';
+
 const props = defineProps({
   areas: {
     type: Array,
@@ -13,8 +16,22 @@ const props = defineProps({
       <thead>
         <tr>
           <th>Area</th>
-          <th>People Count</th>
-          <th>Luggage Count</th>
+          <th>
+            <div class="header-container">
+              <div class="marker-wrapper">
+                <PersonMarker :color="'#4caf50'" :position="{ top: 5, left: 0 }" />
+              </div>
+              People Count
+            </div>
+          </th>
+          <th>
+            <div class="header-container">
+              <div class="marker-wrapper">
+                <LuggageMarker :color="'#f44336'" :position="{ top: 5, left: 0 }" />
+              </div>
+              Luggage Count
+            </div>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -53,5 +70,19 @@ th {
 td {
   background-color: #f8f8ff;
   color: #333;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative; /* Ensure markers stay positioned relative to this container */
+}
+
+.marker-wrapper {
+  position: relative; /* Contains the absolutely positioned markers */
+  width: 20px;
+  height: 20px;
 }
 </style>

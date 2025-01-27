@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
+import PersonMarker from './ObjectMarker/PersonMarker.vue';
+
 const props = defineProps({
   overlayAreas: {
     type: Array,
@@ -14,22 +17,32 @@ const getTextColor = (color: string): string => {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   return brightness < 128 ? 'white' : 'black';
 };
-
 </script>
 
 <template>
   <div class="dashboard">
     <h2>Dashboard</h2>
     <div 
-        v-for="(area, index) in props.overlayAreas" 
-        :key="index" 
-        class="dashboard-area"
-        :style="{ backgroundColor: area.color, color: getTextColor(area.color)}"
-        >
+      v-for="(area, index) in props.overlayAreas" 
+      :key="index" 
+      class="dashboard-area"
+      :style="{ backgroundColor: area.color, color: getTextColor(area.color) }"
+    >
       <h3>{{ area.label }}</h3>
-      <p>Luggage Count: {{ area.luggage?.length || 0 }}</p>
-      <p>People Count: {{ area.people?.length || 0 }}</p>
       
+      <div class="count-container">
+        <div class="marker-container">
+          <LuggageMarker :color="'#f44336'" :position="{ top: 5, left: 0 }" />
+        </div>
+        <p>Luggage Count: {{ area.luggage?.length || 0 }}</p>
+      </div>
+      
+      <div class="count-container">
+        <div class="marker-container">
+          <PersonMarker :color="'#4caf50'" :position="{ top: 5, left: 0 }" />
+        </div>
+        <p>People Count: {{ area.people?.length || 0 }}</p>
+      </div>
     </div>
   </div>
 </template>
@@ -62,8 +75,21 @@ const getTextColor = (color: string): string => {
   text-decoration: underline;
 }
 
-.dashboard-area p {
+.count-container {
+  display: flex;
+  align-items: center;
   margin: 5px 0;
+}
+
+.marker-container {
+  position: relative; /* Keeps the marker absolutely positioned within the container */
+  width: 20px; /* Matches marker size */
+  height: 20px;
+  margin-right: 8px;
+}
+
+.dashboard-area p {
+  margin: 0;
   font-size: 14px;
 }
 </style>
