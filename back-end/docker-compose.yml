@@ -8,43 +8,52 @@ services:
     image: mysql:latest
     container_name: mysql_server
     ports:
-      - "3306:3306"
+      - "3306:3306" # Remove so its only accessible by other containers later
     volumes:
       - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
     networks:
       - my_network
     restart: unless-stopped
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: 'true'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
-  # retriever:
-  #   build: ./retriever
-  #   container_name: retriever
-  #   ports:
-  #     - "5000:5000"
-  #   environment:
-  #     DB_HOST: mysql
-  #     DB_USER: myuser
-  #     DB_PASSWORD: mypassword
-  #     DB_NAME: mydatabase
-  #   depends_on:
-  #     - mysql
-  #   networks:
-  #     - my_network
+  account_registration:
+    build: ./accounts/registration
+    container_name: account_registration
+    ports:
+      - "5001:5001"
+    environment:
+      DB_HOST: mysql
+      DB_USER: account_registration
+      DB_PASSWORD: reg_password
+      DB_NAME: accounts
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
 
-  # acocunts:
-  #   build: ./accounts
-  #   container_name: accounts
-  #   ports:
-  #     - "5001:5001"
-  #   environment:
-  #     DB_HOST: mysql
-  #     DB_USER: myuser
-  #     DB_PASSWORD: mypassword
-  #     DB_NAME: mydatabase
-  #   depends_on:
-  #     - mysql
-  #   networks:
-  #     - my_network
+  account_login:
+    build: ./accounts/login
+    container_name: account_login
+    ports:
+      - "5002:5002"
+    environment:
+      DB_HOST: mysql
+      DB_USER: cookie_manager
+      DB_PASSWORD: cookie_password
+      DB_NAME: accounts
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
 
 networks:
   my_network:
