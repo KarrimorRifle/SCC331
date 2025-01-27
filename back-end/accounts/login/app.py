@@ -28,9 +28,8 @@ def get_db_connection():
 
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+    email = request.header.get('email').lower()
+    password = request.header.get('password')
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
@@ -62,23 +61,23 @@ def login():
 
 @app.route('/validate_cookie', methods=['GET'])
 def validate_cookie():
-    session_id = request.cookies.get('session_id')
+    session_id = request.headers.get('session-id') or request.cookies.get('session_id') 
     if not session_id:
-        return jsonify({"error": "No session cookie provided"}), 400
+        return jsonify({"error": "No session cookie or header provided"}), 400
 
     connection = get_db_connection()
     if connection is None:
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
+    cursor.execute("SELECT user_id, email FROM users WHERE cookie = %s", (session_id,))
     user = cursor.fetchone()
     cursor.close()
 
     if user:
-        return jsonify({"message": "Cookie is valid"}), 200
+        return jsonify({"message": "Cookie is valid", "valid": True, "email": user['email']}), 200
     else:
-        return jsonify({"error": "Invalid cookie"}), 401
+        return jsonify({"error": "Invalid cookie", "valid": False}), 401
 
 
 if __name__ == '__main__':
