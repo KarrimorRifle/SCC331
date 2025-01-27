@@ -7,6 +7,11 @@ const router = createRouter({
       name: 'airport',
       component: () => import('../views/AirportView.vue'),
     },
+    {
+      path: '/summary',
+      name: 'summary',
+      component: () => import('../views/SummaryView.vue'),
+    },
   ],
 })
 

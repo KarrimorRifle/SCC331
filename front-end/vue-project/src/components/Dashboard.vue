@@ -42,7 +42,6 @@ const getTextColor = (color: string): string => {
   border-left: 1px solid #ccc;
   overflow-y: auto;
   box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
   color: black;
   font-weight: bold;
 }

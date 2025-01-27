@@ -72,7 +72,6 @@ const handleScroll = (event) => {
   height: 100%;
   overflow: hidden;
   background-color: #f8f8ff;
-  border-radius: 8px;
 }
 
 .zoom-controls {
