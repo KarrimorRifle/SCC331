@@ -46,12 +46,21 @@ int minorID = 1; // Unique integer identifier for this sensor; change for each s
 bool isLuggage = false; // Determines whether the sensor is luggage or a user.
 
 int strongestMajorID = -1;
-int strongestRSSI = -1;
+int strongestRSSI = -10000;
 
 void advertisementCallback(BLEAdvertisement *adv) {
   if (adv->isIBeacon()) {
     int majorID = adv->getIBeaconMajorID();
     int rssi = adv->getRssi();
+
+    display.clearDisplay();
+    display.setTextSize(1);     
+    display.setTextColor(WHITE);
+    display.setCursor(0, 0);
+    display.println("Received BLE Signal.");
+    display.println("RSSI: " + String(rssi));
+    display.println("Room ID: " + String(majorID));
+    display.display(); 
 
     if (rssi > strongestRSSI) {
       strongestRSSI = rssi;
