@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import AirportMap from '@/components/AirportMap.vue';
+import AirporView from "@/views/AirportView.vue";
 </script>
 
 <template>
-  <AirportMap/>
+  <AirporView/>
 </template>
 
 <style scoped>

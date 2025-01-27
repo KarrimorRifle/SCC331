@@ -25,7 +25,6 @@ const props = defineProps({
   },
 });
 
-console.log("overlay areas people props: ", props.people);
 const emit = defineEmits(['update:position']);
 
 // Local states

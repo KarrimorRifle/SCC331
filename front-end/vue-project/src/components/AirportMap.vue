@@ -1,23 +1,15 @@
 <script setup lang="ts">
 import OverlayArea from './OverlayArea.vue';
-import { reactive, ref } from 'vue';
+import { ref, onMounted } from 'vue';
 
-// Reactive overlay areas
-const overlayAreas = reactive([
-  { 
-    label: 'Area 1', 
-    color: '#F18C8E', 
-    position: { top: 50, left: 50, width: 150, height: 150 },
-    people: [{ position: { top: 20, left: 30 }, color: '#4caf50' }],
-    luggage: [{ position: { top: 70, left: 100 }, color: '#f44336' }],
+const props = defineProps({
+  overlayAreas: {
+    type: Array,
+    required: true,
   },
-  { label: 'Area 2', color: '#F0B7A4', position: { top: 200, left: 100, width: 150, height: 150 } },
-  { label: 'Area 3', color: '#F1D1B5', position: { top: 400, left: 50, width: 150, height: 150 } },
-  { label: 'Area 4', color: '#568EA6', position: { top: 300, left: 300, width: 150, height: 150 } },
-]);
-
+});
 // Zoom level and map position state
-const zoomLevel = ref(1);
+const zoomLevel = ref(0.9);
 const mapPosition = ref({ x: 0, y: 0 });
 
 // Zoom controls
@@ -59,7 +51,7 @@ const handleScroll = (event) => {
       >
         <img src="@/assets/terminal-map.png" alt="Airport Map" class="map" @dragstart.prevent/>
         <OverlayArea
-          v-for="(area, index) in overlayAreas"
+          v-for="(area, index) in props.overlayAreas"
           :key="index"
           v-model:position="area.position"
           :label="area.label"
@@ -80,6 +72,7 @@ const handleScroll = (event) => {
   height: 100%;
   overflow: hidden;
   background-color: #f8f8ff;
+  border-radius: 8px;
 }
 
 .zoom-controls {
