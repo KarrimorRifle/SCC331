@@ -4,7 +4,7 @@
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_NeoPixel.h>
 #include <WiFi.h> 
- 
+#include <ArduinoJson.h>
 
 /*
  * Listen for BLE Broadcasts
@@ -38,7 +38,6 @@ bool isScanning = false;
 
 int oldMajorID = -1; // The room the user / luggage is currently in, according to the majorID picked up
 
-bool isLuggage = false; // Determines whether the sensor is luggage or a user.
 
 int strongestMajorID = -1;
 int strongestRSSI = -10000;
@@ -54,6 +53,7 @@ WiFiClient client;
 // Sensor Changeables:
 #define SENSOR_MINOR_ID 2
 uint32_t colour = WS2812B.Color(255, 0, 0); // Colour of our sensor (change for each luggage sensor pair)
+int picoType = 2; // Determines whether the sensor is luggage or a user. (2 = luggage, 3 = user)
 
 void advertisementCallback(BLEAdvertisement *adv) {
   if (adv->isIBeacon()) {
@@ -120,9 +120,19 @@ void sendToServer(int majorID) {
     display.println("Room ID: " + String(oldMajorID));
     display.display(); 
 
+    // Create JSON document to send to server:
+    StaticJsonDocument<256> json;
+
+    json["PicoID"] = SENSOR_MINOR_ID;
+    json["RoomID"] = majorID;
+    json["PicoType"] = picoType;
+    json["Data"] = majorID;
+
+    String jsonString;
+    serializeJson(json, jsonString);
+
   if (client.connect(serverIP, serverPort)) {
-    String message = "The room ID is: " + String(majorID);
-    client.println(message);
+    client.println(jsonString);
     client.stop();
   }
 }
