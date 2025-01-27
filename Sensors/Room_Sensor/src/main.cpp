@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <WiFi.h> 
 
 /*
  * BLE Broadcast periodically (Every 20 seconds)
@@ -20,15 +21,24 @@
 //creates OLED display object "display"
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-UUID ROOM_UUID = "12345678-1234-5678-1234-567812345678";
-#define ROOM_MAJOR_ID 1
-#define SENSOR_MINOR_ID 1
-
-#define ADVERTISEMENT_DURATION 15000
-#define SLEEP_DURATION 5000
+#define ADVERTISEMENT_DURATION 30000
+#define WAIT_DURATION 30000
 
 unsigned long lastActionTime = 0;
 bool isAdvertising = false;
+
+// WiFi Stuff:
+const char* ssid = "iPhone (204)"; // CHANGE THIS FOR DIFFERENT NETWORKS (FIND ON ROUTERS) 
+const char* password = "dobberz68"; // THIS TOO!
+const char* serverIP = "172.20.10.10"; 
+const int serverPort = 4242;
+
+WiFiClient client;
+
+// Sensor Changeables: 
+#define ROOM_MAJOR_ID 1
+#define SENSOR_MINOR_ID 1
+UUID ROOM_UUID = "12345678-1234-5678-1234-567812345678";
 
 void setup(void) {
   Serial.begin(115200);
@@ -41,6 +51,13 @@ void setup(void) {
     Serial.println("SSD1306 allocation failed");
     for (;;);
   }
+
+  // Connect to Wi-Fi:
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000); // Not sure if this is needed to be honest...
+  }
+
   // Update display:
   display.clearDisplay();
   display.setTextSize(1);     
@@ -51,11 +68,27 @@ void setup(void) {
   display.display(); 
 }
 
+void sendToServer(int temperature) {
+    // Update display:
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("Status: Communicating.");
+    display.println("Sending to Server...");
+    display.println("Temperature: " + String(temperature));
+    display.display(); 
+
+  if (client.connect(serverIP, serverPort)) {
+    String message = "The temperature is: " + String(temperature);
+    client.println(message);
+    client.stop();
+  }
+}
+
 void loop(void) {
   unsigned long currentTime = millis();
 
   // If not advertising and it's time to start broadcasting:
-  if (!isAdvertising && (currentTime - lastActionTime >= SLEEP_DURATION)) {
+  if (!isAdvertising && (currentTime - lastActionTime >= WAIT_DURATION)) {
     BTstack.startAdvertising();
 
     isAdvertising = true;
