@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { PropType, defineEmits } from 'vue';
 
-const updates = ref([
-  'Person 1 moved to Area 2',
-  'Luggage 3 detected in Area 1',
-  'Person 5 left Area 4',
-]);
+const props = defineProps({
+  updates: {
+    type: Array as PropType<string[]>,
+    required: true,
+  },
+});
+
+const emit = defineEmits(['add-update']);
 
 const addUpdate = (newUpdate: string) => {
-  updates.value.unshift(newUpdate); // Add new updates to the top
+  emit('add-update', newUpdate); 
 };
 </script>
 

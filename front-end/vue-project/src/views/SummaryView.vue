@@ -2,10 +2,15 @@
 import SummaryHeader from '../components/Summary/SummaryHeader.vue';
 import SummaryTable from '../components/Summary/SummaryTable.vue';
 import LiveUpdates from '../components/Summary/LiveUpdates.vue';
+import { PropType } from 'vue';
 
 const props = defineProps({
   overlayAreas: {
     type: Array,
+    required: true,
+  },
+  updates: {
+    type: Array as PropType<string[]>,
     required: true,
   },
 });
@@ -16,7 +21,7 @@ const props = defineProps({
   <div class="summary-view">
     <SummaryHeader title="Live Summary of People and Luggage" />
     <SummaryTable :areas="overlayAreas" />
-    <LiveUpdates />
+    <LiveUpdates :updates="updates"/>
   </div>
 </template>
 
