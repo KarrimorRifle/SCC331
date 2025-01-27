@@ -1,0 +1,51 @@
+version: '3.8'
+
+volumes:
+  mysql_data:
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql_server
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    networks:
+      - my_network
+    restart: unless-stopped
+
+  # retriever:
+  #   build: ./retriever
+  #   container_name: retriever
+  #   ports:
+  #     - "5000:5000"
+  #   environment:
+  #     DB_HOST: mysql
+  #     DB_USER: myuser
+  #     DB_PASSWORD: mypassword
+  #     DB_NAME: mydatabase
+  #   depends_on:
+  #     - mysql
+  #   networks:
+  #     - my_network
+
+  # acocunts:
+  #   build: ./accounts
+  #   container_name: accounts
+  #   ports:
+  #     - "5001:5001"
+  #   environment:
+  #     DB_HOST: mysql
+  #     DB_USER: myuser
+  #     DB_PASSWORD: mypassword
+  #     DB_NAME: mydatabase
+  #   depends_on:
+  #     - mysql
+  #   networks:
+  #     - my_network
+
+networks:
+  my_network:
+    driver: bridge
