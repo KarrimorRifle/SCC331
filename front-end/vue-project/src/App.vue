@@ -1,33 +1,57 @@
 <script setup lang="ts">
 import Navbar from '@/components/Navbar.vue';
-import { reactive } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
-const overlayAreas = reactive([
-  { 
-    label: 'Area 1', 
-    color: '#F18C8E', 
-    position: { top: 50, left: 50, width: 150, height: 150 },
-    people: [{ position: { top: 20, left: 30 }, color: '#4caf50' }],
-    luggage: [{ position: { top: 70, left: 100 }, color: '#f44336' }],
-  },
-  { label: 'Area 2', color: '#F0B7A4', position: { top: 200, left: 100, width: 150, height: 150 }, people: [], luggage: [] },
-  { label: 'Area 3', color: '#F1D1B5', position: { top: 400, left: 50, width: 150, height: 150 }, people: [], luggage: [] },
-  { label: 'Area 4', color: '#568EA6', position: { top: 300, left: 300, width: 150, height: 150 }, people: [], luggage: [] },
-]);
+const overlayAreas = ref([]);
+const updates = ref([]);
+let pollingInterval: number;
+
+const fetchData = async () => {
+  try {
+    const response = await fetch('../data.json');
+    const data = await response.json();
+
+    // Compare overlayAreas for changes
+    if (JSON.stringify(data.overlayAreas) !== JSON.stringify(overlayAreas.value)) {
+      console.log('Overlay areas updated:', data.overlayAreas);
+      overlayAreas.value = data.overlayAreas; // Update the overlay areas
+    }
+
+    // Compare updates for changes
+    if (JSON.stringify(data.updates) !== JSON.stringify(updates.value)) {
+      console.log('Updates updated:', data.updates);
+      updates.value = data.updates; // Replace updates entirely to handle reductions or reordering
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+};
+
+onMounted(() => {
+  fetchData(); // Initial fetch
+  pollingInterval = setInterval(fetchData, 5000); // Poll every 5 seconds
+});
+
+onUnmounted(() => {
+  clearInterval(pollingInterval); // Clean up polling on component unmount
+});
 </script>
 
 <template>
   <div class="app">
     <!-- Navbar -->
     <Navbar />
-    
+
     <!-- Dynamic Routing -->
-    <router-view :overlayAreas="overlayAreas" />
+    <router-view 
+      :overlayAreas="overlayAreas" 
+      :updates="updates"
+    />
   </div>
 </template>
 
 <style>
-html, body, *{
+html, body, * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -45,5 +69,4 @@ html, body, *{
   width: 100%;
   height: 100%;
 }
-
 </style>
