@@ -55,6 +55,18 @@ services:
     networks:
       - my_network
 
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: test_runner
+    depends_on:
+      - account_login
+      - account_registration
+    networks:
+      - my_network
+    entrypoint: ["/bin/sh", "-c", "/run_tests.sh"]
+
 networks:
   my_network:
     driver: bridge

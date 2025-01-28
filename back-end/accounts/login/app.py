@@ -28,8 +28,8 @@ def get_db_connection():
 
 @app.route('/login', methods=['POST'])
 def login():
-    email = request.header.get('email').lower()
-    password = request.header.get('password')
+    email = request.headers.get('email').lower()
+    password = request.headers.get('password')
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400

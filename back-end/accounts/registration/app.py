@@ -61,6 +61,8 @@ def register():
     except Error as e:
         cursor.close()
         return jsonify({"error": str(e)}), 500
+    
+# Should add a queue that needs admin approval to this
 
 if __name__ == '__main__':
     get_db_connection()  # Ensure the connection is established at startup
