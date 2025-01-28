@@ -53,7 +53,7 @@ WiFiClient client;
 // Sensor Changeables:
 #define SENSOR_MINOR_ID 2
 uint32_t colour = WS2812B.Color(255, 0, 0); // Colour of our sensor (change for each luggage sensor pair)
-int picoType = 2; // Determines whether the sensor is luggage or a user. (2 = luggage, 3 = user)
+#define PICO_TYPE 2; // Determines whether the sensor is luggage or a user. (2 = luggage, 3 = user)
 
 void advertisementCallback(BLEAdvertisement *adv) {
   if (adv->isIBeacon()) {
@@ -125,7 +125,7 @@ void sendToServer(int majorID) {
 
     json["PicoID"] = SENSOR_MINOR_ID;
     json["RoomID"] = majorID;
-    json["PicoType"] = picoType;
+    json["PicoType"] = PICO_TYPE;
     json["Data"] = majorID;
 
     String jsonString;
