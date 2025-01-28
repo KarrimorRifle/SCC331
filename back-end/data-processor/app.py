@@ -1,5 +1,6 @@
-#uses paho-mqtt from pip, must include in the docker :)
+# Uses paho-mqtt from pip, must include in the docker :)
 import paho.mqtt.client as mqtt
+import os
 
 
 #on connection or reconnection, subscribe to all hardware data feed
@@ -23,15 +24,11 @@ def main():
     #get the mqtt access from a local env folder
     # if this fails exit main
     print("Getting access token")
-    try:
-        file = open(".\\env\\mqtt_token")
-        access_token = file.read()
+    access_token = os.getenv("mqtt_token")
+    print(f"Access token: {access_token}")
 
-        if (len(access_token) == 0):
-            print("Error: Empty token found")
-            return
-    except:
-        print("Error: Token file not found")
+    if not access_token:
+        print("Error: Token not found")
         return
 
 
@@ -52,7 +49,6 @@ def main():
 
     client.loop_forever()
 
-
 if __name__ == "__main__":
+    print("hello")
     main()
-
