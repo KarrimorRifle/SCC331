@@ -23,6 +23,8 @@ To stop the containers, run:
 - `docker-compose down`: this will stop and remove the containers
 
 ### Running the tests
+Make sure the shell scripts are all in LF format and not CRLF
+
 If you want to run all tests make sure the containers and volumes are deleted.
 Build the containers then spin up the containers.
 
