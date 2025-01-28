@@ -55,6 +55,19 @@ services:
     networks:
       - my_network
 
+  data_processor:
+    build: ./data-processor
+    container_name: data_processor
+    ports:
+      - "5003:5003"
+    environment:
+      mqtt_token: ${mqtt_token}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
   test:
     build:
       context: .
