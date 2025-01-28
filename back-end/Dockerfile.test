@@ -1,0 +1,29 @@
+# Use the official Python image from the Docker Hub
+FROM python:3.9-slim
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Install netcat-openbsd
+RUN apt-get update && apt-get install -y netcat-openbsd
+
+# Copy the requirements file into the container
+COPY tests/requirements.txt .
+
+# Install the dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application code into the container
+COPY . .
+
+# Copy the wait-for-it script
+COPY tests/wait-for-it.sh /wait-for-it.sh
+
+# Copy the run_tests script
+COPY tests/run_tests.sh /run_tests.sh
+
+# Make the scripts executable
+RUN chmod +x /wait-for-it.sh /run_tests.sh
+
+# Command to run the tests
+CMD ["/run_tests.sh"]
