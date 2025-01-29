@@ -24,25 +24,28 @@ CREATE TABLE IF NOT EXISTS users (
 -- pico
 USE pico
 CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
   picoID INT NOT NULL,
   roomID INT NOT NULL,
   logged_at TIMESTAMP NOT NULL
-)
+);
 
 CREATE TABLE IF NOT EXISTS luggage ( -- Consider storing it paired up
+  id INT AUTO_INCREMENT PRIMARY KEY,
   picoID INT NOT NULL,
   roomID INT NOT NULL,
   logged_at TIMESTAMP NOT NULL
-)
+);
 
 CREATE TABLE IF NOT EXISTS environment (
+  id INT AUTO_INCREMENT PRIMARY KEY,
   picoID INT NOT NULL,
   roomID INT NOT NULL,
   logged_at TIMESTAMP NOT NULL,
   sound INT NOT NULL,
   light INT NOT NULL,
   temperature INT NOT NULL
-)
+);
 
 -- =============================================
 -- Microservice-specific Accounts

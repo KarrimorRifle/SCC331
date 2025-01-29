@@ -55,6 +55,42 @@ def on_message(client, user_data, message):
     except ValidationError as e:
         print("ERR: invalid structure", e)
 
+    # Make sure there is SQL connection
+    db_connection = get_db_connection()
+    if db_connection is None:
+        print("ERR: No database connection, check the DB is up!")
+        return
+    cursor = db_connection.cursor()
+
+    # If it is a room sensor we do this
+    if data.PicoType == 1:
+        # Variables are split into Sound, Light, and Temperature
+        env_data = data.Data.split(",")
+        
+        # Insert data into the database
+        try:
+            cursor.execute(
+                "INSERT INTO environment (picoID, roomID, logged_at, sound, light, temperature) "
+                "VALUES (%s, %s, NOW(), %s, %s, %s)",
+                (data.PicoID, data.RoomID, env_data[0], env_data[1], env_data[2])
+            )
+            db_connection.commit()
+        except Error as e:
+            print(f"Error inserting data into MySQL: {e}")
+
+    # Otherwise just put the data in
+    try:
+        get_table_name = lambda pico_type: "luggage" if pico_type == 2 else "user" if pico_type == 3 else None
+        cursor.execute(
+            "INSERT INTO %s (picoID, roomID, logged_at) "
+            "VALUES (%s, %s, NOW())",
+            (get_table_name(data.PicoType), data.PicoID, data.RoomID)
+        )
+        db_connection.commit()
+    except Error as e:
+        print(f"Error inserting data into MySQL: {e}")
+    
+    cursor.close()
 
 #set up the client to recieve messages
 def main():
