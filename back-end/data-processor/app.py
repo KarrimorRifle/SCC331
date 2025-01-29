@@ -1,7 +1,26 @@
 # Uses paho-mqtt from pip, must include in the docker :)
 import paho.mqtt.client as mqtt
 import os
+import json
+import mysql.connector
+from mysql.connector import Error
 
+db_connection = None
+
+def get_db_connection():
+    global db_connection
+    if db_connection is None or not db_connection.is_connected():
+        try:
+            db_connection = mysql.connector.connect(
+                host=os.getenv('DB_HOST'),
+                user=os.getenv('DB_USER'),
+                password=os.getenv('DB_PASSWORD'),
+                database=os.getenv('DB_NAME')
+            )
+        except Error as e:
+            print(f"Error connecting to MySQL: {e}")
+            db_connection = None
+    return db_connection
 
 #on connection or reconnection, subscribe to all hardware data feed
 # such that data from these feeds will be recieved by on_message
@@ -12,11 +31,29 @@ def on_connect(client, user_data, connect_flags, result_code, properties):
     client.subscribe("feeds/hardware-data/#")
     print("Subscribed to hardware feeds")
 
+from pydantic import BaseModel, ValidationError
+
+class PicoData(BaseModel):
+    PicoID: int
+    RoomID: int
+    PicoType: int
+    Data: str
 
 #whenever a message is recieved from a feed, print it and its details
 def on_message(client, user_data, message):
     print(f'message from "{message.topic}":')
-    print(str(message.payload))
+    # print(str(message.payload))
+
+    # Decode message into utf-8
+    payload_str = message.payload.decode("utf-8", errors="ignore")
+
+    # Make sure it is a json
+    try:
+        data = PicoData.parse_raw(payload_str)
+    except json.JSONDecodeError:
+        print("ERR: invalid json")
+    except ValidationError as e:
+        print("ERR: invalid structure", e)
 
 
 #set up the client to recieve messages
@@ -26,6 +63,7 @@ def main():
     print("Getting access token")
     access_token = os.getenv("mqtt_token")
     print(f"Access token: {access_token}")
+    get_db_connection()
 
     if not access_token:
         print("Error: Token not found")
@@ -50,5 +88,4 @@ def main():
     client.loop_forever()
 
 if __name__ == "__main__":
-    print("hello")
     main()
