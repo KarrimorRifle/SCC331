@@ -1,13 +1,33 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import PersonMarker from '../ObjectMarker/PersonMarker.vue';
 import LuggageMarker from '../ObjectMarker/LuggageMarker.vue';
+import EnvironmentDataGraph from './EnvironmentDataGraph.vue';
 
 const props = defineProps({
-  areas: {
+  data: {
     type: Array,
     required: true,
   },
+  environmentHistory: {
+    type: Object,
+    required: true,
+  },
 });
+
+// Track active graph area and modal state
+const activeGraphArea = ref(null);
+const showModal = ref(false);
+
+// Toggle modal for environment graph
+const openGraph = (areaLabel) => {
+  activeGraphArea.value = areaLabel;
+  showModal.value = true;
+};
+
+const closeGraph = () => {
+  showModal.value = false;
+};
 </script>
 
 <template>
@@ -32,16 +52,35 @@ const props = defineProps({
               Luggage Count
             </div>
           </th>
+          <th>🌡️ Temp (°C)</th>
+          <th>🔊 Sound (dB)</th>
+          <th>💡 Light (lux)</th>
+          <th>📊 Graph</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(area, index) in props.areas" :key="index">
+        <tr v-for="(area, index) in props.data" :key="index">
           <td>{{ area.label }}</td>
           <td>{{ area.people?.length || 0 }}</td>
           <td>{{ area.luggage?.length || 0 }}</td>
+          <td>{{ area.environment?.temperature ?? 'N/A' }}</td>
+          <td>{{ area.environment?.sound ?? 'N/A' }}</td>
+          <td>{{ area.environment?.light ?? 'N/A' }}</td>
+          <td>
+            <button @click="openGraph(area.label)">📊 View Graph</button>
+          </td>
         </tr>
       </tbody>
     </table>
+
+    <!-- Environment Data Modal -->
+    <EnvironmentDataGraph
+      v-if="showModal"
+      :areaLabel="activeGraphArea"
+      :environmentData="environmentHistory[activeGraphArea] || []"
+      :showModal="showModal"
+      @close="closeGraph"
+    />
   </div>
 </template>
 
@@ -84,5 +123,18 @@ td {
   position: relative; /* Contains the absolutely positioned markers */
   width: 20px;
   height: 20px;
+}
+
+button {
+  padding: 5px 10px;
+  border: none;
+  background-color: #568ea6;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+button:hover {
+  background-color: #305f72;
 }
 </style>
