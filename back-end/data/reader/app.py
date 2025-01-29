@@ -143,13 +143,23 @@ def summary():
         cursor.execute(query_luggage)
         luggage_results = cursor.fetchall()
 
+        # Query for environment
+        query_environment = """
+        SELECT roomID, MAX(logged_at) as latest_log, temperature, sound, light
+        FROM environment
+        WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
+        GROUP BY roomID;
+        """
+        cursor.execute(query_environment)
+        environment_results = cursor.fetchall()
+
         # Combine results
         summary = {}
         for row in users_results:
             room_id = row['roomID']
             pico_id = row['PicoID']
             if room_id not in summary:
-                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}}
+                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}, "environment": {}}
             summary[room_id]['users']['count'] += 1
             summary[room_id]['users']['id'].append(pico_id)
 
@@ -157,9 +167,19 @@ def summary():
             room_id = row['roomID']
             pico_id = row['PicoID']
             if room_id not in summary:
-                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}}
+                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}, "environment": {}}
             summary[room_id]['luggage']['count'] += 1
             summary[room_id]['luggage']['id'].append(pico_id)
+
+        for row in environment_results:
+            room_id = row['roomID']
+            if room_id not in summary:
+                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}, "environment": {}}
+            summary[room_id]['environment'] = {
+                "temperature": row['temperature'],
+                "sound": row['sound'],
+                "light": row['light']
+            }
 
         return jsonify(summary)
     except Error as e:
