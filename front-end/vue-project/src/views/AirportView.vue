@@ -3,7 +3,11 @@ import AirportMap from '@/components/AirportMap.vue';
 import DashBoard from "@/components/Dashboard.vue";
 
 const props = defineProps({
-  overlayAreas: {
+  overlayAreasConstant: {
+    type: Array,
+    required: true,
+  },
+  overlayAreasData: {
     type: Array,
     required: true,
   },
@@ -13,8 +17,14 @@ const props = defineProps({
 
 <template>
   <div class="airport-view-container">
-    <AirportMap :overlayAreas="overlayAreas" />
-    <DashBoard :overlayAreas="overlayAreas" />
+    <AirportMap 
+      :overlayAreasConstant="overlayAreasConstant" 
+      :overlayAreasData="overlayAreasData" 
+    />
+    <DashBoard 
+      :overlayAreasConstant="overlayAreasConstant" 
+      :overlayAreasData="overlayAreasData" 
+    />
   </div>
 </template>
 

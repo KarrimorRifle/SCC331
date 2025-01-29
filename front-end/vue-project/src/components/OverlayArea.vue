@@ -15,14 +15,10 @@ const props = defineProps({
     type: Number,
     default: 1,
   },
-  people: {
+  data: {
     type: Array,
     default: () => [],
-  },
-  luggage: {
-    type: Array,
-    default: () => [],
-  },
+  }
 });
 
 const emit = defineEmits(['update:position']);
@@ -111,14 +107,14 @@ const endResize = () => {
     <span class="overlay-area-label">{{ label }}</span>
 
     <PersonMarker
-      v-for="(person, index) in props.people"
+      v-for="(person, index) in props.data.people"
       :key="'person-' + index"
       :position="person.position"
       :color="person.color"
     />
 
     <LuggageMarker
-      v-for="(item, index) in props.luggage"
+      v-for="(item, index) in props.data.luggage"
       :key="'luggage-' + index"
       :position="item.position"
       :color="item.color"

@@ -3,7 +3,11 @@ import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 
 const props = defineProps({
-  overlayAreas: {
+  overlayAreasConstant: {
+    type: Array,
+    required: true,
+  },
+  overlayAreasData: {
     type: Array,
     required: true,
   },
@@ -23,25 +27,35 @@ const getTextColor = (color: string): string => {
   <div class="dashboard">
     <h2>Dashboard</h2>
     <div 
-      v-for="(area, index) in props.overlayAreas" 
+      v-for="(area, index) in props.overlayAreasConstant" 
       :key="index" 
       class="dashboard-area"
       :style="{ backgroundColor: area.color, color: getTextColor(area.color) }"
     >
       <h3>{{ area.label }}</h3>
-      
+
+      <!-- Luggage Count -->
       <div class="count-container">
         <div class="marker-container">
           <LuggageMarker :color="'#f44336'" :position="{ top: 5, left: 0 }" />
         </div>
-        <p>Luggage Count: {{ area.luggage?.length || 0 }}</p>
+        <p>Luggage Count: {{ props.overlayAreasData[index]?.luggage?.length || 0 }}</p>
       </div>
       
+      <!-- People Count -->
       <div class="count-container">
         <div class="marker-container">
           <PersonMarker :color="'#4caf50'" :position="{ top: 5, left: 0 }" />
         </div>
-        <p>People Count: {{ area.people?.length || 0 }}</p>
+        <p>People Count: {{ props.overlayAreasData[index]?.people?.length || 0 }}</p>
+      </div>
+
+      <!-- Environment Data -->
+      <div class="environment-container">
+        <h4>Environment Data:</h4>
+        <p>🌡️ Temperature: {{ props.overlayAreasData[index]?.environment?.temperature || 'N/A' }}°C</p>
+        <p>🔊 Sound Level: {{ props.overlayAreasData[index]?.environment?.sound || 'N/A' }} dB</p>
+        <p>💡 Light Level: {{ props.overlayAreasData[index]?.environment?.light || 'N/A' }} lux</p>
       </div>
     </div>
   </div>
@@ -82,14 +96,27 @@ const getTextColor = (color: string): string => {
 }
 
 .marker-container {
-  position: relative; /* Keeps the marker absolutely positioned within the container */
-  width: 20px; /* Matches marker size */
+  position: relative;
+  width: 20px;
   height: 20px;
   margin-right: 8px;
 }
 
-.dashboard-area p {
-  margin: 0;
+.environment-container {
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.environment-container h4 {
+  margin-bottom: 5px;
   font-size: 14px;
+  text-decoration: underline;
+}
+
+.environment-container p {
+  margin: 3px 0;
+  font-size: 12px;
 }
 </style>

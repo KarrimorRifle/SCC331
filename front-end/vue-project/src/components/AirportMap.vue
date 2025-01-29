@@ -3,11 +3,18 @@ import OverlayArea from './OverlayArea.vue';
 import { ref, onMounted } from 'vue';
 
 const props = defineProps({
-  overlayAreas: {
+  overlayAreasConstant: {
+    type: Array,
+    required: true,
+  },
+  overlayAreasData: {
     type: Array,
     required: true,
   },
 });
+
+console.log(props.overlayAreasConstant);
+
 // Zoom level and map position state
 const zoomLevel = ref(0.9);
 const mapPosition = ref({ x: 0, y: 0 });
@@ -51,14 +58,14 @@ const handleScroll = (event) => {
       >
         <img src="@/assets/terminal-map.png" alt="Airport Map" class="map" @dragstart.prevent/>
         <OverlayArea
-          v-for="(area, index) in props.overlayAreas"
+          v-for="(area, index) in props.overlayAreasConstant"
           :key="index"
-          v-model:position="area.position"
+          :position="area.position"
           :label="area.label"
           :color="area.color"
           :zoomLevel="zoomLevel"
-          :people="area.people"
-          :luggage="area.luggage"
+          :data="props.overlayAreasData[index]"
+          @update:position="(newPosition) => overlayAreasConstant[index].position = newPosition"
         />
       </div>
     </div>
