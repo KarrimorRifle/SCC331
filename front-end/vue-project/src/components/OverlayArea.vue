@@ -16,8 +16,8 @@ const props = defineProps({
     default: 1,
   },
   data: {
-    type: Array,
-    default: () => [],
+    type: Object, 
+    default: () => ({ people: [], luggage: [] }),
   }
 });
 
