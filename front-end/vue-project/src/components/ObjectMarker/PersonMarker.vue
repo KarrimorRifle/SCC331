@@ -9,7 +9,6 @@ const props = defineProps({
     default: '#4caf50', // Default color for people markers
   },
 });
-console.log("this is props: ", props);
 </script>
 
 <template>
