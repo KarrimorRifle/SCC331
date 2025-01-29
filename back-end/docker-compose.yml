@@ -12,10 +12,13 @@ services:
     volumes:
       - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - my_network
     restart: unless-stopped
     environment:
+      TZ: Europe/London
       MYSQL_RANDOM_ROOT_PASSWORD: 'true'
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -72,13 +75,13 @@ services:
 
   data_reader:
     build: ./data/reader
-    conteiner_name: data_reader
+    container_name: data_reader
     environment:
       DB_HOST: mysql
       DB_USER: data_reader
       DB_PASSWORD: read_password
       DB_NAME: pico
-    port:
+    ports:
       - "5003:5003"
     depends_on:
       mysql:
