@@ -62,6 +62,10 @@ services:
       - "5003:5003"
     environment:
       mqtt_token: ${mqtt_token}
+      DB_HOST: mysql
+      DB_USER: data_processor
+      DB_PASSWORD: process_password
+      DB_NAME: pico
     depends_on:
       mysql:
         condition: service_healthy
