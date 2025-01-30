@@ -1,3 +1,4 @@
 back-end/env
 hardware/mqtt-device/env.py
 Sensors/Room_Sensor_MQTT/src/env.cpp
+Sensors/User_Luggage_Sensor_MQTT/src/env.cpp

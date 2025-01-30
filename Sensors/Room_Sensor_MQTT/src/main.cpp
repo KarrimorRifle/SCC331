@@ -35,16 +35,14 @@ volatile int samplesRead;
 BH1745NUC bh1745nuc = BH1745NUC();
 
 // Location Sensor Timings:
-#define ADVERTISEMENT_DURATION 30000
-#define WAIT_DURATION 5000
+#define WAIT_DURATION 10000
 unsigned long lastActionTime = 0;
-bool isAdvertising = false;
 
 // Sensor Changeables: 
 #define ROOM_MAJOR_ID 1
 #define SENSOR_MINOR_ID 1
 #define PICO_TYPE 1
-UUID ROOM_UUID = "12345678";
+UUID ROOM_UUID = "12345678-1234-5678-1234-567812345678";
 
 // WiFi Stuff:
 const char* ssid = "grp3"; // CHANGE THIS FOR DIFFERENT NETWORKS (FIND ON ROUTERS) 
