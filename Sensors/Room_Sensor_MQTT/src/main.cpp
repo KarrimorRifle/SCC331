@@ -2,7 +2,6 @@
 #include <PDM.h>
 #include <WiFi.h> 
 #include <Adafruit_GFX.h>
-#include "bme68xLibrary.h"
 #include "BH1745NUC.h"
 #include "AsyncMqtt_Generic.h"
 #include <Adafruit_SSD1306.h>
@@ -10,7 +9,9 @@
 #include <BTstackLib.h>
 #include <stdio.h>
 #include <SPI.h>
+#include "bsec.h"
 #include "./env.cpp"
+
 
 /*
  * BLE Broadcast periodically (Every 20 seconds)
@@ -28,7 +29,7 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Environment Sensor Stuff: 
-Bme68x bme; // Climate
+Bsec iaqSensor; // Climate
 short sampleBuffer[512]; // Sound
 volatile int samplesRead;
 #define BH1745NUC_DEVICE_ADDRESS_38 0x38 // Light
@@ -79,26 +80,41 @@ void setup(void) {
   Wire.begin();
   Serial.begin(115200);
 
-  // Initialise Climate Sensors:
-  bme.begin(0x76, Wire);
-  if (bme.checkStatus()){
-    if (bme.checkStatus() == BME68X_ERROR){
-        Serial.println("Sensor error:" + bme.statusString());
-      return;
-      }
-    else if (bme.checkStatus() == BME68X_WARNING){
-      Serial.println("Sensor Warning:" + bme.statusString());
-    }
+  // Initialise the OLED display:
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println("SSD1306 allocation failed");
+    for (;;);
   }
-  bme.setTPH();
 
-  // More Environmental Initialising:
-  uint16_t temperatureProfile[10] = {100, 200, 320};
-  uint16_t durationProfile[10] = {150, 150, 150};
+  // Update display:
+  display.clearDisplay();
+  display.setTextSize(1);     
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println("Beginning Setup");
+  display.println("Connecting to Sensors...");
+  display.display(); 
 
-  bme.setSeqSleep(BME68X_ODR_250_MS);
-  bme.setHeaterProf(temperatureProfile, durationProfile, 3);
-  bme.setOpMode(BME68X_SEQUENTIAL_MODE);
+  // Initialise Climate Sensors:
+  iaqSensor.begin(BME68X_I2C_ADDR_LOW, Wire);
+
+  bsec_virtual_sensor_t sensorList[13] = {
+    BSEC_OUTPUT_IAQ,
+    BSEC_OUTPUT_STATIC_IAQ,
+    BSEC_OUTPUT_CO2_EQUIVALENT,
+    BSEC_OUTPUT_BREATH_VOC_EQUIVALENT,
+    BSEC_OUTPUT_RAW_TEMPERATURE,
+    BSEC_OUTPUT_RAW_PRESSURE,
+    BSEC_OUTPUT_RAW_HUMIDITY,
+    BSEC_OUTPUT_RAW_GAS,
+    BSEC_OUTPUT_STABILIZATION_STATUS,
+    BSEC_OUTPUT_RUN_IN_STATUS,
+    BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE,
+    BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY,
+    BSEC_OUTPUT_GAS_PERCENTAGE
+  };
+
+  iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
 
   // Light: 
   bh1745nuc.begin(BH1745NUC_DEVICE_ADDRESS_38);
@@ -111,21 +127,27 @@ void setup(void) {
   if(!PDM.begin(1, 16000)){
     display.clearDisplay();
     display.setCursor(0,0);
-    display.write("Failed to start PDM");
+    display.println("Failed to start PDM");
     display.display();
     while(1);
   }
+
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("Setting Up");
+  display.println("Initialising Bluetooth...");
+  display.display();
 
   // Initialise Bluetooth Stuff:
   BTstack.setup();
   BTstack.iBeaconConfigure(&ROOM_UUID, ROOM_MAJOR_ID, SENSOR_MINOR_ID);
 
-  // Initialise the OLED display:
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println("SSD1306 allocation failed");
-    for (;;);
-  }
 
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("Setting Up");
+  display.printf("Connecting to WiFi ssid: %s...", ssid);
+  display.display();
   // Connect to Wi-Fi:
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -137,16 +159,15 @@ void setup(void) {
 
   mqttClient.onConnect(onMQTTConnect);
   mqttClient.onDisconnect(onMQTTDisconnect);
+  mqttClient.onPublish(onMqttPublish);
 
   mqttClient.connect();
 
   // Update display:
   display.clearDisplay();
-  display.setTextSize(1);     
-  display.setTextColor(WHITE);
   display.setCursor(0, 0);
   display.println("Setup complete.");
-  display.println("Waiting to broadcast...");
+  display.println("Broadcasting...");
   display.display(); 
 
   BTstack.startAdvertising();
@@ -161,19 +182,22 @@ void environmentalData(){
   display.display(); 
 
   // Get the data:
-  bme68xData data;
-  bme.fetchData();
-  while(bme.getData(data));
-  bh1745nuc.read();
+  iaqSensor.run();
+  bh1745nuc.read();  
 
   // Process the data:
   float sound = readSoundSamples();
-  String temperature =  String(data.temperature-4.49);
+  String temperature =  String(iaqSensor.temperature - 4.49);
   String light = String(bh1745nuc.clear);
+  String airQuality = String(iaqSensor.iaq);
+  String pressure = String(iaqSensor.pressure / 100);
+  String humidity = String(iaqSensor.humidity);
+
 
   // Send data to server via helpermethod:
-  String dataLine = String(light) + "," + String(sound) + "," + String(temperature);
-  sendToServer(dataLine);     
+  String dataLine = String(light) + "," + String(sound) + "," + String(temperature) + "," + String(airQuality) + "," + String(pressure) + "," + String(humidity);
+  sendToServer(dataLine);    
+   
 }
 
 float readSoundSamples(){
@@ -270,6 +294,12 @@ void loop(void) {
   if (currentTime - lastActionTime >= WAIT_DURATION) {
     lastActionTime = currentTime;
     environmentalData();
+
+    // Update display:
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("Broadcasting...");
+    display.display(); 
   }
 
   BTstack.loop();

@@ -126,11 +126,9 @@ void onMqttPublish(const uint16_t& packetId)
 
 
 void setup(void) {
+  Wire.begin();
   Serial.begin(115200);
 
-  // Initialize Bluetooth
-  BTstack.setup();
-  BTstack.setBLEAdvertisementCallback(advertisementCallback);
 
   // Initialise the OLED display:
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -138,16 +136,37 @@ void setup(void) {
     for (;;);
   }
 
+  // Update display:
+  display.clearDisplay();
+  display.setTextSize(1);     
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println("Beginning Setup");
+  display.println("Setting up bluetooth...");
+  display.display(); 
+
+  // Initialize Bluetooth
+  BTstack.setup();
+  BTstack.setBLEAdvertisementCallback(advertisementCallback);
+
   // Colour System:
   WS2812B.begin(); // initializes WS2812B strip object (REQUIRED)
   WS2812B.setPixelColor(1, colour);
   WS2812B.show();
+
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("Setting Up");
+  display.printf("Connecting to WiFi ssid: %s...", ssid);
+  display.display(); 
 
   // Connect to Wi-Fi:
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000); // Not sure if this is needed to be honest...
   }
+
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setCredentials(MQTT_TOKEN);
