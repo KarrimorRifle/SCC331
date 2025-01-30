@@ -95,6 +95,8 @@ services:
       context: .
       dockerfile: Dockerfile.test
     container_name: test_runner
+    environment:
+      mqtt_token: ${mqtt_token}
     depends_on:
       - account_login
       - account_registration
