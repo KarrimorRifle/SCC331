@@ -80,7 +80,7 @@ onBeforeUnmount(() => {
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-content">
         <div class="modal-graph-header">
-            <h3>Environment Data - {{ areaLabel }}</h3>
+            <h3>Environment Data - Area {{ areaLabel }}</h3>
             <button class="close-btn" @click="emit('close')">
                 <font-awesome-icon :icon="faXmark" />
             </button>
