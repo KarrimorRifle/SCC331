@@ -78,6 +78,7 @@ float readSoundSamples();
 
 void setup(void) {
   Wire.begin();
+  Serial.begin(115200);
 
   // Initialise the OLED display:
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -93,8 +94,6 @@ void setup(void) {
   display.println("Beginning Setup");
   display.println("Connecting to Sensors...");
   display.display(); 
-
-  Serial.begin(115200);
 
   // Initialise Climate Sensors:
   iaqSensor.begin(BME68X_I2C_ADDR_LOW, Wire);
