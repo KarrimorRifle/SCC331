@@ -1,0 +1,108 @@
+version: '3.8'
+
+volumes:
+  mysql_data:
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql_server
+    ports:
+      - "3306:3306" # Remove so its only accessible by other containers later
+    volumes:
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      - my_network
+    restart: unless-stopped
+    environment:
+      TZ: Europe/London
+      MYSQL_RANDOM_ROOT_PASSWORD: 'true'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  account_registration:
+    build: ./accounts/registration
+    container_name: account_registration
+    ports:
+      - "5001:5001"
+    environment:
+      DB_HOST: mysql
+      DB_USER: account_registration
+      DB_PASSWORD: reg_password
+      DB_NAME: accounts
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
+  account_login:
+    build: ./accounts/login
+    container_name: account_login
+    ports:
+      - "5002:5002"
+    environment:
+      DB_HOST: mysql
+      DB_USER: cookie_manager
+      DB_PASSWORD: cookie_password
+      DB_NAME: accounts
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
+  data_processor:
+    build: ./data/processor
+    container_name: data_processor
+    environment:
+      mqtt_token: ${mqtt_token}
+      DB_HOST: mysql
+      DB_USER: data_processor
+      DB_PASSWORD: process_password
+      DB_NAME: pico
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
+  data_reader:
+    build: ./data/reader
+    container_name: data_reader
+    environment:
+      DB_HOST: mysql
+      DB_USER: data_reader
+      DB_PASSWORD: read_password
+      DB_NAME: pico
+    ports:
+      - "5003:5003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: test_runner
+    environment:
+      mqtt_token: ${mqtt_token}
+    depends_on:
+      - account_login
+      - account_registration
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
