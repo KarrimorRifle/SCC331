@@ -139,14 +139,20 @@ void enivronmentalData(){
   bh1745nuc.read();
   float sound = readSoundSamples();
   String temperature =  String(data.temperature-4.49);
+  String gas = String(data.gas_resistance / 1000);
   String light = String(bh1745nuc.clear);
-  String dataLine = "Enivronmental Data:\n\tRoom " + String(room) + ", \n\tlight: " + light + ", \n\tsound: " + sound + ", \n\ttemp: " + temperature;     
+  String pressure = String(data.pressure / 100);
+  String humidity = String(data.humidity);
+  String dataLine = "Enivronmental Data:\n\tRoom " + String(room) + ", \n\tlight: " + light + ", \n\tsound: " + sound + ", \n\ttemp: " + temperature + "\n\tgas: " + gas + "\n\tpressure, humidity: " + pressure + ", " + humidity;     
   
   //csv json file
   doc["Room"] = String(room);
   doc["Light"] = light;
   doc["Sound"] = String(sound);
   doc["Temperature"] = temperature;
+  doc["Gas"] = gas;
+  doc["Pressure"] = gas;
+  doc["Humidity"] = gas;
 
   //sends the Json file to the serial port
   serializeJsonPretty(doc, Serial);
