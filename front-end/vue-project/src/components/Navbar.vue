@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+import { useCookies } from 'vue3-cookies';
+
+const { cookies } = useCookies();
+const sessionId = cookies.get('session-id');
 </script>
 
 <template>
   <nav class="navbar">
     <RouterLink to="/" class="nav-link" exact-active-class="active">Airport View</RouterLink>
     <RouterLink to="/summary" class="nav-link" exact-active-class="active">Summary View</RouterLink>
+    <RouterLink to="/login" class="nav-link" exact-active-class="active" v-if="!sessionId">Login</RouterLink>
   </nav>
 </template>
 
@@ -35,7 +40,6 @@ import { RouterLink } from 'vue-router';
 }
 
 .active {
-  text-decoration: underline;
-  color: #f18c8e;
+  color: #a9a9a9;
 }
 </style>
