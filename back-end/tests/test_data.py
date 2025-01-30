@@ -12,9 +12,9 @@ class TestData(unittest.TestCase):
     MQTT_PORT = 1883
     MQTT_TOPIC = "feeds/hardware-data/test"
     MQTT_TOKEN = os.getenv("mqtt_token")  # Replace with your actual MQTT token
-    ACCOUNTS_URL = "http://localhost:5001"
-    LOGIN_URL = "http://localhost:5002"
-    READER_URL = "http://localhost:5003"
+    ACCOUNTS_URL = "http://account_registration:5001"
+    LOGIN_URL = "http://account_login:5002"
+    READER_URL = "http://data_reader:5003"
 
     def setUp(self):
         self.luggage = [
@@ -82,25 +82,25 @@ class TestData(unittest.TestCase):
         self.assertEqual(login_response.status_code, 200)
         return login_response.cookies.get("session_id")
 
-    def publish_data(self, data):
-        client = mqtt.Client()
+    def publish_data(self, data, topic):
+        client = mqtt.Client(protocol=mqtt.MQTTv5)
         client.username_pw_set(self.MQTT_TOKEN, None)
         client.connect(self.MQTT_BROKER, self.MQTT_PORT, 60)
         client.loop_start()
         for item in data:
             payload = json.dumps(item)
-            client.publish(self.MQTT_TOPIC, payload)
+            client.publish(topic, payload)
             time.sleep(1)  # Sleep to ensure messages are sent
         client.loop_stop()
         client.disconnect()
 
     def test_1_populate_and_check_rooms(self):
         # Publish luggage data
-        self.publish_data(self.luggage)
+        self.publish_data(self.luggage, "feeds/hardware-data/test1_luggage")
         # Publish users data
-        self.publish_data(self.users)
+        self.publish_data(self.users, "feeds/hardware-data/test1_users")
         # Publish room data
-        self.publish_data(self.room)
+        self.publish_data(self.room, "feeds/hardware-data/test1_rooms")
 
         # Add assertions or checks here to verify the data was processed correctly
         expected_summary = {
@@ -168,7 +168,7 @@ class TestData(unittest.TestCase):
     def test_2_session_validation(self):
         # Publish session data
         for item in self.session:
-            self.publish_data([item])
+            self.publish_data([item], "feeds/hardware-data/test2_sessions")
             time.sleep(2)  # Sleep to ensure messages are sent
 
         # Fetch the session logs for PicoID 1
@@ -195,7 +195,7 @@ class TestData(unittest.TestCase):
 
         # Publish session2 data
         for item in self.session2:
-            self.publish_data([item])
+            self.publish_data([item], "feeds/hardware-data/test3_sessions")
             time.sleep(2)  # Sleep to ensure messages are sent
 
         # Fetch the session logs for PicoID 59

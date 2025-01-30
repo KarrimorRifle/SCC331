@@ -20,6 +20,8 @@ def get_db_connection():
         except Error as e:
             print(f"Error connecting to MySQL: {e}")
             db_connection = None
+        except e:
+            print("Unknown error", e)
     return db_connection
 
 #on connection or reconnection, subscribe to all hardware data feed
@@ -57,6 +59,9 @@ def on_message(client, user_data, message):
     except ValidationError as e:
         print("ERR: invalid structure", e)
         return
+    except e:
+        print("Unknown error", e)
+        return
 
     # Make sure there is SQL connection
     db_connection = get_db_connection()
@@ -80,19 +85,24 @@ def on_message(client, user_data, message):
             db_connection.commit()
         except Error as e:
             print(f"Error inserting data into MySQL: {e}")
+        except:
+            print("Incorrect format")
 
-    # Otherwise just put the data in
-    try:
-        get_table_name = lambda pico_type: 'luggage' if pico_type == 2 else 'users' if pico_type == 3 else None
-        table_name = get_table_name(data.PicoType)
-        if table_name:
-            query = f"INSERT INTO {table_name} (picoID, roomID, logged_at) VALUES (%s, %s, NOW())"
-            cursor.execute(query, (data.PicoID, data.RoomID))
-            db_connection.commit()
-        else:
-            print("Invalid PicoType")
-    except Error as e:
-        print(f"Error inserting data into MySQL: {e}")
+    else:
+        # Otherwise just put the data in
+        try:
+            get_table_name = lambda pico_type: 'luggage' if pico_type == 2 else 'users' if pico_type == 3 else None
+            table_name = get_table_name(data.PicoType)
+            if table_name:
+                query = f"INSERT INTO {table_name} (picoID, roomID, logged_at) VALUES (%s, %s, NOW())"
+                cursor.execute(query, (data.PicoID, data.RoomID))
+                db_connection.commit()
+            else:
+                print(f"Invalid PicoType {data.PicoType}")
+        except Error as e:
+            print(f"Error inserting data into MySQL: {e}")
+        except e:
+            print("unknown error", e)
     
     cursor.close()
 
