@@ -30,9 +30,9 @@ def get_db_connection():
 
 @app.route('/register', methods=['POST'])
 def register():
-    full_name = request.headers.get('name')
-    email = request.headers.get('email')
-    password = request.headers.get('password')
+    full_name = str(request.headers.get('name', ''))
+    email = str(request.headers.get('email', '')).lower()
+    password = str(request.headers.get('password', ''))
 
     if not full_name:
         return jsonify({"error": "Full name is required"}), 400
