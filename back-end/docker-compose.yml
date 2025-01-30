@@ -12,10 +12,13 @@ services:
     volumes:
       - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - my_network
     restart: unless-stopped
     environment:
+      TZ: Europe/London
       MYSQL_RANDOM_ROOT_PASSWORD: 'true'
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -56,23 +59,44 @@ services:
       - my_network
 
   data_processor:
-    build: ./data-processor
+    build: ./data/processor
     container_name: data_processor
-    ports:
-      - "5003:5003"
     environment:
       mqtt_token: ${mqtt_token}
+      DB_HOST: mysql
+      DB_USER: data_processor
+      DB_PASSWORD: process_password
+      DB_NAME: pico
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - my_network
 
+  data_reader:
+    build: ./data/reader
+    container_name: data_reader
+    environment:
+      DB_HOST: mysql
+      DB_USER: data_reader
+      DB_PASSWORD: read_password
+      DB_NAME: pico
+    ports:
+      - "5003:5003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
+
   test:
     build:
       context: .
       dockerfile: Dockerfile.test
     container_name: test_runner
+    environment:
+      mqtt_token: ${mqtt_token}
     depends_on:
       - account_login
       - account_registration

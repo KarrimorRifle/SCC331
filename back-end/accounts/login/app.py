@@ -12,24 +12,22 @@ app = Flask(__name__)
 db_connection = None
 
 def get_db_connection():
-    global db_connection
-    if db_connection is None or not db_connection.is_connected():
-        try:
-            db_connection = mysql.connector.connect(
-                host=os.getenv('DB_HOST'),
-                user=os.getenv('DB_USER'),
-                password=os.getenv('DB_PASSWORD'),
-                database=os.getenv('DB_NAME')
-            )
-        except Error as e:
-            print(f"Error connecting to MySQL: {e}")
-            db_connection = None
+    try:
+        db_connection = mysql.connector.connect(
+            host=os.getenv('DB_HOST'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            database=os.getenv('DB_NAME')
+        )
+    except Error as e:
+        print(f"Error connecting to MySQL: {e}")
+        db_connection = None
     return db_connection
 
 @app.route('/login', methods=['POST'])
 def login():
-    email = request.headers.get('email').lower()
-    password = request.headers.get('password')
+    email = str(request.headers.get('email').lower())
+    password = str(request.headers.get('password'))
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400

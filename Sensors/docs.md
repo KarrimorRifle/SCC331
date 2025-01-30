@@ -31,13 +31,19 @@ The `Room_Sensor` sends the following JSON structure to the server:
 
 ```json
 {
-  "Temperature": <int>  // The current temperature reading
+  "PicoID": 1,
+  "RoomID": 1,
+  "PicoType": 1,
+  "Data": "<Sound>,<Light>,<Temperature>"  // CSV string with sound, light, and temperature readings
 }
 ```
 
 ### Example
 ```json
 {
-  "Temperature": 25
+  "PicoID": 1,
+  "RoomID": 1,
+  "PicoType": 1,
+  "Data": "45.3,300,22.5"
 }
 ```
