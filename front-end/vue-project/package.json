@@ -16,8 +16,14 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/vue-fontawesome": "^3.0.8",
+    "chart.js": "^4.4.7",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "vue-zoomable": "^1.2.5",
+    "vue3-resizable": "^1.0.0-alpha.3"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",

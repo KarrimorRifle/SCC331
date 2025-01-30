@@ -1,0 +1,35 @@
+{
+    "overlayAreasData": [
+      {
+        "label": "Area 1",
+        "people": [{ "position": { "top": 20, "left": 30 }}],
+        "luggage": [{ "position": { "top": 70, "left": 100 }}], 
+        "environment":{
+          "temperature": 50,
+          "sound": 40,
+          "light": 15
+        }
+      },
+      {
+        "label": "Area 2",
+        "people": [],
+        "luggage": []
+      },
+      {
+        "label": "Area 3",
+        "people": [],
+        "luggage": []
+      },
+      {
+        "label": "Area 4",
+        "people": [],
+        "luggage": []
+      }
+    ],
+    "updates": [
+      "Person 1 moved to Area 2",
+      "Luggage 3 detected in Area 1",
+      "Person 5 left Area 4"
+    ]
+  }
+  
