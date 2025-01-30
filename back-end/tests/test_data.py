@@ -40,6 +40,18 @@ class TestData(unittest.TestCase):
             {"PicoID": 209, "RoomID": 2, "PicoType": 1, "Data": "21,30,12"},
             {"PicoID": 200, "RoomID": 3, "PicoType": 1, "Data": "13,17,9"}
         ]
+        self.session = [
+            {"PicoID": 59, "RoomID": 1, "PicoType": 2, "Data": 1},
+            {"PicoID": 59, "RoomID": 2, "PicoType": 2, "Data": 1},
+            {"PicoID": 59, "RoomID": 3, "PicoType": 2, "Data": 1},
+            {"PicoID": 59, "RoomID": 2, "PicoType": 2, "Data": 1},
+        ]
+        self.session2 = [
+            {"PicoID": 59, "RoomID": 3, "PicoType": 2, "Data": 1},
+            {"PicoID": 59, "RoomID": 1, "PicoType": 2, "Data": 1},
+            {"PicoID": 59, "RoomID": 2, "PicoType": 2, "Data": 1},
+            {"PicoID": 59, "RoomID": 3, "PicoType": 2, "Data": 1},
+        ]
         self.email = self.generate_random_email()
         self.session_cookie = self.register_and_login()
 
@@ -143,6 +155,57 @@ class TestData(unittest.TestCase):
         actual_summary = self.fetch_summary_from_server()
 
         self.assertEqual(expected_summary, actual_summary)
+
+    def test_2_session_validation(self):
+        # Publish session data
+        for item in self.session:
+            self.publish_data([item])
+            time.sleep(2)  # Sleep to ensure messages are sent
+
+        # Fetch the session logs for PicoID 1
+        response = requests.get(
+            f"{self.READER_URL}/pico/59",
+            cookies={"session-id": self.session_cookie}
+        )
+        self.assertEqual(response.status_code, 200)
+
+        expected_logs = [
+            {"roomID": 1},
+            {"roomID": 2},
+            {"roomID": 3},
+            {"roomID": 2}
+        ]
+
+        actual_logs = response.json()
+        actual_logs_simplified = [{"roomID": log["roomID"]} for log in actual_logs]
+        self.assertEqual(expected_logs, actual_logs_simplified)
+
+    def test_3_session_expiry_and_republish(self):
+        # Wait for 2.5 minutes
+        time.sleep(150)
+
+        # Publish session2 data
+        for item in self.session2:
+            self.publish_data([item])
+            time.sleep(2)  # Sleep to ensure messages are sent
+
+        # Fetch the session logs for PicoID 59
+        response = requests.get(
+            f"{self.READER_URL}/pico/59",
+            cookies={"session-id": self.session_cookie}
+        )
+        self.assertEqual(response.status_code, 200)
+
+        expected_logs = [
+            {"roomID": 3},
+            {"roomID": 1},
+            {"roomID": 2},
+            {"roomID": 3}
+        ]
+
+        actual_logs = response.json()
+        actual_logs_simplified = [{"roomID": log["roomID"]} for log in actual_logs]
+        self.assertEqual(expected_logs, actual_logs_simplified)
 
     def fetch_summary_from_server(self):
         # Fetch the summary from the server using the session cookie
