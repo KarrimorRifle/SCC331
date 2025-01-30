@@ -32,12 +32,13 @@ def on_connect(client, user_data, connect_flags, result_code, properties):
     print("Subscribed to hardware feeds")
 
 from pydantic import BaseModel, ValidationError
+from typing import Union
 
 class PicoData(BaseModel):
     PicoID: int
     RoomID: int
     PicoType: int
-    Data: str
+    Data: Union[str, int]
 
 #whenever a message is recieved from a feed, print it and its details
 def on_message(client, user_data, message):
@@ -52,8 +53,10 @@ def on_message(client, user_data, message):
         data = PicoData.parse_raw(payload_str)
     except json.JSONDecodeError:
         print("ERR: invalid json")
+        return
     except ValidationError as e:
         print("ERR: invalid structure", e)
+        return
 
     # Make sure there is SQL connection
     db_connection = get_db_connection()
@@ -80,13 +83,14 @@ def on_message(client, user_data, message):
 
     # Otherwise just put the data in
     try:
-        get_table_name = lambda pico_type: "luggage" if pico_type == 2 else "user" if pico_type == 3 else None
-        cursor.execute(
-            "INSERT INTO %s (picoID, roomID, logged_at) "
-            "VALUES (%s, %s, NOW())",
-            (get_table_name(data.PicoType), data.PicoID, data.RoomID)
-        )
-        db_connection.commit()
+        get_table_name = lambda pico_type: 'luggage' if pico_type == 2 else 'users' if pico_type == 3 else None
+        table_name = get_table_name(data.PicoType)
+        if table_name:
+            query = f"INSERT INTO {table_name} (picoID, roomID, logged_at) VALUES (%s, %s, NOW())"
+            cursor.execute(query, (data.PicoID, data.RoomID))
+            db_connection.commit()
+        else:
+            print("Invalid PicoType")
     except Error as e:
         print(f"Error inserting data into MySQL: {e}")
     

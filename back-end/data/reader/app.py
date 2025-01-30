@@ -98,7 +98,7 @@ def pico(PICO):
         return jsonify(session_logs)
     except Error as e:
         print(f"Error querying data: {e}")
-        return jsonify({"error": "Error querying data"}), 500
+        return jsonify({"error": "Error querying data", "message":f"{e}"}), 500
     finally:
         cursor.close()
         connection.close()
@@ -109,7 +109,7 @@ def summary():
     VALIDATION_SITE = "http://account_login:5002/validate_cookie"
     # Make sure the cookie is valid by sending a cookie auth check to accounts_login container at /authenticate_cookie
     r = requests.get(VALIDATION_SITE, headers={
-        "session-id":request.cookies.get('session_id') 
+        "session-id": request.cookies.get('session_id')
     })
     if r.status_code != 200:
         print("ERR: Invalid cookie detected")
@@ -144,10 +144,14 @@ def summary():
 
         # Query for environment
         query_environment = """
-        SELECT roomID, MAX(logged_at) as latest_log, temperature, sound, light
-        FROM environment
-        WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-        GROUP BY roomID;
+        SELECT e.roomID, e.logged_at, e.temperature, e.sound, e.light
+        FROM environment e
+        INNER JOIN (
+            SELECT roomID, MAX(logged_at) as latest_log
+            FROM environment
+            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
+            GROUP BY roomID
+        ) latest ON e.roomID = latest.roomID AND e.logged_at = latest.latest_log;
         """
         cursor.execute(query_environment)
         environment_results = cursor.fetchall()
@@ -183,7 +187,7 @@ def summary():
         return jsonify(summary)
     except Error as e:
         print(f"Error querying data: {e}")
-        return jsonify({"error": "Error querying data"}), 500
+        return jsonify({"error": "Error querying data", "message": f"{e}"}), 500
     finally:
         cursor.close()
         connection.close()

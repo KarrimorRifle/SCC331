@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- pico
-USE pico
+USE pico;
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   picoID INT NOT NULL,
@@ -46,6 +46,28 @@ CREATE TABLE IF NOT EXISTS environment (
   light INT NOT NULL,
   temperature INT NOT NULL
 );
+
+-- -- =============================================
+-- -- Dummy Data
+-- -- =============================================
+
+-- -- Insert dummy data into users table
+-- INSERT INTO users (picoID, roomID, logged_at) VALUES
+-- (1, 101, '2025-01-28 10:00:00'),
+-- (2, 102, '2025-01-28 10:05:00'),
+-- (3, 103, '2025-01-28 10:10:00');
+
+-- -- Insert dummy data into luggage table
+-- INSERT INTO luggage (picoID, roomID, logged_at) VALUES
+-- (4, 101, '2025-01-28 10:00:00'),
+-- (5, 102, '2025-01-28 10:05:00'),
+-- (6, 103, '2025-01-28 10:10:00');
+
+-- -- Insert dummy data into environment table
+-- INSERT INTO environment (picoID, roomID, logged_at, sound, light, temperature) VALUES
+-- (1, 101, '2025-01-28 10:00:00', 50, 300, 22),
+-- (2, 102, '2025-01-28 10:05:00', 55, 320, 23),
+-- (3, 103, '2025-01-28 10:10:00', 60, 340, 24);
 
 -- =============================================
 -- Microservice-specific Accounts
