@@ -78,6 +78,22 @@ float readSoundSamples();
 
 void setup(void) {
   Wire.begin();
+
+  // Initialise the OLED display:
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println("SSD1306 allocation failed");
+    for (;;);
+  }
+
+  // Update display:
+  display.clearDisplay();
+  display.setTextSize(1);     
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println("Beginning Setup");
+  display.println("Connecting to Sensors...");
+  display.display(); 
+
   Serial.begin(115200);
 
   // Initialise Climate Sensors:
@@ -112,21 +128,27 @@ void setup(void) {
   if(!PDM.begin(1, 16000)){
     display.clearDisplay();
     display.setCursor(0,0);
-    display.write("Failed to start PDM");
+    display.println("Failed to start PDM");
     display.display();
     while(1);
   }
+
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("Setting Up");
+  display.println("Initialising Bluetooth...");
+  display.display();
 
   // Initialise Bluetooth Stuff:
   BTstack.setup();
   BTstack.iBeaconConfigure(&ROOM_UUID, ROOM_MAJOR_ID, SENSOR_MINOR_ID);
 
-  // Initialise the OLED display:
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println("SSD1306 allocation failed");
-    for (;;);
-  }
 
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("Setting Up");
+  display.printf("Connecting to WiFi ssid: %s...", ssid);
+  display.display();
   // Connect to Wi-Fi:
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -138,16 +160,15 @@ void setup(void) {
 
   mqttClient.onConnect(onMQTTConnect);
   mqttClient.onDisconnect(onMQTTDisconnect);
+  mqttClient.onPublish(onMqttPublish);
 
   mqttClient.connect();
 
   // Update display:
   display.clearDisplay();
-  display.setTextSize(1);     
-  display.setTextColor(WHITE);
   display.setCursor(0, 0);
   display.println("Setup complete.");
-  display.println("Waiting to broadcast...");
+  display.println("Broadcasting...");
   display.display(); 
 
   BTstack.startAdvertising();
@@ -176,7 +197,8 @@ void environmentalData(){
 
   // Send data to server via helpermethod:
   String dataLine = String(light) + "," + String(sound) + "," + String(temperature) + "," + String(airQuality) + "," + String(pressure) + "," + String(humidity);
-  sendToServer(dataLine);     
+  sendToServer(dataLine);    
+   
 }
 
 float readSoundSamples(){
@@ -273,6 +295,12 @@ void loop(void) {
   if (currentTime - lastActionTime >= WAIT_DURATION) {
     lastActionTime = currentTime;
     environmentalData();
+
+    // Update display:
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("Broadcasting...");
+    display.display(); 
   }
 
   BTstack.loop();
