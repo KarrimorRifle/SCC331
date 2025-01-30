@@ -96,7 +96,10 @@ port: 5003
           "environment": {
             "temperature": 22.5,
             "sound": 45.3,
-            "light": 300
+            "light": 300,
+            "IAQ": 50.0,
+            "pressure": 1013.25,
+            "humidity": 40.0
           }
         },
         "2": {
@@ -111,7 +114,10 @@ port: 5003
           "environment": {
             "temperature": 23.0,
             "sound": 50.1,
-            "light": 320
+            "light": 320,
+            "IAQ": 55.0,
+            "pressure": 1012.50,
+            "humidity": 42.0
           }
         }
       }
