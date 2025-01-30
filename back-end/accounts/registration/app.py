@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import mysql.connector
 from mysql.connector import Error
 import bcrypt
@@ -6,6 +7,8 @@ import os
 import time
 
 app = Flask(__name__)
+
+CORS(app)
 
 # Establish a persistent connection to the database
 db_connection = None

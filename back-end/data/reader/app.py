@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify, make_response
 import mysql.connector
+from flask_cors import CORS
 from mysql.connector import Error
 from datetime import datetime
 import os
 import requests
 
 app = Flask(__name__)
+CORS(app)
 
 # Establish a persistent connection to the database
 db_connection = None
