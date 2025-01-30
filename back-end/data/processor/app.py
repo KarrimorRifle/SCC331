@@ -20,6 +20,8 @@ def get_db_connection():
         except Error as e:
             print(f"Error connecting to MySQL: {e}")
             db_connection = None
+        except e:
+            print("Unknown error", e)
     return db_connection
 
 #on connection or reconnection, subscribe to all hardware data feed
@@ -56,6 +58,9 @@ def on_message(client, user_data, message):
         return
     except ValidationError as e:
         print("ERR: invalid structure", e)
+        return
+    except e:
+        print("Unknown error", e)
         return
 
     # Make sure there is SQL connection
@@ -96,6 +101,8 @@ def on_message(client, user_data, message):
                 print(f"Invalid PicoType {data.PicoType}")
         except Error as e:
             print(f"Error inserting data into MySQL: {e}")
+        except e:
+            print("unknown error", e)
     
     cursor.close()
 
