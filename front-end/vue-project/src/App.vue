@@ -29,34 +29,42 @@ const environmentHistory = ref({});
 let pollingInterval;
 
 // Load environment data
-const trackEnvironmentData = (data) => {
-  data.forEach((area) => {
-    if (!area.environment) return;
-    const timestamp = Date.now();
-    if (!environmentHistory.value[area.label]) {
-      environmentHistory.value[area.label] = [];
-    }
-    environmentHistory.value[area.label].push({
-      timestamp,
-      temperature: area.environment.temperature,
-      sound: area.environment.sound,
-      light: area.environment.light,
-    });
-    if (environmentHistory.value[area.label].length > 20) {
-      environmentHistory.value[area.label].shift();
-    }
+const trackEnvironmentData = (label, data) => {
+  if (!data) return;
+  const timestamp = Date.now();
+  if (!environmentHistory.value[label]) {
+    environmentHistory.value[label] = [];
+  }
+  environmentHistory.value[label].push({
+    timestamp,
+    temperature: data.temperature,
+    sound: data.sound,
+    light: data.light,
   });
+  if (environmentHistory.value[label].length > 20) {
+    environmentHistory.value[label].shift();
+  }
 };
 
 // Fetch dynamic data
 const fetchData = async () => {
   try {
-    const response = await fetch('../data.json');
+    // const response = await fetch("/summary");
+    const response = await fetch("../data.json");
+
     const data = await response.json();
-    trackEnvironmentData(data.overlayAreasData);
-    if (JSON.stringify(data.overlayAreasData) !== JSON.stringify(overlayAreasData.value)) {
-      console.log('Overlay areas updated:', data.overlayAreasData);
-      overlayAreasData.value = data.overlayAreasData;
+
+    Object.entries(data).forEach(([key, area]) => {
+      if (area.environment && Object.keys(area.environment).length > 0) {
+        trackEnvironmentData(key, area.environment);
+      } else {
+        console.warn(`Empty or missing environment data for Key: ${key}`);
+      }
+    });
+
+    if (JSON.stringify(data) !== JSON.stringify(overlayAreasData.value)) {
+      console.log('Overlay areas updated:', data);
+      overlayAreasData.value = data;
     }
     if (JSON.stringify(data.updates) !== JSON.stringify(updates.value)) {
       console.log('Updates updated:', data.updates);

@@ -28,7 +28,11 @@ const props = defineProps({
 <template>
   <div class="summary-view">
     <SummaryHeader title="Live Summary of People and Luggage" />
-    <SummaryTable :data="overlayAreasData" :environmentHistory="environmentHistory"/>
+    <SummaryTable 
+      :data="overlayAreasData" 
+      :overlayAreasConstant="overlayAreasConstant"
+      :environmentHistory="environmentHistory"
+    />
     <LiveUpdates :updates="updates"/>
   </div>
 </template>

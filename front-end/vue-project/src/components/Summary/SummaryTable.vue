@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import PersonMarker from '../ObjectMarker/PersonMarker.vue';
 import LuggageMarker from '../ObjectMarker/LuggageMarker.vue';
 import EnvironmentDataGraph from './EnvironmentDataGraph.vue';
@@ -9,12 +9,16 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  overlayAreasConstant: {
+    type: Array,
+    required: true,
+  },
   environmentHistory: {
     type: Object,
     required: true,
   },
 });
-
+console.log(props.environmentHistory);
 // Track active graph area and modal state
 const activeGraphArea = ref(null);
 const showModal = ref(false);
@@ -28,6 +32,12 @@ const openGraph = (areaLabel) => {
 const closeGraph = () => {
   showModal.value = false;
 };
+
+const getAreaKey = (label: string): string | null => {
+  const match = label.match(/\d+/);
+  return match ? match[0] : null;
+};
+
 </script>
 
 <template>
@@ -59,15 +69,15 @@ const closeGraph = () => {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(area, index) in props.data" :key="index">
+        <tr v-for="(area, index) in props.overlayAreasConstant" :key="index">
           <td>{{ area.label }}</td>
-          <td>{{ area.people?.length || 0 }}</td>
-          <td>{{ area.luggage?.length || 0 }}</td>
-          <td>{{ area.environment?.temperature ?? 'N/A' }}</td>
-          <td>{{ area.environment?.sound ?? 'N/A' }}</td>
-          <td>{{ area.environment?.light ?? 'N/A' }}</td>
+          <td>{{ props.data[getAreaKey(area.label)]?.users?.count || 0 }}</td>
+          <td>{{ props.data[getAreaKey(area.label)]?.luggage?.count || 0 }}</td>
+          <td>{{ props.data[getAreaKey(area.label)]?.environment?.temperature  ?? 'N/A' }}</td>
+          <td>{{ props.data[getAreaKey(area.label)]?.environment?.sound ?? 'N/A' }}</td>
+          <td>{{ props.data[getAreaKey(area.label)]?.environment?.light ?? 'N/A' }}</td>
           <td>
-            <button @click="openGraph(area.label)">📊 View Graph</button>
+            <button @click="openGraph(getAreaKey(area.label))">📊 View Graph</button>
           </td>
         </tr>
       </tbody>

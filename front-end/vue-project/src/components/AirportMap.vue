@@ -13,7 +13,6 @@ const props = defineProps({
   },
 });
 
-console.log(props.overlayAreasConstant);
 
 // Zoom level and map position state
 const zoomLevel = ref(0.9);
@@ -64,7 +63,7 @@ const handleScroll = (event) => {
           :label="area.label"
           :color="area.color"
           :zoomLevel="zoomLevel"
-          :data="props.overlayAreasData[index]"
+          :data="props.overlayAreasData"
           @update:position="(newPosition) => overlayAreasConstant[index].position = newPosition"
         />
       </div>
