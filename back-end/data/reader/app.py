@@ -12,17 +12,16 @@ db_connection = None
 
 def get_db_connection():
     global db_connection
-    if db_connection is None or not db_connection.is_connected():
-        try:
-            db_connection = mysql.connector.connect(
-                host=os.getenv('DB_HOST'),
-                user=os.getenv('DB_USER'),
-                password=os.getenv('DB_PASSWORD'),
-                database=os.getenv('DB_NAME')
-            )
-        except Error as e:
-            print(f"Error connecting to MySQL: {e}")
-            db_connection = None
+    try:
+        db_connection = mysql.connector.connect(
+            host=os.getenv('DB_HOST'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            database=os.getenv('DB_NAME')
+        )
+    except Error as e:
+        print(f"Error connecting to MySQL: {e}")
+        db_connection = None
     return db_connection
 
 # Make A path per data type, and make sure the cookie is valid beither getting summary data
