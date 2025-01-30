@@ -36,9 +36,9 @@ class TestData(unittest.TestCase):
             {"PicoID": 14, "RoomID": 3, "PicoType": 3, "Data": 1}
         ]
         self.room = [
-            {"PicoID": 205, "RoomID": 1, "PicoType": 1, "Data": "10,12,34"},
-            {"PicoID": 209, "RoomID": 2, "PicoType": 1, "Data": "21,30,12"},
-            {"PicoID": 200, "RoomID": 3, "PicoType": 1, "Data": "13,17,9"}
+            {"PicoID": 205, "RoomID": 1, "PicoType": 1, "Data": "10,12,34,11,20,20"},
+            {"PicoID": 209, "RoomID": 2, "PicoType": 1, "Data": "21,30,12,23,15,12"},
+            {"PicoID": 200, "RoomID": 3, "PicoType": 1, "Data": "13,17,9,53,23,63"}
         ]
         self.session = [
             {"PicoID": 59, "RoomID": 1, "PicoType": 2, "Data": 1},
@@ -116,7 +116,10 @@ class TestData(unittest.TestCase):
                 "environment": {
                     "temperature": 10,
                     "sound": 12,
-                    "light": 34
+                    "light": 34,
+                    "IAQ": 11,
+                    "pressure": 20,
+                    "humidity": 20
                 }
             },
             "2": {
@@ -131,7 +134,10 @@ class TestData(unittest.TestCase):
                 "environment": {
                     "temperature": 21,
                     "sound": 30,
-                    "light": 12
+                    "light": 12,
+                    "IAQ": 23,
+                    "pressure": 15,
+                    "humidity": 12
                 }
             },
             "3": {
@@ -146,7 +152,10 @@ class TestData(unittest.TestCase):
                 "environment": {
                     "temperature": 13,
                     "sound": 17,
-                    "light": 9
+                    "light": 9,
+                    "IAQ": 53,
+                    "pressure": 23,
+                    "humidity": 63
                 }
             }
         }

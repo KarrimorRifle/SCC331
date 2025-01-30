@@ -42,9 +42,12 @@ CREATE TABLE IF NOT EXISTS environment (
   picoID INT NOT NULL,
   roomID INT NOT NULL,
   logged_at TIMESTAMP NOT NULL,
-  sound INT NOT NULL,
-  light INT NOT NULL,
-  temperature INT NOT NULL
+  sound FLOAT NOT NULL,
+  light FLOAT NOT NULL,
+  temperature FLOAT NOT NULL,
+  IAQ FLOAT NOT NULL,
+  pressure FLOAT NOT NULL,
+  humidity FLOAT NOT NULL
 );
 
 -- -- =============================================

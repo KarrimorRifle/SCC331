@@ -144,7 +144,7 @@ def summary():
 
         # Query for environment
         query_environment = """
-        SELECT e.roomID, e.logged_at, e.temperature, e.sound, e.light
+        SELECT e.roomID, e.logged_at, e.temperature, e.sound, e.light, e.IAQ, e.pressure, e.humidity
         FROM environment e
         INNER JOIN (
             SELECT roomID, MAX(logged_at) as latest_log
@@ -181,7 +181,10 @@ def summary():
             summary[room_id]['environment'] = {
                 "temperature": row['temperature'],
                 "sound": row['sound'],
-                "light": row['light']
+                "light": row['light'],
+                "IAQ": row['IAQ'],  # Include IAQ data
+                "pressure": row['pressure'],  # Include pressure data
+                "humidity": row['humidity']  # Include humidity data
             }
 
         return jsonify(summary)

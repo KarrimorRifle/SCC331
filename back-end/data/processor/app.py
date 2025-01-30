@@ -73,9 +73,9 @@ def on_message(client, user_data, message):
         # Insert data into the database
         try:
             cursor.execute(
-                "INSERT INTO environment (picoID, roomID, logged_at, sound, light, temperature) "
-                "VALUES (%s, %s, NOW(), %s, %s, %s)",
-                (data.PicoID, data.RoomID, env_data[0], env_data[1], env_data[2])
+                "INSERT INTO environment (picoID, roomID, logged_at, sound, light, temperature, IAQ, pressure, humidity) "
+                "VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s, %s)",
+                (data.PicoID, data.RoomID, env_data[0], env_data[1], env_data[2], env_data[3], env_data[4], env_data[5])
             )
             db_connection.commit()
         except Error as e:
