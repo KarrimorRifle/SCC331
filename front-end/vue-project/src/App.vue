@@ -50,7 +50,7 @@ const trackEnvironmentData = (label, data) => {
 const fetchData = async () => {
   try {
     // const response = await fetch("/summary");
-    const response = await fetch("../data.json");
+    const response = await fetch("/summary");
 
     const data = await response.json();
 
