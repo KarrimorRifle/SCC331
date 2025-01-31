@@ -118,20 +118,24 @@ const filteredAreas = computed(() => {
 </template>
 
 <style scoped>
+/* Summary Container Layout */
 .summary-container {
-  padding: 20px;
   display: flex;
   flex-direction: column;
-  height: 150vh;
-  color: black;
+  padding: 20px;
+  background-color: #f8f8ff; 
   border-top: 1px solid #ccc;
-
+  color: black;
+  border-radius: 12px;
 }
 
-.summary-container-header{
+/* Header Styling */
+.summary-container-header {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
 .toggle-button {
@@ -142,19 +146,23 @@ const filteredAreas = computed(() => {
   border-radius: 5px;
   font-size: 14px;
   cursor: pointer;
-  margin-bottom: 10px;
+  transition: background 0.3s ease;
 }
 
+.toggle-button:hover {
+  background-color: #305F72;
+}
+
+/* Cards Layout */
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   border-radius: 10px;
-  padding: 10px;
   overflow: hidden;
-  margin: 0;
 }
 
+/* Individual Cards */
 .summary-card {
   border-radius: 10px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
@@ -162,73 +170,79 @@ const filteredAreas = computed(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: 50vh;
+  height: auto;
+  padding: 15px;
 }
 
 .card-header {
-  padding: 20px;
-  text-align: center;
-  color: black;
-  font-size: 18px;
+  background-color: #305F72;
+  color: white;
+  padding: 15px;
+  font-size: 16px;
   font-weight: bold;
-  overflow: hidden;
+  text-align: center;
+  border-radius: 8px 8px 0 0;
 }
 
 .card-body {
-  padding: 15px;
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
-  color: black;
+  padding: 15px;
+  gap: 10px;
 }
 
+/* Counters */
 .count-container {
   display: flex;
   align-items: center;
-  font-size: 16px;
-  position: relative;
-  gap: 10px; 
-  overflow: hidden;
+  font-size: 14px;
+  gap: 10px;
 }
 
 .marker-wrapper {
-  position: relative; 
-  width: 30px; 
-  height: 30px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
-.environment-data{
-  overflow: hidden;
+/* Environment Data */
+.environment-data {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .environment-data p {
   display: flex;
-  align-items: center; 
-  gap: 20px; 
-  font-size: 16px;
+  align-items: center;
+  gap: 15px;
+  font-size: 14px;
 }
 
-.emoji {
-  font-size: 18px; 
-}
-
+/* Button */
 button {
-  width: auto;
+  width: fit-content;
+  align-self: flex-start;
   padding: 8px 12px;
   border: none;
-  background-color: #568ea6;
+  background-color: #568EA6;
   color: white;
   cursor: pointer;
   border-radius: 5px;
-  margin-top: 10px;
   transition: background 0.3s;
-  overflow: hidden;
 }
 
 button:hover {
-  background-color: #305f72;
+  background-color: #305F72;
+}
+
+/* Responsive Grid */
+@media (max-width: 600px) {
+  .summary-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }
 </style>

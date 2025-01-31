@@ -64,11 +64,9 @@ const activeSection = ref("all");
 /* Layout */
 .summary-container {
   display: flex;
-  height: 90vh;
   background-color: #f8f8ff;
 }
 
-/* Sidebar */
 .sidebar {
   width: 200px;
   padding: 20px;
@@ -96,10 +94,19 @@ const activeSection = ref("all");
   background: #568EA6;
 }
 
-/* Main Content */
 .summary-content {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
+}
+
+@media (max-width: 600px) {
+  .summary-container{
+    flex-direction: column;
+  }
+  .sidebar{
+    flex-direction: row;
+    width: 100%;
+  }
 }
 </style>
