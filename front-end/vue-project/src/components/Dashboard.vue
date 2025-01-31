@@ -44,7 +44,7 @@ const getAreaKey = (label: string): string | null => {
       <!-- Luggage Count -->
       <div class="count-container">
         <div class="marker-container">
-          <LuggageMarker :color="'#f44336'" :position="{ top: 5, left: 0 }" />
+          <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
         </div>
         <p>Luggage Count: {{ props.overlayAreasData[getAreaKey(area.label)]?.luggage?.count || 0 }}</p>
       </div>
@@ -52,7 +52,7 @@ const getAreaKey = (label: string): string | null => {
       <!-- People Count -->
       <div class="count-container">
         <div class="marker-container">
-          <PersonMarker :color="'#4caf50'" :position="{ top: 5, left: 0 }" />
+          <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
         </div>
         <p>People Count: {{ props.overlayAreasData[getAreaKey(area.label)]?.users?.count || 0 }}</p>
       </div>
