@@ -33,14 +33,14 @@ def get_db_connection():
 # make route for most recent pico session
 @app.route('/pico/<int:PICO>', methods=['GET'])
 def pico(PICO):
-    VALIDATION_SITE = "http://account_login:5002/validate_cookie"
-    # Make sure the cookie is valid by sending a cookie auth check to accounts_login container at /authenticate_cookie
-    r = requests.get(VALIDATION_SITE, headers={
-        "session-id":request.cookies.get('session_id') 
-    })
-    if r.status_code != 200:
-        print("ERR: Invalid cookie detected")
-        return jsonify({"error": "Invalid cookie"}), 401
+    # VALIDATION_SITE = "http://account_login:5002/validate_cookie"
+    # # Make sure the cookie is valid by sending a cookie auth check to accounts_login container at /authenticate_cookie
+    # r = requests.get(VALIDATION_SITE, headers={
+    #     "session-id":request.cookies.get('session_id') 
+    # })
+    # if r.status_code != 200:
+    #     print("ERR: Invalid cookie detected")
+    #     return jsonify({"error": "Invalid cookie"}), 401
 
     connection = get_db_connection()
     
@@ -108,14 +108,14 @@ def pico(PICO):
 
 @app.route('/summary', methods=['GET'])
 def summary():
-    VALIDATION_SITE = "http://account_login:5002/validate_cookie"
-    # Make sure the cookie is valid by sending a cookie auth check to accounts_login container at /authenticate_cookie
-    r = requests.get(VALIDATION_SITE, headers={
-        "session-id": request.cookies.get('session_id')
-    })
-    if r.status_code != 200:
-        print("ERR: Invalid cookie detected")
-        return jsonify({"error": "Invalid cookie"}), 401
+    # VALIDATION_SITE = "http://account_login:5002/validate_cookie"
+    # # Make sure the cookie is valid by sending a cookie auth check to accounts_login container at /authenticate_cookie
+    # r = requests.get(VALIDATION_SITE, headers={
+    #     "session-id": request.cookies.get('session_id')
+    # })
+    # if r.status_code != 200:
+    #     print("ERR: Invalid cookie detected")
+    #     return jsonify({"error": "Invalid cookie"}), 401
 
     connection = get_db_connection()
     
