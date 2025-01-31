@@ -7,7 +7,7 @@ import SummaryTableFilterBar from "./SummaryTableFilterBar.vue";
 
 const props = defineProps({
   data: {
-    type: Array,
+    type: Object,
     required: true,
   },
   overlayAreasConstant: {

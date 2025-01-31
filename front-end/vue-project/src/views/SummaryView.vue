@@ -14,7 +14,7 @@ const props = defineProps({
     required: true,
   },
   overlayAreasData: {
-    type: Array,
+    type: Object,
     required: true,
   },
   updates: {
