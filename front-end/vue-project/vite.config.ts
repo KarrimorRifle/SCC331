@@ -25,6 +25,11 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_READER_PATH,
           changeOrigin: true,
           secure: false
+        },
+        '/pico': {
+          target: env.VITE_READER_PATH, 
+          changeOrigin: true,
+          secure: false
         }
       }
     }
