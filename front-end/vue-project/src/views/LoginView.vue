@@ -53,6 +53,7 @@ const handleSubmit = async () => {
 
   try {
       const response = await axios.post("http://localhost:5002/login", {}, {
+        withCredentials: true,
         headers: {
           "email": email.value,
           "password": password.value

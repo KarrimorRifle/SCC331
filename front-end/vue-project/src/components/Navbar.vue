@@ -7,14 +7,6 @@ import { ref } from 'vue';
 
 const { cookies } = useCookies();
 const sessionId = cookies.get('session-id');
-
-// State to track menu visibility
-const isMenuOpen = ref(false);
-
-// Toggle menu function
-const toggleMenu = () => {
-  isMenuOpen.value = !isMenuOpen.value;
-};
 </script>
 
 <template>

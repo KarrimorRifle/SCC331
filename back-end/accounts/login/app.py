@@ -53,7 +53,7 @@ def login():
 
         # Create response with the new cookie
         response = make_response(jsonify({"message": "Login successful"}), 200)
-        response.set_cookie('session_id', new_cookie, httponly=True, secure=True)
+        response.set_cookie("session_id", new_cookie, max_age=1*60*60)
         return response
     else:
         cursor.close()
