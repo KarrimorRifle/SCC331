@@ -30,17 +30,29 @@ def get_db_connection():
 
 # Make route for finding the picos in each room currently
 
+def validate_session_cookie(request):
+    VALIDATION_SITE = "http://account_login:5002/validate_cookie"
+    cookie = request.cookies.get("session_id")
+
+    if not cookie:
+        print("No session_id cookie found.")
+        return {"error": "Invalid cookie", "message": "Cookie missing"}, 401
+
+    print(f"Cookie found: {cookie}")
+    r = requests.get(VALIDATION_SITE, headers={"session-id": cookie})
+    if r.status_code != 200:
+        print("ERR: Invalid cookie detected")
+        return {"error": "Invalid cookie"}, 401 #, "message": r.text
+
+    # Return None if everything is valid (no error)
+    return None
+
 # make route for most recent pico session
 @app.route('/pico/<int:PICO>', methods=['GET'])
 def pico(PICO):
-    # VALIDATION_SITE = "http://account_login:5002/validate_cookie"
-    # # Make sure the cookie is valid by sending a cookie auth check to accounts_login container at /authenticate_cookie
-    # r = requests.get(VALIDATION_SITE, headers={
-    #     "session-id":request.cookies.get('session_id') 
-    # })
-    # if r.status_code != 200:
-    #     print("ERR: Invalid cookie detected")
-    #     return jsonify({"error": "Invalid cookie"}), 401
+    cookie_validation_error = validate_session_cookie(request)
+    if cookie_validation_error:
+        return jsonify(cookie_validation_error[0]), cookie_validation_error[1]
 
     connection = get_db_connection()
     
@@ -108,14 +120,9 @@ def pico(PICO):
 
 @app.route('/summary', methods=['GET'])
 def summary():
-    # VALIDATION_SITE = "http://account_login:5002/validate_cookie"
-    # # Make sure the cookie is valid by sending a cookie auth check to accounts_login container at /authenticate_cookie
-    # r = requests.get(VALIDATION_SITE, headers={
-    #     "session-id": request.cookies.get('session_id')
-    # })
-    # if r.status_code != 200:
-    #     print("ERR: Invalid cookie detected")
-    #     return jsonify({"error": "Invalid cookie"}), 401
+    cookie_validation_error = validate_session_cookie(request)
+    if cookie_validation_error:
+        return jsonify(cookie_validation_error[0]), cookie_validation_error[1]
 
     connection = get_db_connection()
     
@@ -126,20 +133,28 @@ def summary():
     try:
         # Query for users
         query_users = """
-        SELECT roomID, PicoID, MAX(logged_at) as latest_log
+        SELECT roomID, PicoID, logged_at as latest_log
         FROM users
-        WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-        GROUP BY roomID, PicoID;
+        WHERE (PicoID, logged_at) IN (
+            SELECT PicoID, MAX(logged_at)
+            FROM users
+            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
+            GROUP BY PicoID
+        );
         """
         cursor.execute(query_users)
         users_results = cursor.fetchall()
 
         # Query for luggage
         query_luggage = """
-        SELECT roomID, PicoID, MAX(logged_at) as latest_log
+        SELECT roomID, PicoID, logged_at as latest_log
         FROM luggage
-        WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-        GROUP BY roomID, PicoID;
+        WHERE (PicoID, logged_at) IN (
+            SELECT PicoID, MAX(logged_at)
+            FROM luggage
+            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
+            GROUP BY PicoID
+        );
         """
         cursor.execute(query_luggage)
         luggage_results = cursor.fetchall()

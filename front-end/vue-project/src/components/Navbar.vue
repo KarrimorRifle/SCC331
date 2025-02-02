@@ -3,7 +3,7 @@ import { RouterLink } from 'vue-router';
 import { useCookies } from 'vue3-cookies';
 
 const { cookies } = useCookies();
-const sessionId = cookies.get('session-id');
+const sessionId = cookies.get('session_id');
 </script>
 
 <template>
