@@ -1,6 +1,7 @@
 -- Database creation
 CREATE DATABASE IF NOT EXISTS accounts;
 CREATE DATABASE IF NOT EXISTS pico;
+CREATE DATABASE IF NOT EXISTS assets;
 
 -- =============================================
 -- Table Structure
@@ -22,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- pico
-USE pico;
+USE assets;
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   picoID VARCHAR(50) NOT NULL,
@@ -50,27 +51,34 @@ CREATE TABLE IF NOT EXISTS environment (
   humidity FLOAT NOT NULL
 );
 
--- -- =============================================
--- -- Dummy Data
--- -- =============================================
+-- Use the assets database
+USE assets;
 
--- -- Insert dummy data into users table
--- INSERT INTO users (picoID, roomID, logged_at) VALUES
--- (1, 101, '2025-01-28 10:00:00'),
--- (2, 102, '2025-01-28 10:05:00'),
--- (3, 103, '2025-01-28 10:10:00');
+CREATE TABLE IF NOT EXISTS files (
+  filename VARCHAR(255) NOT NULL PRIMARY KEY,
+  filedata LONGBLOB NOT NULL,
+  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- -- Insert dummy data into luggage table
--- INSERT INTO luggage (picoID, roomID, logged_at) VALUES
--- (4, 101, '2025-01-28 10:00:00'),
--- (5, 102, '2025-01-28 10:05:00'),
--- (6, 103, '2025-01-28 10:10:00');
+CREATE TABLE IF NOT EXISTS presets (
+  preset_id INT AUTO_INCREMENT PRIMARY KEY,
+  preset_name VARCHAR(255) NOT NULL,
+  file_id VARCHAR(255) NOT NULL,
+  FOREIGN KEY (file_id) REFERENCES files(filename) ON DELETE CASCADE
+);
 
--- -- Insert dummy data into environment table
--- INSERT INTO environment (picoID, roomID, logged_at, sound, light, temperature) VALUES
--- (1, 101, '2025-01-28 10:00:00', 50, 300, 22),
--- (2, 102, '2025-01-28 10:05:00', 55, 320, 23),
--- (3, 103, '2025-01-28 10:10:00', 60, 340, 24);
+CREATE TABLE IF NOT EXISTS map_blocks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  preset_id INT NOT NULL,
+  roomID VARCHAR(50) NOT NULL,
+  label VARCHAR(255) DEFAULT roomID,
+  location_top INT NOT NULL,
+  location_left INT NOT NULL,
+  location_width INT NOT NULL,
+  location_height INT NOT NULL,
+  colour VARCHAR(10) NOT NULL,
+  FOREIGN KEY (preset_id) REFERENCES presets(preset_id)
+);
 
 -- =============================================
 -- Microservice-specific Accounts
@@ -107,6 +115,21 @@ GRANT SELECT, DELETE ON pico.* TO 'data_admin'@'%';
 ALTER USER 'data_admin'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
+-- Assets Reading Service (Read only)
+CREATE USER IF NOT EXISTS 'assets_reader'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'read_password';
+GRANT SELECT ON assets.files TO 'assets_reader'@'%';
+GRANT SELECT ON assets.presets TO 'assets_reader'@'%';
+GRANT SELECT ON assets.map_blocks TO 'assets_reader'@'%';
+ALTER USER 'assets_reader'@'%' WITH MAX_USER_CONNECTIONS 1;
+FLUSH PRIVILEGES;
+
+-- Assets Editing Service (Full permissions)
+CREATE USER IF NOT EXISTS 'assets_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'edit_password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.files TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.presets TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.map_blocks TO 'assets_editor'@'%';
+ALTER USER 'assets_editor'@'%' WITH MAX_USER_CONNECTIONS 1;
+FLUSH PRIVILEGES;
 
 -- =============================================
 -- Security Hardening
