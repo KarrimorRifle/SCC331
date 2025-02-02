@@ -126,7 +126,6 @@ const filteredAreas = computed(() => {
   background-color: #f8f8ff; 
   border-top: 1px solid #ccc;
   color: black;
-  border-radius: 12px;
 }
 
 /* Header Styling */
