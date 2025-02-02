@@ -37,8 +37,8 @@ from pydantic import BaseModel, ValidationError
 from typing import Union
 
 class PicoData(BaseModel):
-    PicoID: int
-    RoomID: int
+    PicoID: Union[str, int]
+    RoomID: Union[str, int]
     PicoType: int
     Data: Union[str, int]
 
