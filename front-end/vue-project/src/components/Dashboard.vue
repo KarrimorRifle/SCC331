@@ -73,7 +73,6 @@ const getAreaKey = (label: string): string | null => {
   width: 300px;
   padding: 20px;
   background-color: #f8f8ff;
-  border-left: 1px solid #ccc;
   max-height: 90vh;
   overflow-y: auto;
   color: black;
@@ -83,7 +82,6 @@ const getAreaKey = (label: string): string | null => {
 .dashboard-area {
   margin-bottom: 20px;
   padding: 10px;
-  border: 1px solid #ccc;
   border-radius: 8px;
   background-color: #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
