@@ -33,6 +33,25 @@ port: 5002
   - `500`: Database connection failed or other server error
 
 # Data
+## Warning System
+The warning system will utilise the MQTT server to communicate and will send messages in this format:
+```JSON
+{
+  "Title": "A string with the name of the warning",
+  "Location": "RoomID",
+  "Severity": "ENUM['doomed','danger','warning','notification']",
+  "Summary": "String with summary"
+}
+```
+
+### Authorisation and Topics utilised
+\# will be used as the warning ID
+- Staff seniors only: `warning/senior/#`
+- Staff only: `warning/staff/#`
+- Everyone: `warning/everyone/#`
+
+Warnings can range from telling staff there is a lack of people in a room, too many people in a room, or fires are going etc.
+
 ## processing
 All messages are to be sent through the MQTT server on topic: `feeds/hardware-data/#`
 
