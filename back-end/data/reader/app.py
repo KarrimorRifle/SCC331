@@ -126,20 +126,28 @@ def summary():
     try:
         # Query for users
         query_users = """
-        SELECT roomID, PicoID, MAX(logged_at) as latest_log
+        SELECT roomID, PicoID, logged_at as latest_log
         FROM users
-        WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-        GROUP BY roomID, PicoID;
+        WHERE (PicoID, logged_at) IN (
+            SELECT PicoID, MAX(logged_at)
+            FROM users
+            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
+            GROUP BY PicoID
+        );
         """
         cursor.execute(query_users)
         users_results = cursor.fetchall()
 
         # Query for luggage
         query_luggage = """
-        SELECT roomID, PicoID, MAX(logged_at) as latest_log
+        SELECT roomID, PicoID, logged_at as latest_log
         FROM luggage
-        WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-        GROUP BY roomID, PicoID;
+        WHERE (PicoID, logged_at) IN (
+            SELECT PicoID, MAX(logged_at)
+            FROM luggage
+            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
+            GROUP BY PicoID
+        );
         """
         cursor.execute(query_luggage)
         luggage_results = cursor.fetchall()
