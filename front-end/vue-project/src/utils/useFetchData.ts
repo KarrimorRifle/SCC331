@@ -1,4 +1,5 @@
 import { ref, reactive, watch, onMounted, onUnmounted } from 'vue';
+import axios from "axios";
 
 const LOCAL_STORAGE_KEY = 'overlayAreas';
 
@@ -46,10 +47,10 @@ export function useFetchData(picoIds) {
 
   // Function to fetch data
   const fetchData = async () => {
-    try {
+        try {
       // Fetch overlay data
-      const summaryResponse = await fetch("/summary");
-      const summaryData = await summaryResponse.json();
+      const summaryResponse = await axios.get("/summary", {withCredentials: true});
+      const summaryData = summaryResponse.data;
 
       // Track environment data
       Object.entries(summaryData).forEach(([key, area]) => {
@@ -67,13 +68,13 @@ export function useFetchData(picoIds) {
 
       // Fetch updates from multiple Pico IDs
       for (const PICO_ID of picoIds) {
-        const picoResponse = await fetch(`/pico/${PICO_ID}`);
-        if (!picoResponse.ok) {
+        const picoResponse = await axios.get(`/pico/${PICO_ID}`, {withCredentials: true});
+        if (picoResponse.status != 200) {
           console.error(`Error fetching Pico updates for ${PICO_ID}: ${picoResponse.status}`);
           continue;
         }
 
-        const picoData = await picoResponse.json();
+        const picoData = await picoResponse.data;
         console.log(`Pico ${PICO_ID} data:`, picoData);
 
         if (JSON.stringify(picoData) !== JSON.stringify(updates.value[PICO_ID])) {
