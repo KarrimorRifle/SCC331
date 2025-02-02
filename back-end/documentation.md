@@ -33,25 +33,6 @@ port: 5002
   - `500`: Database connection failed or other server error
 
 # Data
-## Warning System
-The warning system will utilise the MQTT server to communicate and will send messages in this format:
-```JSON
-{
-  "Title": "A string with the name of the warning",
-  "Location": "RoomID",
-  "Severity": "ENUM['doomed','danger','warning','notification']",
-  "Summary": "String with summary"
-}
-```
-
-### Authorisation and Topics utilised
-\# will be used as the warning ID
-- Staff seniors only: `warning/senior/#`
-- Staff only: `warning/staff/#`
-- Everyone: `warning/everyone/#`
-
-Warnings can range from telling staff there is a lack of people in a room, too many people in a room, or fires are going etc.
-
 ## processing
 All messages are to be sent through the MQTT server on topic: `feeds/hardware-data/#`
 
@@ -143,3 +124,175 @@ port: 5003
       ```
   - `401`: Invalid cookie
   - `500`: Database connection failed or other server error
+
+# Warning System
+The warning system will utilise the MQTT server to communicate and will send messages in this format:
+```JSON
+{
+  "Title": "A string with the name of the warning",
+  "Location": "RoomID",
+  "Severity": "ENUM['doomed','danger','warning','notification']",
+  "Summary": "String with summary"
+}
+```
+
+## Authorisation and Topics utilised
+\# will be used as the warning ID
+- Staff admins only: `warning/admin/#`
+- Staff only: `warning/staff/#`
+- Everyone: `warning/everyone/#`
+
+Warnings can range from telling staff there is a lack of people in a room, too many people in a room, or fires are going etc.
+
+# Assets
+
+## Assets Editor Microservice (Port: 5011)
+This service handles the creation, modification, and deletion of asset presets, boxes, and related images. Endpoints below require a valid `session_id` cookie with admin privileges.
+
+### Endpoints
+
+#### Create Preset
+- **POST:** `/presets`
+- **Cookies:**  
+  - `session_id`: Valid admin session.
+- **Request Body (JSON):**
+  ```json
+  {
+    "name": "Preset Name",
+    "trusted": ["email1@domain.com", "email2@domain.com"]
+  }
+  ```
+- **Responses:**
+  - `201`: Preset created.
+  - `400`: Invalid preset data.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Upload Preset Image
+- **POST:** `/presets/<preset_id>/image`
+- **Cookies:**  
+  - `session_id`: Valid admin session.
+- **Request Body (JSON):**
+  ```json
+  {
+    "name": "Image Name",
+    "data": "Base64 encoded image data"
+  }
+  ```
+- **Responses:**
+  - `201`: Image uploaded.
+  - `400`: Invalid image data.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Add Boxes to Preset
+- **POST:** `/presets/<preset_id>/boxes`
+- **Cookies:**  
+  - `session_id`: Valid admin session.
+- **Request Body (JSON):**
+  ```json
+  {
+    "boxes": [
+      {
+        "roomID": "Room ID",
+        "label": "Display label",
+        "top": "Top position in pixels",
+        "left": "Left position in pixels",
+        "width": "Box width in pixels",
+        "height": "Box height in pixels",
+        "colour": "#HEX"
+      }
+      // ... additional boxes ...
+    ]
+  }
+  ```
+- **Responses:**
+  - `201`: Boxes added.
+  - `400`: Invalid data.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Update Preset Name
+- **PATCH:** `/presets/<preset_id>`
+- **Cookies:**
+  - `session_id`: Valid admin session.
+- **Request Body (JSON):**
+  ```json
+  {
+    "name": "New Preset Name"
+  }
+  ```
+- **Responses:**
+  - `200`: Preset updated.
+  - `400`: Invalid data.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Delete Preset
+- **DELETE:** `/presets/<preset_id>`
+- **Cookies:**
+  - `session_id`: Valid session of the preset owner.
+- **Responses:**
+  - `200`: Preset deleted.
+  - `400`: Invalid preset ID.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+## Assets Reader Microservice (Port: 5010)
+This service is dedicated to delivering asset preset details to staff users. Its endpoints require a valid `session_id` cookie with appropriate staff privileges.
+
+### Endpoints
+
+#### List Presets
+- **GET:** `/presets`
+- **Cookies:**
+  - `session_id`: Valid staff session.
+- **Responses:**
+  - `200`: Returns a JSON array of presets (preset ID and name).
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Get Preset Details
+- **GET:** `/presets/<preset_id>`
+- **Cookies:**
+  - `session_id`: Valid staff session.
+- **Responses:**
+  - `200`: Returns a JSON object with details, including:
+    - List of boxes.
+    - Background image data.
+    - Permission level (`read` or `write`).
+  - `400`: Invalid preset ID.
+  - `401`: Unauthorized.
+  - `404`: Preset not found.
+  - `500`: Server error.
+
+## Reader Service (Port: 5010)
+This service allows staff to retrieve preset details.
+
+### Endpoints
+
+#### GET: `/preset`
+- **Cookies:**
+  - `session_id`: Valid staff session.
+- **Description:**  
+  Retrieves a list of available presets.
+- **Responses:**
+  - `200`: Returns a JSON array of presets (each containing preset IDs and names).
+  - `401`: Unauthorized.
+  - `500`: Internal server error.
+
+#### GET: `/preset/<ID>`
+- **Cookies:**
+  - `session_id`: Valid staff session.
+- **Description:**  
+  Retrieves details for a specific preset, including:
+  - A list of BOXPRESET objects.
+  - Permission level (`read` or `write`).
+  - The associated background image.
+- **Responses:**
+  - `200`: Returns a JSON object with the preset details.
+  - `400`: Invalid preset ID.
+  - `401`: Unauthorized.
+  - `404`: Preset not found.
+  - `500`: Internal server error.
+

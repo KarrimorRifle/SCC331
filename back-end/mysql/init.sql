@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- pico
-USE assets;
+USE pico;
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   picoID VARCHAR(50) NOT NULL,
@@ -64,7 +64,9 @@ CREATE TABLE IF NOT EXISTS presets (
   preset_id INT AUTO_INCREMENT PRIMARY KEY,
   preset_name VARCHAR(255) NOT NULL,
   file_id VARCHAR(255) NOT NULL,
-  FOREIGN KEY (file_id) REFERENCES files(filename) ON DELETE CASCADE
+  owner_id INT NOT NULL,
+  FOREIGN KEY (file_id) REFERENCES files(filename) ON DELETE CASCADE,
+  FOREIGN KEY (owner_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS map_blocks (
@@ -77,7 +79,15 @@ CREATE TABLE IF NOT EXISTS map_blocks (
   location_width INT NOT NULL,
   location_height INT NOT NULL,
   colour VARCHAR(10) NOT NULL,
-  FOREIGN KEY (preset_id) REFERENCES presets(preset_id)
+  FOREIGN KEY (preset_id) REFERENCES presets(preset_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS preset_trusted (
+  preset_id INT NOT NULL,
+  user_id INT NOT NULL,
+  PRIMARY KEY (preset_id, user_id),
+  FOREIGN KEY (preset_id) REFERENCES presets(preset_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES accounts.users(user_id) ON DELETE CASCADE
 );
 
 -- =============================================
