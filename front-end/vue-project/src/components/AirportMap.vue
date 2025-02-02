@@ -8,12 +8,11 @@ const props = defineProps({
     required: true,
   },
   overlayAreasData: {
-    type: Array,
+    type: Object,
     required: true,
   },
 });
 
-console.log(props.overlayAreasConstant);
 
 // Zoom level and map position state
 const zoomLevel = ref(0.9);
@@ -64,7 +63,7 @@ const handleScroll = (event) => {
           :label="area.label"
           :color="area.color"
           :zoomLevel="zoomLevel"
-          :data="props.overlayAreasData[index]"
+          :data="props.overlayAreasData"
           @update:position="(newPosition) => overlayAreasConstant[index].position = newPosition"
         />
       </div>
@@ -75,7 +74,6 @@ const handleScroll = (event) => {
 <style scoped>
 .airport-map-container {
   position: relative;
-  width: 100%;
   height: 100%;
   overflow: hidden;
   background-color: #f8f8ff;

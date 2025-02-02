@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 
@@ -8,7 +9,7 @@ const props = defineProps({
     required: true,
   },
   overlayAreasData: {
-    type: Array,
+    type: Object,
     required: true,
   },
 });
@@ -21,6 +22,12 @@ const getTextColor = (color: string): string => {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   return brightness < 128 ? 'white' : 'black';
 };
+
+const getAreaKey = (label: string): string | null => {
+  const match = label.match(/\d+/);
+  return match ? match[0] : null;
+};
+
 </script>
 
 <template>
@@ -37,25 +44,25 @@ const getTextColor = (color: string): string => {
       <!-- Luggage Count -->
       <div class="count-container">
         <div class="marker-container">
-          <LuggageMarker :color="'#f44336'" :position="{ top: 5, left: 0 }" />
+          <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
         </div>
-        <p>Luggage Count: {{ props.overlayAreasData[index]?.luggage?.length || 0 }}</p>
+        <p>Luggage Count: {{ props.overlayAreasData[getAreaKey(area.label)]?.luggage?.count || 0 }}</p>
       </div>
       
       <!-- People Count -->
       <div class="count-container">
         <div class="marker-container">
-          <PersonMarker :color="'#4caf50'" :position="{ top: 5, left: 0 }" />
+          <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
         </div>
-        <p>People Count: {{ props.overlayAreasData[index]?.people?.length || 0 }}</p>
+        <p>People Count: {{ props.overlayAreasData[getAreaKey(area.label)]?.users?.count || 0 }}</p>
       </div>
 
       <!-- Environment Data -->
       <div class="environment-container">
         <h4>Environment Data:</h4>
-        <p>🌡️ Temperature: {{ props.overlayAreasData[index]?.environment?.temperature || 'N/A' }}°C</p>
-        <p>🔊 Sound Level: {{ props.overlayAreasData[index]?.environment?.sound || 'N/A' }} dB</p>
-        <p>💡 Light Level: {{ props.overlayAreasData[index]?.environment?.light || 'N/A' }} lux</p>
+        <p>🌡️ Temperature: {{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.temperature || 'N/A' }}°C</p>
+        <p>🔊 Sound Level: {{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.sound || 'N/A' }} dB</p>
+        <p>💡 Light Level: {{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.light || 'N/A' }} lux</p>
       </div>
     </div>
   </div>
@@ -67,8 +74,8 @@ const getTextColor = (color: string): string => {
   padding: 20px;
   background-color: #f8f8ff;
   border-left: 1px solid #ccc;
+  max-height: 90vh;
   overflow-y: auto;
-  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
   color: black;
   font-weight: bold;
 }

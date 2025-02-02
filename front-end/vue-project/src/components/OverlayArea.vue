@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import PersonMarker from "./ObjectMarker/PersonMarker.vue"
 import LuggageMarker from "./ObjectMarker/LuggageMarker.vue";
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 // Define props and emits
 const props = defineProps({
@@ -17,8 +17,34 @@ const props = defineProps({
   },
   data: {
     type: Object, 
-    default: () => ({ people: [], luggage: [] }),
+    default: () => ({})
   }
+});
+
+const getAreaKey = (label: string): string | null => {
+  const match = label.match(/\d+/);
+  return match ? match[0] : null;
+};
+
+const usersList = computed(() => {
+  const key = getAreaKey(props.label);
+
+  if (!key || !props.data[key]?.users?.id) return [];
+  
+  return props.data[key].users.id.map((userId, index) => ({
+    id: userId,
+    position: { top: 50 + index * 10, left: 20 + index * 10 },
+  }));
+});
+
+const luggageList = computed(() => {
+  const key = getAreaKey(props.label);
+  if (!key || !props.data[key]?.luggage?.id) return [];
+
+  return props.data[key].luggage.id.map((itemId, index) => ({
+    id: itemId,
+    position: { top: 50 + index * 10, left: 50 + index * 10 },
+  }));
 });
 
 const emit = defineEmits(['update:position']);
@@ -107,14 +133,15 @@ const endResize = () => {
     <span class="overlay-area-label">{{ label }}</span>
 
     <PersonMarker
-      v-for="(person, index) in props.data.people"
+      v-for="(person, index) in usersList"
       :key="'person-' + index"
       :position="person.position"
       :color="person.color"
+      :id="person.id"
     />
 
     <LuggageMarker
-      v-for="(item, index) in props.data.luggage"
+      v-for="(item, index) in luggageList"
       :key="'luggage-' + index"
       :position="item.position"
       :color="item.color"
