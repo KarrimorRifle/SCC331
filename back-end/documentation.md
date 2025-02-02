@@ -185,8 +185,8 @@ This service handles the creation, modification, and deletion of asset presets, 
   - `401`: Unauthorized.
   - `500`: Server error.
 
-#### Add Boxes to Preset
-- **POST:** `/presets/<preset_id>/boxes`
+#### Patch Boxes in Preset
+- **PATCH:** `/presets/<preset_id>/boxes`
 - **Cookies:**  
   - `session_id`: Valid admin session.
 - **Request Body (JSON):**
@@ -207,7 +207,7 @@ This service handles the creation, modification, and deletion of asset presets, 
   }
   ```
 - **Responses:**
-  - `201`: Boxes added.
+  - `200`: Boxes updated successfully.
   - `400`: Invalid data.
   - `401`: Unauthorized.
   - `500`: Server error.
@@ -238,6 +238,22 @@ This service handles the creation, modification, and deletion of asset presets, 
   - `401`: Unauthorized.
   - `500`: Server error.
 
+#### Set Default Preset
+- **PATCH:** `/presets/default`
+- **Cookies:**  
+  - `session_id`: Valid admin session.
+- **Request Body (JSON):**
+  ```json
+  {
+    "preset_id": <preset_id>
+  }
+  ```
+- **Responses:**
+  - `200`: Default preset updated.
+  - `400`: Invalid preset ID.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
 ## Assets Reader Microservice (Port: 5010)
 This service is dedicated to delivering asset preset details to staff users. Its endpoints require a valid `session_id` cookie with appropriate staff privileges.
 
@@ -249,6 +265,18 @@ This service is dedicated to delivering asset preset details to staff users. Its
   - `session_id`: Valid staff session.
 - **Responses:**
   - `200`: Returns a JSON array of presets (preset ID and name).
+    ```json
+    {
+      "default": "presetID",
+      "presets": [
+        {
+          "name": "name",
+          "id": "int"
+        },
+        ...
+      ]
+    }
+    ```
   - `401`: Unauthorized.
   - `500`: Server error.
 
@@ -257,42 +285,40 @@ This service is dedicated to delivering asset preset details to staff users. Its
 - **Cookies:**
   - `session_id`: Valid staff session.
 - **Responses:**
-  - `200`: Returns a JSON object with details, including:
-    - List of boxes.
-    - Background image data.
-    - Permission level (`read` or `write`).
+  - `200`: Returns a JSON object with details for the specified preset. Example:
+    ```json
+    {
+      "id": 123,
+      "name": "Office Layout",
+      "trusted": ["admin@fakecompany.co.uk", "user@fakecompany.co.uk"],
+      "boxes": [
+        {
+          "roomID": "101",
+          "label": "Reception",
+          "top": 50,
+          "left": 100,
+          "width": 200,
+          "height": 150,
+          "colour": "#FF5733"
+        },
+        {
+          "roomID": "102",
+          "label": "Conference",
+          "top": 220,
+          "left": 80,
+          "width": 180,
+          "height": 140,
+          "colour": "#33A2FF"
+        }
+      ],
+      "image": {
+        "name": "background.png",
+        "data": "Base64EncodedString"
+      },
+      "permission": "read"
+    }
+    ```
   - `400`: Invalid preset ID.
   - `401`: Unauthorized.
   - `404`: Preset not found.
   - `500`: Server error.
-
-## Reader Service (Port: 5010)
-This service allows staff to retrieve preset details.
-
-### Endpoints
-
-#### GET: `/preset`
-- **Cookies:**
-  - `session_id`: Valid staff session.
-- **Description:**  
-  Retrieves a list of available presets.
-- **Responses:**
-  - `200`: Returns a JSON array of presets (each containing preset IDs and names).
-  - `401`: Unauthorized.
-  - `500`: Internal server error.
-
-#### GET: `/preset/<ID>`
-- **Cookies:**
-  - `session_id`: Valid staff session.
-- **Description:**  
-  Retrieves details for a specific preset, including:
-  - A list of BOXPRESET objects.
-  - Permission level (`read` or `write`).
-  - The associated background image.
-- **Responses:**
-  - `200`: Returns a JSON object with the preset details.
-  - `400`: Invalid preset ID.
-  - `401`: Unauthorized.
-  - `404`: Preset not found.
-  - `500`: Internal server error.
-
