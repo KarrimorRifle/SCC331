@@ -42,7 +42,7 @@ def validate_session_cookie(request):
     r = requests.get(VALIDATION_SITE, headers={"session-id": cookie})
     if r.status_code != 200:
         print("ERR: Invalid cookie detected")
-        return {"error": "Invalid cookie", "message": r.text}, 401
+        return {"error": "Invalid cookie"}, 401 #, "message": r.text
 
     # Return None if everything is valid (no error)
     return None
