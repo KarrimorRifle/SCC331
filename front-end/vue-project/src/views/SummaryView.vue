@@ -55,6 +55,7 @@ const activeSection = ref("all");
         v-if="activeSection === 'updates' || activeSection === 'all'"
         :userIds="picoIds" 
         :updates="updates"
+        :overlayAreasConstant="overlayAreasConstant"
       />
     </div>
   </div>
