@@ -51,6 +51,9 @@ For PicoType 1 (rooms):
 For PicoType 2 (luggage) & 3 (Users):
   Data variable is currently negligible
 
+For PicoType 4 (staff) & 5 (guard):
+  Data variable is currently negligible
+
 ## Reader
 port: 5003
 
@@ -93,6 +96,14 @@ port: 5003
             "count": 1,
             "id": [201]
           },
+          "staff": {
+            "count": 1,
+            "id": [301]
+          },
+          "guard": {
+            "count": 1,
+            "id": [401]
+          },
           "environment": {
             "temperature": 22.5,
             "sound": 45.3,
@@ -110,6 +121,14 @@ port: 5003
           "luggage": {
             "count": 2,
             "id": [202, 203]
+          },
+          "staff": {
+            "count": 2,
+            "id": [302, 303]
+          },
+          "guard": {
+            "count": 1,
+            "id": [402]
           },
           "environment": {
             "temperature": 23.0,
