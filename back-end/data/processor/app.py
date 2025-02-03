@@ -91,7 +91,7 @@ def on_message(client, user_data, message):
     else:
         # Otherwise just put the data in
         try:
-            get_table_name = lambda pico_type: 'luggage' if pico_type == 2 else 'users' if pico_type == 3 else 'staff' if pico_type == 4 else 'security_guard' if pico_type == 5 else None
+            get_table_name = lambda pico_type: 'luggage' if pico_type == 2 else 'users' if pico_type == 3 else 'staff' if pico_type == 4 else 'guard' if pico_type == 5 else None
             table_name = get_table_name(data.PicoType)
             if table_name:
                 query = f"INSERT INTO {table_name} (picoID, roomID, logged_at) VALUES (%s, %s, NOW())"
