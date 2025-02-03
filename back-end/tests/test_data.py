@@ -41,6 +41,19 @@ class TestData(unittest.TestCase):
             {"PicoID": 209, "RoomID": 2, "PicoType": 1, "Data": "21,30,12,23,15,12"},
             {"PicoID": 200, "RoomID": 3, "PicoType": 1, "Data": "13,17,9,53,23,63"}
         ]
+        self.staff = [
+            {"PicoID": 15, "RoomID": 1, "PicoType": 4, "Data": 1},
+            {"PicoID": 16, "RoomID": 1, "PicoType": 4, "Data": 1},
+            {"PicoID": 17, "RoomID": 2, "PicoType": 4, "Data": 1},
+            {"PicoID": 18, "RoomID": 3, "PicoType": 4, "Data": 1},
+            {"PicoID": 19, "RoomID": 3, "PicoType": 4, "Data": 1},
+        ]
+        self.guard = [
+            {"PicoID": 20, "RoomID": 1, "PicoType": 5, "Data": 1},
+            {"PicoID": 21, "RoomID": 2, "PicoType": 5, "Data": 1},
+            {"PicoID": 22, "RoomID": 3, "PicoType": 5, "Data": 1},
+            {"PicoID": 23, "RoomID": 3, "PicoType": 5, "Data": 1},
+        ]
         self.session = [
             {"PicoID": 59, "RoomID": 1, "PicoType": 2, "Data": 1},
             {"PicoID": 59, "RoomID": 2, "PicoType": 2, "Data": 1},
@@ -96,22 +109,20 @@ class TestData(unittest.TestCase):
         client.disconnect()
 
     def test_1_populate_and_check_rooms(self):
-        # Publish luggage data
+        # Publish luggage, users, room, staff and guard data
         self.publish_data(self.luggage, "feeds/hardware-data/test1_luggage")
-        # Publish users data
         self.publish_data(self.users, "feeds/hardware-data/test1_users")
-        # Publish room data
         self.publish_data(self.room, "feeds/hardware-data/test1_rooms")
+        self.publish_data(self.staff, "feeds/hardware-data/test1_staff")
+        self.publish_data(self.guard, "feeds/hardware-data/test1_guard")
 
-        # Expected summary with explicit float values for environment data
+        # Updated expected summary with staff and guard dummy data
         expected_summary = {
             "1": {
-                "users": {
-                    "id": [8, 9]
-                },
-                "luggage": {
-                    "id": [1, 2, 3]
-                },
+                "users": {"id": [8, 9]},
+                "luggage": {"id": [1, 2, 3]},
+                "staff": {"id": [15, 16]},
+                "guard": {"id": [20]},
                 "environment": {
                     "sound": 10.0,
                     "light": 12.0,
@@ -122,13 +133,10 @@ class TestData(unittest.TestCase):
                 }
             },
             "2": {
-                "users": {
-                    "id": [10, 11, 12]
-                },
-                "luggage": {
-                    "count": 2,
-                    "id": [4, 5]
-                },
+                "users": {"id": [10, 11, 12]},
+                "luggage": {"id": [4, 5]},
+                "staff": {"id": [17]},
+                "guard": {"id": [21]},
                 "environment": {
                     "sound": 21.0,
                     "light": 30.0,
@@ -139,12 +147,10 @@ class TestData(unittest.TestCase):
                 }
             },
             "3": {
-                "users": {
-                    "id": [13, 14]
-                },
-                "luggage": {
-                    "id": [6,7]
-                },
+                "users": {"id": [13, 14]},
+                "luggage": {"id": [6, 7]},
+                "staff": {"id": [18, 19]},
+                "guard": {"id": [22, 23]},
                 "environment": {
                     "sound": 13.0,
                     "light": 17.0,
@@ -170,18 +176,23 @@ class TestData(unittest.TestCase):
 
             # Check users data
             self.assertIn("users", actual_room, f"Users key missing for room {room_id}")
-            # self.assertEqual(expected_room["users"]["count"], int(actual_room["users"]["count"]),
-            #                 f"Users count mismatch for room {room_id}")
-            # Compare sorted lists for users ids.
             self.assertEqual(sorted(expected_room["users"]["id"]), sorted(actual_room["users"]["id"]),
                             f"Users ids mismatch for room {room_id}")
 
             # Check luggage data
             self.assertIn("luggage", actual_room, f"Luggage key missing for room {room_id}")
-            # self.assertEqual(expected_room["luggage"]["count"], int(actual_room["luggage"]["count"]),
-            #                 f"Luggage count mismatch for room {room_id}")
             self.assertEqual(sorted(expected_room["luggage"]["id"]), sorted(actual_room["luggage"]["id"]),
                             f"Luggage ids mismatch for room {room_id}")
+
+            # Check staff data
+            self.assertIn("staff", actual_room, f"Staff key missing for room {room_id}")
+            self.assertEqual(expected_room["staff"]["id"], actual_room["staff"]["id"],
+                            f"Staff ids mismatch for room {room_id}")
+            
+            # Check guard data
+            self.assertIn("guard", actual_room, f"Guard key missing for room {room_id}")
+            self.assertEqual(expected_room["guard"]["id"], actual_room["guard"]["id"],
+                            f"Guard ids mismatch for room {room_id}")
 
             # Check environment data (convert actual values to float and compare)
             self.assertIn("environment", actual_room, f"Environment key missing for room {room_id}")
