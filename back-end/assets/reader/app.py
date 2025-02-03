@@ -5,6 +5,7 @@ from mysql.connector import Error
 from datetime import datetime
 import os
 import requests
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -12,23 +13,24 @@ CORS(app)
 # Establish a persistent connection to the database
 db_connection = None
 
-def get_db_connection():
+def get_db_connection(retries=5, delay=1):
     global db_connection
-    try:
-        db_connection = mysql.connector.connect(
-            host=os.getenv('DB_HOST'),
-            user=os.getenv('DB_USER'),
-            password=os.getenv('DB_PASSWORD'),
-            database=os.getenv('DB_NAME')
-        )
-    except Error as e:
-        print(f"Error connecting to MySQL: {e}")
-        db_connection = None
-    return db_connection
-
-# Make A path per data type, and make sure the cookie is valid beither getting summary data
-
-# Make route for finding the picos in each room currently
+    for _ in range(retries):
+        try:
+            db_connection = mysql.connector.connect(
+                host=os.getenv('DB_HOST'),
+                user=os.getenv('DB_USER'),
+                password=os.getenv('DB_PASSWORD'),
+                database=os.getenv('DB_NAME')
+            )
+            if db_connection.is_connected():
+                return db_connection
+        except Error as e:
+            print(f"Error connecting to MySQL: {e}")
+            db_connection = None
+            time.sleep(delay)
+    
+    return None
 
 def validate_session_cookie(request):
     VALIDATION_SITE = "http://account_login:5002/validate_cookie"
@@ -47,173 +49,110 @@ def validate_session_cookie(request):
     # Return None if everything is valid (no error)
     return None
 
-# make route for most recent pico session
-@app.route('/pico/<int:PICO>', methods=['GET'])
-def pico(PICO):
-    cookie_validation_error = validate_session_cookie(request)
-    if cookie_validation_error:
-        return jsonify(cookie_validation_error[0]), cookie_validation_error[1]
+@app.route('/presets', methods=['GET'])
+def list_presets():
+    cookie_error = validate_session_cookie(request)
+    if cookie_error:
+        return jsonify(cookie_error[0]), cookie_error[1]
 
-    connection = get_db_connection()
-    
-    if connection is None:
-        return jsonify({"error": "MySQL connection unavailable"}), 500
-    
-    cursor = connection.cursor(dictionary=True)
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "DB connection unavailable"}), 500
+
+    cursor = conn.cursor(dictionary=True)
     try:
-        # Query to get the most recent session for the specified PicoID
-        query = """
-        SELECT roomID, logged_at
-        FROM (
-            SELECT roomID, logged_at,
-                    LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
-            FROM (
-                SELECT roomID, logged_at
-                FROM (
-                    SELECT roomID, logged_at FROM users WHERE PicoID = %s
-                    UNION ALL
-                    SELECT roomID, logged_at FROM luggage WHERE PicoID = %s
-                ) AS combined
-                ORDER BY logged_at DESC
-            ) AS ordered_logs
-        ) AS session_logs
-        WHERE TIMESTAMPDIFF(MINUTE, prev_log, logged_at) >= 2 OR prev_log IS NULL
-        ORDER BY logged_at DESC
-        LIMIT 1;
-        """
-        cursor.execute(query, (PICO, PICO))
-        session_start = cursor.fetchone()
+        # Get default preset
+        cursor.execute("SELECT preset_id FROM default_preset WHERE id = 1;")
+        row = cursor.fetchone()
+        default_id = row['preset_id'] if row else None
 
-        if not session_start:
-            return jsonify({"error": "No session found for the specified PicoID"}), 404
+        # Get all presets
+        cursor.execute("SELECT preset_id AS id, preset_name AS name FROM presets;")
+        presets = cursor.fetchall()
 
-        # Query to get all logs for the most recent session
-        query = """
-        SELECT roomID, logged_at
-        FROM (
-            SELECT roomID, logged_at,
-                    LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
-            FROM (
-                SELECT roomID, logged_at
-                FROM (
-                    SELECT roomID, logged_at FROM users WHERE PicoID = %s
-                    UNION ALL
-                    SELECT roomID, logged_at FROM luggage WHERE PicoID = %s
-                ) AS combined
-                ORDER BY logged_at DESC
-            ) AS ordered_logs
-        ) AS session_logs
-        WHERE logged_at >= %s
-        ORDER BY logged_at;
-        """
-        cursor.execute(query, (PICO, PICO, session_start['logged_at']))
-        session_logs = cursor.fetchall()
-
-        return jsonify(session_logs)
+        return jsonify({
+            "default": default_id,
+            "presets": presets
+        }), 200
     except Error as e:
-        print(f"Error querying data: {e}")
-        return jsonify({"error": "Error querying data", "message":f"{e}"}), 500
+        return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
-        connection.close()
+        conn.close()
 
+@app.route('/presets/<int:preset_id>', methods=['GET'])
+def get_preset_details(preset_id):
+    cookie_error = validate_session_cookie(request)
+    if cookie_error:
+        return jsonify(cookie_error[0]), cookie_error[1]
 
-@app.route('/summary', methods=['GET'])
-def summary():
-    cookie_validation_error = validate_session_cookie(request)
-    if cookie_validation_error:
-        return jsonify(cookie_validation_error[0]), cookie_validation_error[1]
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "DB connection unavailable"}), 500
 
-    connection = get_db_connection()
-    
-    if connection is None:
-        return jsonify({"error": "MySQL connection unavailable"}), 500
-    
-    cursor = connection.cursor(dictionary=True)
+    cursor = conn.cursor(dictionary=True)
     try:
-        # Query for users
-        query_users = """
-        SELECT roomID, PicoID, logged_at as latest_log
-        FROM users
-        WHERE (PicoID, logged_at) IN (
-            SELECT PicoID, MAX(logged_at)
-            FROM users
-            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-            GROUP BY PicoID
-        );
-        """
-        cursor.execute(query_users)
-        users_results = cursor.fetchall()
+        # Fetch preset details
+        cursor.execute("""
+            SELECT preset_id AS id, preset_name AS name, file_id
+            FROM presets
+            WHERE preset_id = %s
+        """, (preset_id,))
+        preset_row = cursor.fetchone()
+        if not preset_row:
+            return jsonify({"error": "Preset not found"}), 404
 
-        # Query for luggage
-        query_luggage = """
-        SELECT roomID, PicoID, logged_at as latest_log
-        FROM luggage
-        WHERE (PicoID, logged_at) IN (
-            SELECT PicoID, MAX(logged_at)
-            FROM luggage
-            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-            GROUP BY PicoID
-        );
-        """
-        cursor.execute(query_luggage)
-        luggage_results = cursor.fetchall()
+        # Fetch trusted users
+        cursor.execute("""
+            SELECT u.email
+            FROM preset_trusted pt
+            JOIN accounts.users u ON pt.user_id = u.user_id
+            WHERE pt.preset_id = %s
+        """, (preset_id,))
+        trusted_rows = cursor.fetchall()
+        trusted = [row['email'] for row in trusted_rows]
 
-        # Query for environment
-        query_environment = """
-        SELECT e.roomID, e.logged_at, e.temperature, e.sound, e.light, e.IAQ, e.pressure, e.humidity
-        FROM environment e
-        INNER JOIN (
-            SELECT roomID, MAX(logged_at) as latest_log
-            FROM environment
-            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-            GROUP BY roomID
-        ) latest ON e.roomID = latest.roomID AND e.logged_at = latest.latest_log;
-        """
-        cursor.execute(query_environment)
-        environment_results = cursor.fetchall()
+        # Fetch boxes
+        cursor.execute("""
+            SELECT
+              id AS box_id, roomID, label,
+              location_top AS top,
+              location_left AS left,
+              location_width AS width,
+              location_height AS height,
+              colour
+            FROM map_blocks
+            WHERE preset_id = %s
+        """, (preset_id,))
+        boxes = cursor.fetchall()
 
-        # Combine results
-        summary = {}
-        for row in users_results:
-            room_id = row['roomID']
-            pico_id = row['PicoID']
-            if room_id not in summary:
-                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}, "environment": {}}
-            summary[room_id]['users']['count'] += 1
-            summary[room_id]['users']['id'].append(pico_id)
+        # Fetch image from files (if you store one)
+        cursor.execute("""
+            SELECT filename AS name
+            FROM files
+            WHERE filename = %s
+        """, (preset_row["file_id"],))
+        image_row = cursor.fetchone()
 
-        for row in luggage_results:
-            room_id = row['roomID']
-            pico_id = row['PicoID']
-            if room_id not in summary:
-                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}, "environment": {}}
-            summary[room_id]['luggage']['count'] += 1
-            summary[room_id]['luggage']['id'].append(pico_id)
+        # Minimal representation of "permission"
+        # In real usage, you'd check whether user is in preset_trusted or an admin
+        permission = "read"
 
-        for row in environment_results:
-            room_id = row['roomID']
-            if room_id not in summary:
-                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}, "environment": {}}
-            summary[room_id]['environment'] = {
-                "temperature": row['temperature'],
-                "sound": row['sound'],
-                "light": row['light'],
-                "IAQ": row['IAQ'],  # Include IAQ data
-                "pressure": row['pressure'],  # Include pressure data
-                "humidity": row['humidity']  # Include humidity data
-            }
+        return jsonify({
+            "id": preset_row["id"],
+            "name": preset_row["name"],
+            "trusted": trusted,
+            "boxes": boxes,
+            "image": image_row if image_row else {},
+            "permission": permission
+        }), 200
 
-        return jsonify(summary)
     except Error as e:
-        print(f"Error querying data: {e}")
-        return jsonify({"error": "Error querying data", "message": f"{e}"}), 500
+        return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
-        connection.close()
-
-
+        conn.close()
 
 if __name__ == '__main__':
     get_db_connection()  # Ensure the connection is established at startup
-    app.run(host='0.0.0.0', port=5003)
+    app.run(host='0.0.0.0', port=5010)
