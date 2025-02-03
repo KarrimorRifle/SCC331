@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS files (
 CREATE TABLE IF NOT EXISTS presets (
   preset_id INT AUTO_INCREMENT PRIMARY KEY,
   preset_name VARCHAR(255) NOT NULL,
-  file_id VARCHAR(255) NOT NULL,
+  file_id VARCHAR(255),
   owner_id INT NOT NULL,
   FOREIGN KEY (file_id) REFERENCES files(filename) ON DELETE CASCADE,
   FOREIGN KEY (owner_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL

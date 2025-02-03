@@ -50,9 +50,8 @@ def validate_session_cookie(request):
     if data.get("authority") != "Admin":
         print("ERR: Non-admin cookie")
         return {"error": "Forbidden", "message": "User isn't a valid admin"}, 403
-
-    # Return None if everything is valid (no error)
-    return None
+    
+    return [data.get("uid")]
 
 def validate_owner_cookie(request, owner):
     VALIDATION_SITE = "http://account_login:5002/validate_cookie"
@@ -91,6 +90,47 @@ def validate_trusted_cookie(request, trustees):
         return {"error": "Forbidden", "message": "You are not a trusted user"}, 403
 
     return None
+
+@app.route('/presets', methods=['POST'])
+def presets():
+    cookie_res = validate_session_cookie(request)
+    if len(cookie_res) == 2:
+        return cookie_res[0], cookie_res[1]
+    
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cursor = connection.cursor(dictionary=True)
+    data = request.get_json()
+
+    try:
+        # Insert the new preset
+        cursor.execute("""
+            INSERT INTO presets (preset_name, owner_id)
+            VALUES (%s, %s)
+            """, (data["name"], cookie_res[0]))
+        
+        preset_id = cursor.lastrowid
+
+        # Add the trustees
+        for user_id in data['trusted']:
+            cursor.execute("""
+                INSERT INTO preset_trusted (preset_id, user_id)
+                VALUES (%s, %s)
+            """, (preset_id, user_id))
+
+        connection.commit()
+        return jsonify({"message": "Preset created", "preset_id": preset_id}), 201
+    except Error as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+        
+
+
 
 if __name__ == '__main__':
     get_db_connection()  # Ensure the connection is established at startup

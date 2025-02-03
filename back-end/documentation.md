@@ -159,7 +159,7 @@ This service handles the creation, modification, and deletion of asset presets, 
   ```json
   {
     "name": "Preset Name",
-    "trusted": ["email1@domain.com", "email2@domain.com"]
+    "trusted": [203, 01]
   }
   ```
 - **Responses:**
