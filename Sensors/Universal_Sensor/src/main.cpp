@@ -89,13 +89,41 @@ void onMQTTMessage(char* topic, char* payload, const AsyncMqttClientMessagePrope
   return;
 }
 
-void onMqttPublish(const uint16_t& packetId)
+void onMQTTPublish(const uint16_t& packetId)
 {
   Serial.println("Publish acknowledged.");
   Serial.print("  packetId: ");
   Serial.println(packetId);
 }
 
+bool publishToMQTT(String data, String topic) {
+	String macAddress = WiFi.macAddress();
+    macAddress.replace(":", "");
+    String topic = "feeds/hardware-data/" + macAddress;
+    //WiFi.macAddress();
+    Serial.printf("Publishing message in topic '%s': %s\n", topic.c_str(), data.c_str());
+
+    if (!connectedToMQTT) {
+      mqttClient.connect();
+    }
+    if (connectedToMQTT) {
+      mqttClient.publish(topic.c_str(), 2, true, data.c_str());
+    }
+}
+
+bool publishDataWithIdentifier(String data, String topic) {
+	String macAddress = WiFi.macAddress();
+    macAddress.replace(":", "");
+	topic.concat(macAddress);
+	publishToMQTT(data, topic);
+}
+
+bool publishHardwareData(String data) {
+	String macAddress = WiFi.macAddress();
+    macAddress.replace(":", "");
+    String topic = "feeds/hardware-data/" + macAddress;
+	publishDataWithIdentifier(data, topic);
+}
 
 // Room Sensor Methods:
 
@@ -200,18 +228,7 @@ void sendToServer(String data)
     String jsonString;
     serializeJson(json, jsonString);
 
-    String macAddress = WiFi.macAddress();
-    macAddress.replace(":", "");
-    String topic = "feeds/hardware-data/" + macAddress;
-    //WiFi.macAddress();
-    Serial.printf("Publishing message in topic '%s': %s\n", topic.c_str(), jsonString.c_str());
-
-    if (!connectedToMQTT) {
-      mqttClient.connect();
-    }
-    if (connectedToMQTT) {
-      mqttClient.publish(topic.c_str(), 2, true, jsonString.c_str());
-    }
+	publishDataWithIdentifier(jsonString, "feeds/hardware-data/");
 }
 
 // Setup Methods:
@@ -293,7 +310,7 @@ void setup(void)
 
   	mqttClient.onConnect(onMQTTConnect);
   	mqttClient.onDisconnect(onMQTTDisconnect);
-  	mqttClient.onPublish(onMqttPublish);
+  	mqttClient.onPublish(onMQTTPublish);
 
   	mqttClient.connect();
 	
