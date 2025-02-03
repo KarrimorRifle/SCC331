@@ -104,13 +104,12 @@ def get_preset_details(preset_id):
 
         # Fetch trusted users
         cursor.execute("""
-            SELECT u.email
-            FROM preset_trusted pt
-            JOIN accounts.users u ON pt.user_id = u.user_id
-            WHERE pt.preset_id = %s
+            SELECT user_id
+            FROM preset_trusted
+            WHERE preset_id = %s
         """, (preset_id,))
         trusted_rows = cursor.fetchall()
-        trusted = [row['email'] for row in trusted_rows]
+        trusted = [row['user_id'] for row in trusted_rows]
 
         # Fetch boxes
         cursor.execute("""

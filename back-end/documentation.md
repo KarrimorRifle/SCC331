@@ -290,7 +290,7 @@ This service is dedicated to delivering asset preset details to staff users. Its
     {
       "id": 123,
       "name": "Office Layout",
-      "trusted": ["admin@fakecompany.co.uk", "user@fakecompany.co.uk"],
+      "trusted": [01, 02, 03], //UIDs
       "boxes": [
         {
           "roomID": "101",
