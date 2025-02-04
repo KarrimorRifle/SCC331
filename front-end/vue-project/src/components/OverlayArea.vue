@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import PersonMarker from "./ObjectMarker/PersonMarker.vue"
 import LuggageMarker from "./ObjectMarker/LuggageMarker.vue";
-import { ref, computed } from 'vue';
+import { ref, computed, shallowReactive } from 'vue';
 
 // Define props and emits
 const props = defineProps({
@@ -123,7 +123,8 @@ const endResize = () => {
       left: props.position.left + 'px',
       width: props.position.width + 'px',
       height: props.position.height + 'px',
-      backgroundColor: color,
+      backgroundColor: color + '7D',
+      overflow: 'visible',
     }"
     @mousedown="startDrag"
     @mousemove="drag"
@@ -158,7 +159,6 @@ const endResize = () => {
 <style scoped>
 .overlay-area {
   position: absolute;
-  opacity: 0.5;
   border: 1px solid #000;
   display: flex;
   align-items: center;
@@ -182,7 +182,12 @@ const endResize = () => {
   height: 10px;
   bottom: 0;
   right: 0;
-  background: #000;
+  background: #FFF;
+  border: #000 2px solid;
   cursor: se-resize;
+  position: absolute;
+  bottom: -0.3em;
+  right: -0.3rem;
+  z-index: 100;
 }
 </style>
