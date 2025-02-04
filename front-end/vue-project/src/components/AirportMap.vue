@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import OverlayArea from './OverlayArea.vue';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 
 const props = defineProps({
   overlayAreasConstant: {
@@ -18,14 +18,21 @@ const zoomLevel = ref(0.9);
 const mapPosition = ref({ x: 0, y: 0 });
 const isDragging = ref(false);
 const dragStart = ref({ x: 0, y: 0 });
+const isZooming = ref(false);
 
 // Zoom controls
 const zoomIn = () => {
-  if (zoomLevel.value < 2) zoomLevel.value += 0.1;
+  if (zoomLevel.value < 2) {
+    zoomLevel.value += 0.1;
+    isZooming.value = true;
+  }
 };
 
 const zoomOut = () => {
-  if (zoomLevel.value > 0.5) zoomLevel.value -= 0.1;
+  if (zoomLevel.value > 0.5) {
+    zoomLevel.value -= 0.1;
+    isZooming.value = true;
+  }
 };
 
 // Handle scrolling for panning
@@ -74,6 +81,13 @@ onUnmounted(() => {
   window.removeEventListener('mousemove', handleMouseMove);
   window.removeEventListener('mouseup', handleMouseUp);
 });
+
+// Watch for zoom level changes to reset isZooming after transition
+watch(zoomLevel, () => {
+  setTimeout(() => {
+    isZooming.value = false;
+  }, 120); // Match the transition duration
+});
 </script>
 
 <template>
@@ -90,6 +104,7 @@ onUnmounted(() => {
     >
       <div
         class="airport-map"
+        :class="{ 'zooming': isZooming }"
         :style="{
           transform: `scale(${zoomLevel}) translate(${mapPosition.x}px, ${mapPosition.y}px)`,
         }"
@@ -154,14 +169,16 @@ onUnmounted(() => {
 .airport-map {
   position: relative;
   transform-origin: center center;
-  border: 2px solid black;
+}
+
+.airport-map.zooming {
+  transition: transform 0.12s ease-in;
 }
 
 .map {
-  width: 100%;
-  height: auto;
   object-fit: contain;
   user-select: none;
-  filter: brightness(50%)
+  filter: brightness(50%);
+  border: 2px solid black;
 }
 </style>
