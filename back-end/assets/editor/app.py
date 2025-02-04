@@ -217,7 +217,7 @@ def update_preset_boxes(preset_id):
         for box in data["boxes"]:
             cursor.execute("""
                 INSERT INTO map_blocks 
-                (preset_id, roomID, label, location_top, location_left, location_width, location_height, colour)
+                (preset_id, roomID, label, `top`, `left`, `width`, `heigth`, colour)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (preset_id, box["roomID"], box["label"], box["top"], box["left"], box["width"], box["height"], box["colour"]))
         connection.commit()

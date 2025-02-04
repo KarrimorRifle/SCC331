@@ -116,10 +116,10 @@ def get_preset_details(preset_id):
             SELECT
               roomID,
               label,
-              location_top AS top,
-              location_left AS `left`,
-              location_width AS width,
-              location_height AS height,
+              `top`,
+              `left`,
+              `width`,
+              `height`,
               colour
             FROM map_blocks
             WHERE preset_id = %s

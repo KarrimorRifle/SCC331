@@ -68,10 +68,10 @@ CREATE TABLE IF NOT EXISTS map_blocks (
   preset_id INT NOT NULL,
   roomID VARCHAR(50) NOT NULL,
   label VARCHAR(255) DEFAULT NULL,
-  location_top INT NOT NULL,
-  location_left INT NOT NULL,
-  location_width INT NOT NULL,
-  location_height INT NOT NULL,
+  `top` INT NOT NULL,
+  `left` INT NOT NULL,
+  `width` INT NOT NULL,
+  `height` INT NOT NULL,
   colour VARCHAR(10) NOT NULL,
   FOREIGN KEY (preset_id) REFERENCES presets(preset_id) ON DELETE CASCADE
 );
@@ -148,7 +148,7 @@ FLUSH PRIVILEGES;
 -- Security Hardening
 -- =============================================
 -- Remove remote root access
--- DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 
 -- Remove anonymous users
 DELETE FROM mysql.user WHERE User='';
