@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import OverlayArea from './OverlayArea.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
   overlayAreasConstant: {
@@ -13,10 +13,11 @@ const props = defineProps({
   },
 });
 
-
 // Zoom level and map position state
 const zoomLevel = ref(0.9);
 const mapPosition = ref({ x: 0, y: 0 });
+const isDragging = ref(false);
+const dragStart = ref({ x: 0, y: 0 });
 
 // Zoom controls
 const zoomIn = () => {
@@ -35,8 +36,45 @@ const handleScroll = (event) => {
     y: mapPosition.value.y - event.deltaY,
   };
 };
-</script>
 
+// Handle dragging start
+const handleMouseDown = (event) => {
+  // Check if the target is an OverlayArea
+  if (event.target.closest('.overlay-area')) {
+    return;
+  }
+  isDragging.value = true;
+  dragStart.value = { x: event.clientX, y: event.clientY };
+};
+
+// Handle dragging
+const handleMouseMove = (event) => {
+  if (isDragging.value) {
+    const speedFactor = 1.5; // Adjust this factor to make the dragging faster
+    mapPosition.value = {
+      x: mapPosition.value.x + (event.clientX - dragStart.value.x) * speedFactor,
+      y: mapPosition.value.y + (event.clientY - dragStart.value.y) * speedFactor,
+    };
+    dragStart.value = { x: event.clientX, y: event.clientY };
+  }
+};
+
+// Handle dragging end
+const handleMouseUp = () => {
+  isDragging.value = false;
+};
+
+// Add event listeners for dragging
+onMounted(() => {
+  window.addEventListener('mousemove', handleMouseMove);
+  window.addEventListener('mouseup', handleMouseUp);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('mousemove', handleMouseMove);
+  window.removeEventListener('mouseup', handleMouseUp);
+});
+</script>
 
 <template>
   <div class="airport-map-container">
@@ -48,6 +86,7 @@ const handleScroll = (event) => {
     <div
       class="airport-map-wrapper"
       @wheel="handleScroll"
+      @mousedown="handleMouseDown"
     >
       <div
         class="airport-map"
@@ -108,10 +147,13 @@ const handleScroll = (event) => {
   overflow: hidden; /* Ensure the map doesn't go out of bounds */
 }
 
+.airport-map-wrapper:active {
+  cursor: grabbing;
+}
+
 .airport-map {
   position: relative;
   transform-origin: center center;
-  transition: transform 0.05s ease-in-out;
   border: 2px solid black;
 }
 
@@ -120,6 +162,6 @@ const handleScroll = (event) => {
   height: auto;
   object-fit: contain;
   user-select: none;
-  filter: brightness(50%);
+  filter: brightness(50%)
 }
 </style>
