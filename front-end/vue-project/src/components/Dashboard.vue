@@ -74,7 +74,7 @@ const getAreaKey = (label: string): string | null => {
   padding: 20px;
   background-color: #f8f8ff;
   border-left: 1px solid #ccc;
-  max-height: 90vh;
+  max-height: 100%;
   overflow-y: auto;
   color: black;
   font-weight: bold;

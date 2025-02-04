@@ -16,8 +16,9 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="airport-view-container">
-    <AirportMap 
+  <div class="airport-view-container d-flex flex-row">
+    <AirportMap
+      class="flex-grow-1"
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
     />
@@ -28,7 +29,7 @@ const props = defineProps({
   </div>
 </template>
 
-<style scoped>
+<!-- <style scoped>
   .airport-view-container{
     display: flex;
     flex-direction: row;
@@ -39,4 +40,4 @@ const props = defineProps({
     flex-direction: column;
   }
 }
-</style>
+</style> -->
