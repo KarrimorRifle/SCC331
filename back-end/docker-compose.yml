@@ -89,6 +89,89 @@ services:
     networks:
       - my_network
 
+  assets_editor:
+    build: ./assets/editor
+    container_name: assets_editor
+    environment:
+      DB_HOST: mysql
+      DB_USER: assets_editor
+      DB_PASSWORD: edit_password
+      DB_NAME: assets
+    ports:
+      - "5011:5011"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
+  assets_reader:
+    build: ./assets/reader
+    container_name: assets_reader
+    environment:
+      DB_HOST: mysql
+      DB_USER: assets_reader
+      DB_PASSWORD: read_password
+      DB_NAME: assets
+    ports:
+      - "5010:5010"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
+  # warning_setter:
+  #   build: ./warning/setter
+  #   container_name: warning_setter
+  #   environment:
+  #     DB_HOST: mysql
+  #     DB_USER: data_reader
+  #     DB_PASSWORD: read_password
+  #     DB_NAME: pico
+  #   ports:
+  #     - "5004:5004"
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #   networks:
+  #     - my_network
+
+  # warning_alert_active:
+  #   build: ./warning/alert/active
+  #   container_name: warning_alert_active
+  #   environment:
+  #     DB_HOST: mysql
+  #     DB_USER: data_reader
+  #     DB_PASSWORD: read_password
+  #     DB_NAME: pico
+  #     MQTT_TOKEN: ${mqtt_token}
+  #   ports:
+  #     - "5005:5005"
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #   networks:
+  #     - my_network
+    
+  # warning_alert_passive:
+  #   build: ./warning/alert/passive
+  #   container_name: warning_alert_passive
+  #   environment:
+  #     DB_HOST: mysql
+  #     DB_USER: data_reader
+  #     DB_PASSWORD: read_password
+  #     DB_NAME: pico
+  #     MQTT_TOKEN: ${mqtt_token}
+  #   ports:
+  #     - "5005:5006"
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     warning_alert_active:
+  #       condition: service_started
+  #   networks:
+  #     - my_network
 
   test:
     build:

@@ -70,12 +70,12 @@ def validate_cookie():
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT user_id, email FROM users WHERE cookie = %s", (session_id,))
+    cursor.execute("SELECT user_id, email, authority FROM users WHERE cookie = %s", (session_id,))
     user = cursor.fetchone()
     cursor.close()
 
     if user:
-        return jsonify({"message": "Cookie is valid", "valid": True, "email": user['email']}), 200
+        return jsonify({"message": "Cookie is valid", "valid": True, "email": user['email'], "uid": user['user_id'], "authority": user["authority"]}), 200
     else:
         return jsonify({"error": "Invalid cookie", "valid": False}), 401
 

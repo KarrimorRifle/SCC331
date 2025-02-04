@@ -8,9 +8,10 @@ const { overlayAreasConstant, overlayAreasData, updates, environmentHistory } = 
 </script>
 
 <template>
-  <div class="app">
-    <Navbar />
-    <router-view 
+  <div id="app" class="d-flex flex-column max-vh-100">
+    <Navbar class="nav"/>
+    <router-view
+      class="flex-grow-1 app"
       :picoIds="picoIds"
       :overlayAreasConstant="overlayAreasConstant"
       :overlayAreasData="overlayAreasData" 
@@ -21,24 +22,41 @@ const { overlayAreasConstant, overlayAreasData, updates, environmentHistory } = 
 </template>
 
 <style>
-html, body, * {
+:root {
+  --nav-height: 4rem;
+}
+
+.nav {
+  height: var(--nav-height);
+}
+
+html, body, #app {
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
 }
 
 #app {
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  width: 100%;
+  min-height: 100vh;
+  width: 100% !important;
+}
+
+.app {
+  max-height: calc(100% - var(--nav-height))
 }
 
 .router-view {
+  flex-grow: 1;
   width: 100%;
-  height: 100%;
+  max-height: calc(100% - var(--nav-height));
+}
+
+.flex-grow-1 {
+  flex-grow: 1;
 }
 </style>

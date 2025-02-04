@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import OverlayArea from './OverlayArea.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 
 const props = defineProps({
   overlayAreasConstant: {
@@ -13,30 +13,83 @@ const props = defineProps({
   },
 });
 
-
 // Zoom level and map position state
 const zoomLevel = ref(0.9);
 const mapPosition = ref({ x: 0, y: 0 });
+const isDragging = ref(false);
+const dragStart = ref({ x: 0, y: 0 });
+const isZooming = ref(false);
 
 // Zoom controls
-const zoomIn = () => {
-  if (zoomLevel.value < 2) zoomLevel.value += 0.1;
+const zoomIn = (ease?: boolean) => {
+  if (zoomLevel.value < 2) {
+    zoomLevel.value += 0.1;
+    isZooming.value = ease ? true : false;
+  }
 };
 
-const zoomOut = () => {
-  if (zoomLevel.value > 0.5) zoomLevel.value -= 0.1;
+const zoomOut = (ease?: boolean) => {
+  if (zoomLevel.value > 0.5) {
+    zoomLevel.value -= 0.1;
+    isZooming.value = ease ? true : false;
+  }
 };
 
-// Handle scrolling for panning
+// Handle scrolling for zooming
 const handleScroll = (event) => {
   event.preventDefault(); // Prevent the default scrolling behavior
-  mapPosition.value = {
-    x: mapPosition.value.x - event.deltaX,
-    y: mapPosition.value.y - event.deltaY,
-  };
+  if (event.deltaY < 0) {
+    zoomIn(false);
+  } else {
+    zoomOut(false);
+  }
 };
-</script>
 
+// Handle dragging start
+const handleMouseDown = (event) => {
+  // Check if the target is an OverlayArea
+  if (event.target.closest('.overlay-area')) {
+    return;
+  }
+  isDragging.value = true;
+  dragStart.value = { x: event.clientX, y: event.clientY };
+};
+
+// Handle dragging
+const handleMouseMove = (event) => {
+  if (isDragging.value) {
+    const speedFactor = 1.3; // Adjust this factor to make the dragging faster
+    mapPosition.value = {
+      x: mapPosition.value.x + (event.clientX - dragStart.value.x) * speedFactor / zoomLevel.value,
+      y: mapPosition.value.y + (event.clientY - dragStart.value.y) * speedFactor / zoomLevel.value,
+    };
+    dragStart.value = { x: event.clientX, y: event.clientY };
+  }
+};
+
+// Handle dragging end
+const handleMouseUp = () => {
+  isDragging.value = false;
+};
+
+// Add event listeners for dragging
+onMounted(() => {
+  window.addEventListener('mousemove', handleMouseMove);
+  window.addEventListener('mouseup', handleMouseUp);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('mousemove', handleMouseMove);
+  window.removeEventListener('mouseup', handleMouseUp);
+});
+
+// Watch for zoom level changes to reset isZooming after transition
+watch(zoomLevel, () => {
+  setTimeout(() => {
+    isZooming.value = false;
+  }, 120); // Match the transition duration
+});
+</script>
 
 <template>
   <div class="airport-map-container">
@@ -48,9 +101,11 @@ const handleScroll = (event) => {
     <div
       class="airport-map-wrapper"
       @wheel="handleScroll"
+      @mousedown="handleMouseDown"
     >
       <div
         class="airport-map"
+        :class="{ 'zooming': isZooming }"
         :style="{
           transform: `scale(${zoomLevel}) translate(${mapPosition.x}px, ${mapPosition.y}px)`,
         }"
@@ -108,18 +163,23 @@ const handleScroll = (event) => {
   overflow: hidden; /* Ensure the map doesn't go out of bounds */
 }
 
+.airport-map-wrapper:active {
+  cursor: grabbing;
+}
+
 .airport-map {
   position: relative;
   transform-origin: center center;
-  transition: transform 0.05s ease-in-out;
-  border: 2px solid black;
+}
+
+.airport-map.zooming {
+  transition: transform 0.12s ease-in;
 }
 
 .map {
-  width: 100%;
-  height: auto;
   object-fit: contain;
   user-select: none;
   filter: brightness(50%);
+  border: 2px solid black;
 }
 </style>
