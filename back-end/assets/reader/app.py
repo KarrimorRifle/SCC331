@@ -46,13 +46,13 @@ def validate_session_cookie(request):
         print("ERR: Invalid cookie detected")
         return {"error": "Invalid cookie"}, 401 #, "message": r.text
 
-    # Return None if everything is valid (no error)
-    return None
+    # Return the UID if no error
+    return [r.json().get("uid")]
 
 @app.route('/presets', methods=['GET'])
 def list_presets():
     cookie_error = validate_session_cookie(request)
-    if cookie_error:
+    if len(cookie_error) == 2:
         return jsonify(cookie_error[0]), cookie_error[1]
 
     conn = get_db_connection()
@@ -83,18 +83,19 @@ def list_presets():
 @app.route('/presets/<int:preset_id>', methods=['GET'])
 def get_preset_details(preset_id):
     cookie_error = validate_session_cookie(request)
-    if cookie_error:
+    if len(cookie_error) == 2:
         return jsonify(cookie_error[0]), cookie_error[1]
 
     conn = get_db_connection()
     if not conn:
+        print("ERR: No DB connection retrieving data")
         return jsonify({"error": "DB connection unavailable"}), 500
 
     cursor = conn.cursor(dictionary=True)
     try:
-        # Fetch preset details
+        # Fetch preset details including image columns from presets
         cursor.execute("""
-            SELECT preset_id AS id, preset_name AS name, file_id
+            SELECT preset_id AS id, preset_name AS name, image_name, image_data
             FROM presets
             WHERE preset_id = %s
         """, (preset_id,))
@@ -108,15 +109,15 @@ def get_preset_details(preset_id):
             FROM preset_trusted
             WHERE preset_id = %s
         """, (preset_id,))
-        trusted_rows = cursor.fetchall()
-        trusted = [row['user_id'] for row in trusted_rows]
+        trusted = [row['user_id'] for row in cursor.fetchall()]
 
-        # Fetch boxes
+        # Fetch boxes from map_blocks
         cursor.execute("""
             SELECT
-              id AS box_id, roomID, label,
+              roomID,
+              label,
               location_top AS top,
-              location_left AS left,
+              location_left AS `left`,
               location_width AS width,
               location_height AS height,
               colour
@@ -125,28 +126,32 @@ def get_preset_details(preset_id):
         """, (preset_id,))
         boxes = cursor.fetchall()
 
-        # Fetch image from files (if you store one)
-        cursor.execute("""
-            SELECT filename AS name
-            FROM files
-            WHERE filename = %s
-        """, (preset_row["file_id"],))
-        image_row = cursor.fetchone()
+        # Build image object from presets columns if present
+        image = {}
+        if preset_row.get("image_name") and preset_row.get("image_data"):
+            print(preset_row["image_data"])
+            image = {
+                "name": preset_row["image_name"],
+                "data": preset_row["image_data"].decode('utf-8')
+            }
 
         # Minimal representation of "permission"
-        # In real usage, you'd check whether user is in preset_trusted or an admin
-        permission = "read"
+        if cookie_error[0] in trusted:
+            permission = "write"
+        else:
+            permission = "read"
 
         return jsonify({
             "id": preset_row["id"],
             "name": preset_row["name"],
             "trusted": trusted,
             "boxes": boxes,
-            "image": image_row if image_row else {},
+            "image": image,
             "permission": permission
         }), 200
 
     except Error as e:
+        print(f"ERR: Error encountered retrieving preset data: {str(e)}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()

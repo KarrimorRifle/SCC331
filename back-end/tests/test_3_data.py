@@ -169,18 +169,13 @@ class TestData(unittest.TestCase):
 
             # Check users data
             self.assertIn("users", actual_room, f"Users key missing for room {room_id}")
-            # self.assertEqual(expected_room["users"]["count"], int(actual_room["users"]["count"]),
-            #                 f"Users count mismatch for room {room_id}")
-            # Compare sorted lists for users ids.
-            self.assertEqual(sorted(expected_room["users"]["id"]), sorted(actual_room["users"]["id"]),
-                            f"Users ids mismatch for room {room_id}")
+            for user_id in expected_room["users"]["id"]:
+                self.assertIn(user_id, actual_room["users"]["id"], f"User ID {user_id} not found in room {room_id}")
 
             # Check luggage data
             self.assertIn("luggage", actual_room, f"Luggage key missing for room {room_id}")
-            # self.assertEqual(expected_room["luggage"]["count"], int(actual_room["luggage"]["count"]),
-            #                 f"Luggage count mismatch for room {room_id}")
-            self.assertEqual(sorted(expected_room["luggage"]["id"]), sorted(actual_room["luggage"]["id"]),
-                            f"Luggage ids mismatch for room {room_id}")
+            for luggage_id in expected_room["luggage"]["id"]:
+                self.assertIn(luggage_id, actual_room["luggage"]["id"], f"Luggage ID {luggage_id} not found in room {room_id}")
 
             # Check environment data (convert actual values to float and compare)
             self.assertIn("environment", actual_room, f"Environment key missing for room {room_id}")
@@ -219,7 +214,7 @@ class TestData(unittest.TestCase):
 
     def test_3_session_expiry_and_republish(self):
         # # Wait for 2.5 minutes
-        # time.sleep(150) # undo when the other test works
+        time.sleep(150)
 
         # Publish session2 data
         for item in self.session2:

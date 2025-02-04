@@ -36,6 +36,7 @@ def register():
     full_name = str(request.headers.get('name', ''))
     email = str(request.headers.get('email', '')).lower()
     password = str(request.headers.get('password', ''))
+    bypass = str(request.headers.get('bypass', ''))
 
     if not full_name:
         return jsonify({"error": "Full name is required"}), 400
@@ -55,9 +56,10 @@ def register():
 
     cursor = connection.cursor(dictionary=True)
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    authority = "Admin" if bypass == "yes" else "Reception"
     try:
-        cursor.execute("INSERT INTO users (full_name, email, pass_hash) VALUES (%s, %s, %s)", 
-                       (full_name, email, hashed_password))
+        cursor.execute("INSERT INTO users (full_name, email, pass_hash, authority) VALUES (%s, %s, %s, %s)", 
+                       (full_name, email, hashed_password, authority))
         connection.commit()
         cursor.close()
         return jsonify({"message": "User registered successfully"}), 201

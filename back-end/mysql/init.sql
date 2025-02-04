@@ -54,18 +54,12 @@ CREATE TABLE IF NOT EXISTS environment (
 -- Use the assets database
 USE assets;
 
-CREATE TABLE IF NOT EXISTS files (
-  filename VARCHAR(255) NOT NULL PRIMARY KEY,
-  filedata LONGBLOB NOT NULL,
-  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS presets (
   preset_id INT AUTO_INCREMENT PRIMARY KEY,
   preset_name VARCHAR(255) NOT NULL,
-  file_id VARCHAR(255),
-  owner_id INT NOT NULL,
-  FOREIGN KEY (file_id) REFERENCES files(filename) ON DELETE CASCADE,
+  owner_id INT DEFAULT NULL,
+  image_name VARCHAR(255) DEFAULT NULL,
+  image_data LONGBLOB DEFAULT NULL,
   FOREIGN KEY (owner_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL
 );
 
@@ -73,7 +67,7 @@ CREATE TABLE IF NOT EXISTS map_blocks (
   id INT AUTO_INCREMENT PRIMARY KEY,
   preset_id INT NOT NULL,
   roomID VARCHAR(50) NOT NULL,
-  label VARCHAR(255) DEFAULT roomID,
+  label VARCHAR(255) DEFAULT NULL,
   location_top INT NOT NULL,
   location_left INT NOT NULL,
   location_width INT NOT NULL,
@@ -96,37 +90,41 @@ CREATE TABLE IF NOT EXISTS default_preset (
   FOREIGN KEY (preset_id) REFERENCES presets(preset_id) ON DELETE SET NULL
 );
 
+-- Ensure there is always an entry with id 1
+INSERT INTO default_preset (id, preset_id) VALUES (1, NULL)
+ON DUPLICATE KEY UPDATE id = 1;
+
 -- =============================================
 -- Microservice-specific Accounts
 -- =============================================
 
 -- Account Registration Service (Insert only)
-CREATE USER IF NOT EXISTS 'account_registration'@'%' IDENTIFIED WITH 'caching_sha2_password' by 'reg_password';
+CREATE USER IF NOT EXISTS 'account_registration'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'reg_password';
 GRANT INSERT ON accounts.users TO 'account_registration'@'%';
 ALTER USER 'account_registration'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 
 -- Account Cookie Management Service (Update cookie + Read)
-CREATE USER IF NOT EXISTS 'cookie_manager'@'%' IDENTIFIED WITH 'caching_sha2_password' by 'cookie_password';
+CREATE USER IF NOT EXISTS 'cookie_manager'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'cookie_password';
 GRANT SELECT, UPDATE(cookie, last_login) ON accounts.users TO 'cookie_manager'@'%';
 ALTER USER 'cookie_manager'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 -- Data Processing Service (pico Insert)
-CREATE USER IF NOT EXISTS 'data_processor'@'%' IDENTIFIED WITH 'caching_sha2_password' by 'process_password';
+CREATE USER IF NOT EXISTS 'data_processor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'process_password';
 GRANT INSERT ON pico.* TO 'data_processor'@'%';
 ALTER USER 'data_processor'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 -- Data Reading Service (pico Read)
-CREATE USER IF NOT EXISTS 'data_reader'@'%' IDENTIFIED WITH 'caching_sha2_password' by 'read_password';
+CREATE USER IF NOT EXISTS 'data_reader'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'read_password';
 GRANT SELECT ON pico.* TO 'data_reader'@'%';
 ALTER USER 'data_reader'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 -- Data Deletion Service (pico Delete + Read)
-CREATE USER IF NOT EXISTS 'data_admin'@'%' IDENTIFIED WITH 'caching_sha2_password' by 'admin_password';
+CREATE USER IF NOT EXISTS 'data_admin'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'admin_password';
 GRANT SELECT, DELETE ON pico.* TO 'data_admin'@'%';
 ALTER USER 'data_admin'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
@@ -139,7 +137,10 @@ FLUSH PRIVILEGES;
 
 -- Assets Editing Service (Full permissions)
 CREATE USER IF NOT EXISTS 'assets_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'edit_password';
-GRANT SELECT, INSERT, UPDATE, DELETE ON assets.* TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.presets        TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.map_blocks     TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.preset_trusted TO 'assets_editor'@'%';
+GRANT SELECT, UPDATE ON assets.default_preset TO 'assets_editor'@'%';
 ALTER USER 'assets_editor'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
@@ -147,7 +148,7 @@ FLUSH PRIVILEGES;
 -- Security Hardening
 -- =============================================
 -- Remove remote root access
-DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+-- DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 
 -- Remove anonymous users
 DELETE FROM mysql.user WHERE User='';
