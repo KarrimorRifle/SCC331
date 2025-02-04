@@ -5,6 +5,9 @@
 #include <Adafruit_NeoPixel.h>
 #include <WiFi.h> 
 #include <ArduinoJson.h>
+#include "AsyncMqtt_Generic.h"
+#include "./env.cpp"
+
 
 /*
  * Listen for BLE Broadcasts
@@ -20,6 +23,25 @@
 */
 
 
+//MQTT Stuff
+#define MQTT_SERVER "mqtt.flespi.io"
+#define MQTT_PORT 1883
+
+#ifndef MQTT_TOKEN
+#define MQTT_TOKEN ""
+#endif
+
+AsyncMqttClient mqttClient;
+bool connectedToMQTT = false;
+
+// Function Declarations:
+void onMQTTConnect(bool sessionPresent);
+void onMQTTDisconnect(AsyncMqttClientDisconnectReason reason);
+void onMQTTMessage(char* topic, char* payload, const AsyncMqttClientMessageProperties& properties,
+                   const size_t& len, const size_t& index, const size_t& total);
+void onMqttPublish(const uint16_t& packetId);
+
+
 // For LED Stuff:
 Adafruit_NeoPixel WS2812B(3, 6, NEO_GRB + NEO_KHZ800);
 
@@ -30,8 +52,8 @@ Adafruit_NeoPixel WS2812B(3, 6, NEO_GRB + NEO_KHZ800);
 #define SCREEN_ADDRESS 0x3C // OLED I2C address
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define SCAN_DURATION 15000
-#define WAIT_DURATION 30000
+#define SCAN_DURATION 9500
+#define WAIT_DURATION 500
 
 unsigned long lastActionTime = 0;
 bool isScanning = false;
@@ -43,10 +65,10 @@ int strongestMajorID = -1;
 int strongestRSSI = -10000;
 
 // WiFi Stuff:
-const char* ssid = "iPhone (204)"; // CHANGE THIS FOR DIFFERENT NETWORKS (FIND ON ROUTERS) 
-const char* password = "dobberz68"; // THIS TOO!
-const char* serverIP = "172.20.10.10"; 
-const int serverPort = 4242;
+const char* ssid = "grp3"; // CHANGE THIS FOR DIFFERENT NETWORKS (FIND ON ROUTERS) 
+const char* password = "eqdf2376"; // THIS TOO!
+// const char* serverIP = "172.20.10.10"; 
+// const int serverPort = 4242;
 
 WiFiClient client;
 
@@ -76,12 +98,37 @@ void advertisementCallback(BLEAdvertisement *adv) {
   }
 }
 
+void onMQTTDisconnect(AsyncMqttClientDisconnectReason reason)
+{
+  (void) reason;
+
+  connectedToMQTT = false;
+
+  Serial.println("Disconnected from MQTT.");
+}
+
+void onMQTTConnect(bool sessionPresent) {
+  connectedToMQTT = true;
+  
+  Serial.println("Connected to MQTT.");
+}
+
+void onMQTTMessage(char* topic, char* payload, const AsyncMqttClientMessageProperties& properties, const size_t& len, const size_t& index, const size_t& total) {
+  return;
+}
+
+void onMqttPublish(const uint16_t& packetId)
+{
+  Serial.println("Publish acknowledged.");
+  Serial.print("  packetId: ");
+  Serial.println(packetId);
+}
+
+
 void setup(void) {
+  Wire.begin();
   Serial.begin(115200);
 
-  // Initialize Bluetooth
-  BTstack.setup();
-  BTstack.setBLEAdvertisementCallback(advertisementCallback);
 
   // Initialise the OLED display:
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -89,16 +136,46 @@ void setup(void) {
     for (;;);
   }
 
+  // Update display:
+  display.clearDisplay();
+  display.setTextSize(1);     
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println("Beginning Setup");
+  display.println("Setting up bluetooth...");
+  display.display(); 
+
+  // Initialize Bluetooth
+  BTstack.setup();
+  BTstack.setBLEAdvertisementCallback(advertisementCallback);
+
   // Colour System:
   WS2812B.begin(); // initializes WS2812B strip object (REQUIRED)
   WS2812B.setPixelColor(1, colour);
   WS2812B.show();
+
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("Setting Up");
+  display.printf("Connecting to WiFi ssid: %s...", ssid);
+  display.display(); 
 
   // Connect to Wi-Fi:
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000); // Not sure if this is needed to be honest...
   }
+
+
+  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
+  mqttClient.setCredentials(MQTT_TOKEN);
+
+  mqttClient.onConnect(onMQTTConnect);
+  mqttClient.onDisconnect(onMQTTDisconnect);
+  mqttClient.onPublish(onMqttPublish);
+
+  mqttClient.connect();
 
   // Update display:
   display.clearDisplay();
@@ -117,7 +194,7 @@ void sendToServer(int majorID) {
     display.setCursor(0, 0);
     display.println("Status: Communicating.");
     display.println("Sending to Server...");
-    display.println("Room ID: " + String(oldMajorID));
+    display.println("Room ID: " + String(majorID));
     display.display(); 
 
     // Create JSON document to send to server:
@@ -131,15 +208,22 @@ void sendToServer(int majorID) {
     String jsonString;
     serializeJson(json, jsonString);
 
-  if (client.connect(serverIP, serverPort)) {
-    client.println(jsonString);
-    client.stop();
-  }
+    String macAddress = WiFi.macAddress();
+    macAddress.replace(":", "");
+    String topic = "feeds/hardware-data/" + macAddress;
+    //WiFi.macAddress();
+    Serial.printf("Publishing message in topic '%s': %s\n", topic.c_str(), jsonString.c_str());
+
+    if (!connectedToMQTT) {
+      mqttClient.connect();
+    }
+    if (connectedToMQTT) {
+      mqttClient.publish(topic.c_str(), 2, true, jsonString.c_str());
+    }
 }
 
 void loop(void) {
   unsigned long currentTime = millis();
-  Serial.println("Reached loop");
 
   // Start scanning if not currently scanning and the wait period has elapsed:
   if (!isScanning && (currentTime - lastActionTime >= WAIT_DURATION)) {
@@ -179,12 +263,10 @@ void loop(void) {
     // After scanning, process the strongest signal:
     if (strongestMajorID != -1 && strongestRSSI != -1) {
       // Update MajorID:
-      if (oldMajorID != strongestMajorID) {
-        oldMajorID = strongestMajorID;
+      oldMajorID = strongestMajorID;
 
-        // Send the new MajorID to the server:
-        sendToServer(strongestMajorID);
-      }
+      // Send the new MajorID to the server:
+      sendToServer(strongestMajorID);
     }
   }
   BTstack.loop();
