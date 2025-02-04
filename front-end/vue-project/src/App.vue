@@ -4,7 +4,7 @@ import { useFetchData } from '@/utils/useFetchData';
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
 
-const { overlayAreasConstant, overlayAreasData, updates, environmentHistory } = useFetchData(picoIds);
+const { overlayAreasConstant, overlayAreasData, updates, environmentHistory, warnings} = useFetchData(picoIds);
 </script>
 
 <template>
@@ -17,6 +17,7 @@ const { overlayAreasConstant, overlayAreasData, updates, environmentHistory } = 
       :overlayAreasData="overlayAreasData" 
       :updates="updates"
       :environmentHistory="environmentHistory"
+      :warnings="warnings"
     />
   </div>
 </template>

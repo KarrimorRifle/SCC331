@@ -20,7 +20,9 @@ export function useFetchData(picoIds) {
   const overlayAreasData = ref([]);
   const updates = ref({});
   const environmentHistory = ref({});
+  const warnings = ref([]);
   let pollingInterval = null;
+  let warningInterval = null;
 
   // Watch for overlay area changes and save to localStorage
   watch(overlayAreasConstant, (newValue) => {
@@ -44,6 +46,16 @@ export function useFetchData(picoIds) {
       environmentHistory.value[label].shift();
     }
   };
+
+  const fetchWarnings = async () => {
+    try {
+      const response = await axios.get("http://localhost:5003/warnings", { withCredentials: true });
+      warnings.value = response.data;
+    } catch (error) {
+      console.error("Error fetching warnings:", error);
+    }
+  };
+
 
   // Function to fetch data
   const fetchData = async () => {
@@ -90,17 +102,22 @@ export function useFetchData(picoIds) {
   // Lifecycle hooks
   onMounted(() => {
     fetchData();
+    fetchWarnings();
+    //5000 = fetch the data every 5 seconds
     pollingInterval = setInterval(fetchData, 5000);
+    warningInterval = setInterval(fetchWarnings, 5000);
   });
 
   onUnmounted(() => {
     if (pollingInterval) clearInterval(pollingInterval);
+    if (warningInterval) clearInterval(warningInterval);
   });
 
   return {
     overlayAreasConstant,
     overlayAreasData,
     updates,
-    environmentHistory
+    environmentHistory,
+    warnings,
   };
 }

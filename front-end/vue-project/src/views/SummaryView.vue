@@ -2,6 +2,7 @@
 import SummaryHeader from '../components/Summary/SummaryHeader.vue';
 import SummaryTable from '../components/Summary/SummaryTable/SummaryTable.vue';
 import LiveUpdates from '../components/Summary/LiveUpdates/LiveUpdates.vue';
+import WarningSystem from '../components/Summary/WarningSystem/WarningSystem.vue'; // Import new warning system component
 import { ref, PropType } from 'vue';
 
 const props = defineProps({
@@ -25,6 +26,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  warnings: {
+    type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
+    required: true,
+  },
 });
 
 // Active section: "all", "summary", or "updates"
@@ -39,6 +44,7 @@ const activeSection = ref("all");
       <button @click="activeSection = 'all'" :class="{ active: activeSection === 'all' }">📌 Show All</button>
       <button @click="activeSection = 'summary'" :class="{ active: activeSection === 'summary' }">📊 Summary Table</button>
       <button @click="activeSection = 'updates'" :class="{ active: activeSection === 'updates' }">🔄 Live Updates</button>
+      <button @click="activeSection = 'warnings'" :class="{ active: activeSection === 'warnings' }">⚠️ Warnings</button>
     </nav>
 
     <!-- Main Content -->
@@ -56,6 +62,10 @@ const activeSection = ref("all");
         :userIds="picoIds" 
         :updates="updates"
         :overlayAreasConstant="overlayAreasConstant"
+      />
+      <WarningSystem
+        v-if="activeSection === 'warnings' || activeSection === 'all'"
+        :warnings="warnings"
       />
     </div>
   </div>
