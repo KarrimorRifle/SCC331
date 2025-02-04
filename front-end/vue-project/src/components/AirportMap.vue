@@ -21,27 +21,28 @@ const dragStart = ref({ x: 0, y: 0 });
 const isZooming = ref(false);
 
 // Zoom controls
-const zoomIn = () => {
+const zoomIn = (ease?: boolean) => {
   if (zoomLevel.value < 2) {
     zoomLevel.value += 0.1;
-    isZooming.value = true;
+    isZooming.value = ease ? true : false;
   }
 };
 
-const zoomOut = () => {
+const zoomOut = (ease?: boolean) => {
   if (zoomLevel.value > 0.5) {
     zoomLevel.value -= 0.1;
-    isZooming.value = true;
+    isZooming.value = ease ? true : false;
   }
 };
 
-// Handle scrolling for panning
+// Handle scrolling for zooming
 const handleScroll = (event) => {
   event.preventDefault(); // Prevent the default scrolling behavior
-  mapPosition.value = {
-    x: mapPosition.value.x - event.deltaX,
-    y: mapPosition.value.y - event.deltaY,
-  };
+  if (event.deltaY < 0) {
+    zoomIn(false);
+  } else {
+    zoomOut(false);
+  }
 };
 
 // Handle dragging start
@@ -57,10 +58,10 @@ const handleMouseDown = (event) => {
 // Handle dragging
 const handleMouseMove = (event) => {
   if (isDragging.value) {
-    const speedFactor = 1.5; // Adjust this factor to make the dragging faster
+    const speedFactor = 1.3; // Adjust this factor to make the dragging faster
     mapPosition.value = {
-      x: mapPosition.value.x + (event.clientX - dragStart.value.x) * speedFactor,
-      y: mapPosition.value.y + (event.clientY - dragStart.value.y) * speedFactor,
+      x: mapPosition.value.x + (event.clientX - dragStart.value.x) * speedFactor / zoomLevel.value,
+      y: mapPosition.value.y + (event.clientY - dragStart.value.y) * speedFactor / zoomLevel.value,
     };
     dragStart.value = { x: event.clientX, y: event.clientY };
   }
