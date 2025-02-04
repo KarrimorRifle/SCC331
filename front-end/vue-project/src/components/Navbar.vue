@@ -140,9 +140,9 @@ const toggleMenu = () => {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 10;
+  z-index: 999;
 }
 
 /* Responsive Design */
@@ -156,7 +156,7 @@ const toggleMenu = () => {
   }
 
   .mobile-menu {
-    z-index: 15;
+    z-index: 1000;
   }
 }
 </style>

@@ -128,6 +128,8 @@ watch(zoomLevel, () => {
 
 <style scoped>
 .airport-map-container {
+  display: flex;
+  flex: 1;
   position: relative;
   height: 100%;
   overflow: hidden;
@@ -138,7 +140,7 @@ watch(zoomLevel, () => {
   position: absolute;
   top: 10px;
   right: 10px;
-  z-index: 1000;
+  z-index: 10;
   display: flex;
   gap: 10px;
 }
