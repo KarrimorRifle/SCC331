@@ -27,7 +27,7 @@ port: 5002
 - **Headers or Cookies:**
   - `session-id`: Session ID cookie (required)
 - **Responses:**
-  - `200`: Cookie is valid, returns user email
+  - `200`: Cookie is valid, returns user: `email`, `authority`, `uid` 
   - `400`: No session cookie or header provided
   - `401`: Invalid cookie
   - `500`: Database connection failed or other server error
