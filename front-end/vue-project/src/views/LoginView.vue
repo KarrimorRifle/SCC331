@@ -55,6 +55,7 @@ const handleSubmit = async () => {
       const response = await axios.post("http://localhost:5002/login", {}, {
         withCredentials: true,
         headers: {
+          "Access-Control-Allow-Credentials": true,
           "email": email.value,
           "password": password.value
         }

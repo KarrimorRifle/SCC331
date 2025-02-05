@@ -33,7 +33,7 @@ const getAreaKey = (label: string): string | null => {
 <template>
   <div class="dashboard">
     <div 
-      v-for="(area, index) in props.overlayAreasConstant" 
+      v-for="(area, index) in props.overlayAreasData" 
       :key="index" 
       class="dashboard-area"
       :style="{ backgroundColor: area.color, color: getTextColor(area.color) }"

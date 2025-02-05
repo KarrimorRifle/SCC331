@@ -87,15 +87,15 @@ export function useFetchData(picoIds) {
     }
   };
 
-  // Lifecycle hooks
-  onMounted(() => {
-    fetchData();
-    pollingInterval = setInterval(fetchData, 5000);
-  });
+  // // Lifecycle hooks
+  // onMounted(() => {
+  //   fetchData();
+  //   pollingInterval = setInterval(fetchData, 5000);
+  // });
 
-  onUnmounted(() => {
-    if (pollingInterval) clearInterval(pollingInterval);
-  });
+  // onUnmounted(() => {
+  //   if (pollingInterval) clearInterval(pollingInterval);
+  // });
 
   return {
     overlayAreasConstant,

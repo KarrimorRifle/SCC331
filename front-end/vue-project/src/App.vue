@@ -13,8 +13,6 @@ const { overlayAreasConstant, overlayAreasData, updates, environmentHistory } = 
     <router-view
       class="flex-grow-1 app"
       :picoIds="picoIds"
-      :overlayAreasConstant="overlayAreasConstant"
-      :overlayAreasData="overlayAreasData" 
       :updates="updates"
       :environmentHistory="environmentHistory"
     />

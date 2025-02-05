@@ -139,9 +139,9 @@ watch(zoomLevel, () => {
         </div>
       </div>
     </div>
-    <div class="zoom-controls d-flex flex-column">
+    <div class="zoom-controls d-flex flex-column align-items-end" style="pointer-events: none;">
       <div class="preset-container card p-2">
-        <div class="input-group">
+        <div class="input-group" style="pointer-events: all;">
           <label class="input-group-text bg-dark text-light" for="inputGroupSelect01">Preset</label>
           <!-- add v-model and make it a v-if to change the name -->
           <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem">
@@ -152,10 +152,11 @@ watch(zoomLevel, () => {
           </select>
         </div>
       </div>
-      <div class="button-container d-flex flex-column align-items-end">
+      <div class="button-container d-flex flex-column align-items-end" style="pointer-events: all;">
         <button class="mb-1" @click="zoomIn">+</button>
         <button class="mb-1" @click="zoomOut">-</button>
         <div> <!--will add v-if-->
+          <hr class="text-dark my-1" style="width: 100%; height: 3px;">
           <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center">
             <img src="@/assets/pencil.svg" alt="" style="max-width: 1.5rem;">
           </button>
