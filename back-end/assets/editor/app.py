@@ -9,7 +9,7 @@ import base64
 import binascii
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 # Establish a persistent connection to the database
 db_connection = None
@@ -31,6 +31,7 @@ def get_db_connection(retries=5, delay=1):
             db_connection = None
             time.sleep(delay)
     
+    print("Failed to establish database connection after retries")
     return None
 
 def validate_session_cookie(request):
@@ -99,6 +100,7 @@ def presets():
     
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
     
     cursor = connection.cursor(dictionary=True)
@@ -129,6 +131,7 @@ def presets():
         return jsonify({"message": "Preset created", "preset_id": preset_id}), 201
     except Error as e:
         connection.rollback()
+        print(f"Error creating preset: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -142,7 +145,7 @@ def set_default_preset():
     
     connection = get_db_connection()
     if connection is None:
-        print("ERR couldnt get a DB connection")
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
     
     cursor = connection.cursor(dictionary=True)
@@ -156,7 +159,7 @@ def set_default_preset():
         connection.commit()
         return jsonify({"message":"Preset updated successfully"}), 200
     except Error as e:
-        print(f"ERR: Error encountered setting default preset: {str(e)}")
+        print(f"Error setting default preset: {e}")
         connection.rollback()
         return jsonify({"error": str(e)}), 500
     finally:
@@ -171,6 +174,7 @@ def upload_preset_image(preset_id):
     
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
     
     cursor = connection.cursor(dictionary=True)
@@ -192,6 +196,7 @@ def upload_preset_image(preset_id):
         return jsonify({"message": "Preset image updated"}), 200
     except Error as e:
         connection.rollback()
+        print(f"Error uploading preset image: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -205,6 +210,7 @@ def update_preset_boxes(preset_id):
     
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
     
     cursor = connection.cursor(dictionary=True)
@@ -217,13 +223,14 @@ def update_preset_boxes(preset_id):
         for box in data["boxes"]:
             cursor.execute("""
                 INSERT INTO map_blocks 
-                (preset_id, roomID, label, `top`, `left`, `width`, `heigth`, colour)
+                (preset_id, roomID, label, `top`, `left`, `width`, `height`, colour)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (preset_id, box["roomID"], box["label"], box["top"], box["left"], box["width"], box["height"], box["colour"]))
         connection.commit()
         return jsonify({"message": "Preset boxes updated"}), 200
     except Error as e:
         connection.rollback()
+        print(f"Error updating preset boxes: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -237,6 +244,7 @@ def update_preset_name(preset_id):
     
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
     
     cursor = connection.cursor(dictionary=True)
@@ -248,6 +256,7 @@ def update_preset_name(preset_id):
         return jsonify({"message": "Preset name updated"}), 200
     except Error as e:
         connection.rollback()
+        print(f"Error updating preset name: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -261,6 +270,7 @@ def delete_preset(preset_id):
     
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
     
     cursor = connection.cursor(dictionary=True)
@@ -277,6 +287,7 @@ def delete_preset(preset_id):
         return jsonify({"message": "Preset deleted"}), 200
     except Error as e:
         connection.rollback()
+        print(f"Error deleting preset: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
