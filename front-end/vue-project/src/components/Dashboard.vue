@@ -32,7 +32,6 @@ const getAreaKey = (label: string): string | null => {
 
 <template>
   <div class="dashboard">
-    <h2>Dashboard</h2>
     <div 
       v-for="(area, index) in props.overlayAreasConstant" 
       :key="index" 
@@ -46,7 +45,7 @@ const getAreaKey = (label: string): string | null => {
         <div class="marker-container">
           <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
         </div>
-        <p>Luggage Count: {{ props.overlayAreasData[getAreaKey(area.label)]?.luggage?.count || 0 }}</p>
+        <p>Luggage: {{ props.overlayAreasData[getAreaKey(area.label)]?.luggage?.count || 0 }}</p>
       </div>
       
       <!-- People Count -->
@@ -54,31 +53,33 @@ const getAreaKey = (label: string): string | null => {
         <div class="marker-container">
           <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
         </div>
-        <p>People Count: {{ props.overlayAreasData[getAreaKey(area.label)]?.users?.count || 0 }}</p>
+        <p>People: {{ props.overlayAreasData[getAreaKey(area.label)]?.users?.count || 0 }}</p>
       </div>
 
       <!-- Environment Data -->
       <div class="environment-container">
         <h4>Environment Data:</h4>
         <table style="width: 100%;">
-          <tr>
-            <th class="emoji-column">🌡️</th>
-            <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.temperature || '--' }} °C</th>
-            <th class="emoji-column">🌬️</th>
-            <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.IAQ || '--' }} %</th>
-          </tr>
-          <tr>
-            <th class="emoji-column">🔊</th>
-            <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.sound || '--' }} dB</th>
-            <th class="emoji-column">🌡️</th>
-            <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.pressure || '--' }} hPa</th>
-          </tr>
-          <tr>
-            <th class="emoji-column">💡</th>
-            <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.light || '--' }} lux</th>
-            <th class="emoji-column">💧</th>
-            <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.humidity || '--' }} %</th>
-          </tr>
+          <tbody>
+            <tr>
+              <th class="emoji-column">🌡️</th>
+              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.temperature || '--' }} °C</th>
+              <th class="emoji-column">🌬️</th>
+              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.IAQ || '--' }} %</th>
+            </tr>
+            <tr>
+              <th class="emoji-column">🔊</th>
+              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.sound || '--' }} dB</th>
+              <th class="emoji-column">🌡️</th>
+              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.pressure || '--' }} hPa</th>
+            </tr>
+            <tr>
+              <th class="emoji-column">💡</th>
+              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.light || '--' }} lux</th>
+              <th class="emoji-column">💧</th>
+              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.humidity || '--' }} %</th>
+            </tr>
+          </tbody>
         </table>
       </div>
     </div>

@@ -22,7 +22,7 @@ const props = defineProps({
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
     />
-    <DashBoard 
+    <DashBoard
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
     />

@@ -55,6 +55,15 @@ const handleMouseDown = (event) => {
   dragStart.value = { x: event.clientX, y: event.clientY };
 };
 
+const handleTouchStart = (event) => {
+  if (event.target.closest('.overlay-area')) {
+    return;
+  }
+  isDragging.value = true;
+  const touch = event.touches[0];
+  dragStart.value = { x: touch.clientX, y: touch.clientY };
+};
+
 // Handle dragging
 const handleMouseMove = (event) => {
   if (isDragging.value) {
@@ -67,8 +76,24 @@ const handleMouseMove = (event) => {
   }
 };
 
+const handleTouchMove = (event) => {
+  if (isDragging.value) {
+    const touch = event.touches[0];
+    const speedFactor = 1.3; // Adjust this factor to make the dragging faster
+    mapPosition.value = {
+      x: mapPosition.value.x + (touch.clientX - dragStart.value.x) * speedFactor / zoomLevel.value,
+      y: mapPosition.value.y + (touch.clientY - dragStart.value.y) * speedFactor / zoomLevel.value,
+    };
+    dragStart.value = { x: touch.clientX, y: touch.clientY };
+  }
+};
+
 // Handle dragging end
 const handleMouseUp = () => {
+  isDragging.value = false;
+};
+
+const handleTouchEnd = () => {
   isDragging.value = false;
 };
 
@@ -76,11 +101,15 @@ const handleMouseUp = () => {
 onMounted(() => {
   window.addEventListener('mousemove', handleMouseMove);
   window.addEventListener('mouseup', handleMouseUp);
+  window.addEventListener('touchmove', handleTouchMove);
+  window.addEventListener('touchend', handleTouchEnd);
 });
 
 onUnmounted(() => {
   window.removeEventListener('mousemove', handleMouseMove);
   window.removeEventListener('mouseup', handleMouseUp);
+  window.removeEventListener('touchmove', handleTouchMove);
+  window.removeEventListener('touchend', handleTouchEnd);
 });
 
 // Watch for zoom level changes to reset isZooming after transition
@@ -93,15 +122,30 @@ watch(zoomLevel, () => {
 
 <template>
   <div class="airport-map-container">
-    <div class="zoom-controls">
-      <button @click="zoomOut">-</button>
-      <button @click="zoomIn">+</button>
+    <div class="zoom-controls d-flex flex-column">
+      <div class="preset-container card p-2">
+        <div class="input-group">
+          <label class="input-group-text bg-secondary text-light" for="inputGroupSelect01">Preset</label>
+          <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem">
+            <option selected>Choose...</option>
+            <option value="1">One</option>
+            <option value="2">Two</option>
+            <option value="3">Three</option>
+          </select>
+        </div>
+      </div>
+      <div class="button-container d-flex flex-column align-items-end">
+        <button class="mb-1" @click="zoomIn">+</button>
+        <button class="mb-1" @click="zoomOut">-</button>
+        <button><img src="" alt=""></button>
+      </div>
     </div>
     <!-- Add scroll event listener -->
     <div
       class="airport-map-wrapper"
       @wheel="handleScroll"
       @mousedown="handleMouseDown"
+      @touchstart="handleTouchStart"
     >
       <div
         class="airport-map"
@@ -143,13 +187,14 @@ watch(zoomLevel, () => {
   gap: 10px;
 }
 
-.zoom-controls button {
+.zoom-controls > .button-container > button {
   background-color: #568ea6;
   color: white;
   border: none;
   padding: 5px 10px;
   border-radius: 5px;
   cursor: pointer;
+  width: 2rem;
 }
 
 .zoom-controls button:hover {
