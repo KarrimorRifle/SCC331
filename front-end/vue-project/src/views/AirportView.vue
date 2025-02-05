@@ -41,7 +41,7 @@ const toggleDashboard = () => {
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
     />
-    <DashBoard 
+    <DashBoard
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
       :userIds="picoIds"
