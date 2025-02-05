@@ -121,11 +121,29 @@ watch(zoomLevel, () => {
 </script>
 
 <template>
-  <div class="airport-map-container">
+  <div class="airport-map-container" id="">
+    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="staticBackdropLabel">Modal title</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            ...
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary">Understood</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="zoom-controls d-flex flex-column">
       <div class="preset-container card p-2">
         <div class="input-group">
-          <label class="input-group-text bg-secondary text-light" for="inputGroupSelect01">Preset</label>
+          <label class="input-group-text bg-dark text-light" for="inputGroupSelect01">Preset</label>
+          <!-- add v-model and make it a v-if to change the name -->
           <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem">
             <option selected>Choose...</option>
             <option value="1">One</option>
@@ -137,7 +155,15 @@ watch(zoomLevel, () => {
       <div class="button-container d-flex flex-column align-items-end">
         <button class="mb-1" @click="zoomIn">+</button>
         <button class="mb-1" @click="zoomOut">-</button>
-        <button><img src="" alt=""></button>
+        <div> <!--will add v-if-->
+          <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center">
+            <img src="@/assets/pencil.svg" alt="" style="max-width: 1.5rem;">
+          </button>
+          <button class="p-0 py-1 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+            <img src="@/assets/image.svg" alt="" style="max-width: 1.5rem;">
+            <!-- Add a modal popout for this -->
+          </button>
+        </div>
       </div>
     </div>
     <!-- Add scroll event listener -->
@@ -187,7 +213,7 @@ watch(zoomLevel, () => {
   gap: 10px;
 }
 
-.zoom-controls > .button-container > button {
+.zoom-controls > .button-container button {
   background-color: #568ea6;
   color: white;
   border: none;

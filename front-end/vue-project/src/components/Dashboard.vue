@@ -38,7 +38,9 @@ const getAreaKey = (label: string): string | null => {
       class="dashboard-area"
       :style="{ backgroundColor: area.color, color: getTextColor(area.color) }"
     >
-      <h3>{{ area.label }}</h3>
+      <button class="btn btn-success add-button">+</button>
+      <!-- <h3>{{ area.label }}</h3> -->
+      <input type="Name" v-model="area.label" class="input-group-text text-start" style="width: 80%;">
 
       <!-- Luggage Count -->
       <div class="count-container">
@@ -105,6 +107,7 @@ const getAreaKey = (label: string): string | null => {
   border-radius: 8px;
   background-color: #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .dashboard-area h3 {
@@ -151,5 +154,11 @@ const getAreaKey = (label: string): string | null => {
 
 .data-column {
   width: auto;
+}
+
+.add-button {
+  position: absolute;
+  right: 10px;
+  top: 10px;
 }
 </style>
