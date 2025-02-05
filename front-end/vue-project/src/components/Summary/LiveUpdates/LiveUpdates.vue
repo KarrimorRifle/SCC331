@@ -43,6 +43,7 @@ const endDate = ref(
         .slice(0, 16)
     : new Date(new Date().getTime() + 60000).toISOString().slice(0, 16)
 );
+
 // Watch for updates in timestamps and adjust startDate and endDate dynamically
 watch(allTimestamps, (timestamps) => {
   if (timestamps.length) {
@@ -56,53 +57,40 @@ const groupedUsersByRoom = computed(() => {
   const roomMap = new Map<string, { hour: string; users: { userId: number; loggedAt: string }[] }[]>();
 
   // Populate roomMap with updates
-  Object.entries(props.updates).forEach(([userId, updates]) => {
-    updates.forEach(({ logged_at, roomID }) => {
+  Object.entries(props.updates).forEach(([userId, userUpdates]) => {
+    userUpdates.forEach(({ logged_at, roomID }) => {
       const date = new Date(logged_at);
       const hour = date.toLocaleTimeString([], { hour: 'numeric', hour12: true });
       const fullTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-      // Map roomID to room label
-      const roomLabel = props.overlayAreasConstant[roomID - 1]?.label || `Room ${roomID}`;
+      const formattedRoomLabel = `Area ${roomID}`;
+      const matchingArea = props.overlayAreasConstant.find(area => area.label === formattedRoomLabel);
+      if (!matchingArea) return;
 
       // Apply Date-Time Range Filtering
       if (date >= new Date(startDate.value) && date <= new Date(endDate.value)) {
-        if (!roomMap.has(roomLabel)) {
-          roomMap.set(roomLabel, []);
+        if (!roomMap.has(formattedRoomLabel)) {
+          roomMap.set(formattedRoomLabel, []);
         }
-        const roomEntry = roomMap.get(roomLabel);
+
+        const roomEntry = roomMap.get(formattedRoomLabel);
         const existingHourEntry = roomEntry?.find(entry => entry.hour === hour);
 
         if (existingHourEntry) {
           existingHourEntry.users.push({ userId: Number(userId), loggedAt: fullTime });
         } else {
-          roomEntry?.push({
-            hour,
-            users: [{ userId: Number(userId), loggedAt: fullTime }],
-          });
+          roomEntry?.push({ hour, users: [{ userId: Number(userId), loggedAt: fullTime }] });
         }
       }
     });
   });
 
-  // Ensure all areas from overlayAreasConstant are included
-  props.overlayAreasConstant.forEach((area) => {
-    if (!roomMap.has(area.label)) {
-      roomMap.set(area.label, []); // Add empty area with no users
-    }
-  });
-
-  // Convert map to array and sort it based on the order in overlayAreasConstant
-  return props.overlayAreasConstant.map((area) => {
-    const entries = roomMap.get(area.label) || [];
-    return {
-      roomLabel: area.label,
-      roomColor: area.color,
-      entries,
-    };
-  });
+  return props.overlayAreasConstant.map((area) => ({
+    roomLabel: area.label,
+    roomColor: area.color,
+    entries: roomMap.get(area.label) || [],
+  }));
 });
-
 </script>
 
 <template>

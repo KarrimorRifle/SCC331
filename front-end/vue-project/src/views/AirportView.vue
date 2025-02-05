@@ -16,6 +16,14 @@ const props = defineProps({
   isMobile: {
     type: Boolean,
     required: true,
+  }, 
+  picoIds: {
+    type: Array,
+    required: true,
+  },
+  updates: {
+    type: Object,
+    required: true,
   }
 });
 
@@ -36,6 +44,8 @@ const toggleDashboard = () => {
     <DashBoard 
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
+      :userIds="picoIds"
+      :updates="updates"
     />
   </div>
 </template>
