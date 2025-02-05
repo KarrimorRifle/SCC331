@@ -189,13 +189,21 @@ const getUpdatesForArea = (area) => {
   padding: 20px;
 }
 
-/* Compact Dashboard */
+/* Compact Dashboard Layout */
 .dashboard-areas {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
+/* Expanded Layout - Two Areas Per Row */
+.dashboard.expanded .dashboard-areas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* Dashboard Area Box */
 .dashboard-area {
   margin-bottom: 20px;
   padding: 10px;
@@ -212,6 +220,7 @@ const getUpdatesForArea = (area) => {
   text-decoration: underline;
 }
 
+/* Counters for Luggage & People */
 .count-container {
   display: flex;
   align-items: center;
