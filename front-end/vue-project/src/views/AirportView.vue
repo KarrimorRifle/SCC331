@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import AirportMap from "@/components/AirportMap.vue";
 import DashBoard from "@/components/Dashboard.vue";
+import BottomTabNavigator from "@/components/BottomTabNavigator.vue";
 
 // Receive isMobile from App.vue
 const props = defineProps({
@@ -35,7 +36,27 @@ const toggleDashboard = () => {
 </script>
 
 <template>
-  <div class="airport-view-container d-flex flex-row">
+  <BottomTabNavigator v-if="isMobile">
+    <!-- Slot for Map -->
+    <template #map>
+      <AirportMap
+        :overlayAreasConstant="overlayAreasConstant"
+        :overlayAreasData="overlayAreasData"
+      />
+    </template>
+
+    <!-- Slot for Dashboard -->
+    <template #dashboard>
+      <DashBoard
+        :overlayAreasConstant="overlayAreasConstant"
+        :overlayAreasData="overlayAreasData"
+        :userIds="picoIds"
+        :updates="updates"
+      />
+    </template>
+  </BottomTabNavigator>
+
+  <div v-else class="airport-view-container d-flex flex-row">
     <AirportMap
       class="flex-grow-1"
       :overlayAreasConstant="overlayAreasConstant" 

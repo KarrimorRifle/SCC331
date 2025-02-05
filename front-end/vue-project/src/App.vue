@@ -1,10 +1,25 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted} from 'vue';
 import Navbar from '@/components/Navbar.vue';
 import { useFetchData } from '@/utils/useFetchData';
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
 
 const { overlayAreasConstant, overlayAreasData, updates, environmentHistory, warnings} = useFetchData(picoIds);
+const isMobile = ref(window.innerWidth < 768);
+
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth < 768;
+};
+
+onMounted(() => {
+  window.addEventListener("resize", updateIsMobile);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", updateIsMobile);
+});
+
 </script>
 
 <template>
@@ -18,6 +33,7 @@ const { overlayAreasConstant, overlayAreasData, updates, environmentHistory, war
       :updates="updates"
       :environmentHistory="environmentHistory"
       :warnings="warnings"
+      :isMobile="isMobile"
     />
   </div>
 </template>

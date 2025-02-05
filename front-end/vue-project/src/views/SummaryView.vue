@@ -19,7 +19,7 @@ const props = defineProps({
     required: true,
   },
   updates: {
-    type: Array as PropType<string[]>,
+    type: Object,
     required: true,
   },
   environmentHistory: {

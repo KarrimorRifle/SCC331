@@ -54,13 +54,14 @@ watch(allTimestamps, (timestamps) => {
 
 // Group user visits by area and then by time
 const groupedUsersByRoom = computed(() => {
-  const roomMap = new Map<string, { hour: string; users: { userId: number; loggedAt: string }[] }[]>();
+  const roomMap = new Map<string, { hour: string; hourNumeric: number; users: { userId: number; loggedAt: string }[] }[]>();
 
   // Populate roomMap with updates
   Object.entries(props.updates).forEach(([userId, userUpdates]) => {
     userUpdates.forEach(({ logged_at, roomID }) => {
       const date = new Date(logged_at);
-      const hour = date.toLocaleTimeString([], { hour: 'numeric', hour12: true });
+      const hour = date.toLocaleTimeString([], { hour: 'numeric', hour12: true })
+      const hourNumeric = date.getHours();
       const fullTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
       const formattedRoomLabel = `Area ${roomID}`;
@@ -79,7 +80,7 @@ const groupedUsersByRoom = computed(() => {
         if (existingHourEntry) {
           existingHourEntry.users.push({ userId: Number(userId), loggedAt: fullTime });
         } else {
-          roomEntry?.push({ hour, users: [{ userId: Number(userId), loggedAt: fullTime }] });
+          roomEntry?.push({ hour, hourNumeric, users: [{ userId: Number(userId), loggedAt: fullTime }] });
         }
       }
     });
@@ -88,9 +89,10 @@ const groupedUsersByRoom = computed(() => {
   return props.overlayAreasConstant.map((area) => ({
     roomLabel: area.label,
     roomColor: area.color,
-    entries: roomMap.get(area.label) || [],
+    entries: (roomMap.get(area.label) || []).sort((a, b) => a.hourNumeric - b.hourNumeric), // ✅ Sort hours numerically
   }));
 });
+
 </script>
 
 <template>

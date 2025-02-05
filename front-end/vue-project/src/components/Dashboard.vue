@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faExpand, faCompress } from '@fortawesome/free-solid-svg-icons';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
@@ -27,8 +27,17 @@ const props = defineProps({
 
 // Dashboard state
 const isExpanded = ref(false);
+const bottomTabHeight = ref(0);
+
 const toggleDashboard = () => {
   isExpanded.value = !isExpanded.value;
+};
+
+const updateBottomTabHeight = () => {
+  const bottomTab = document.querySelector('.tab-bar');
+  if (bottomTab) {
+    bottomTabHeight.value = bottomTab?.clientHeight;
+  }
 };
 
 // Helper functions remain unchanged
@@ -62,10 +71,27 @@ const getUpdatesForArea = (area) => {
 
   return filteredUpdates;
 };
+
+onMounted(() => {
+  updateBottomTabHeight();
+  window.addEventListener('resize', updateBottomTabHeight);
+});
+
+// Cleanup event listener
+onUnmounted(() => {
+  window.removeEventListener('resize', updateBottomTabHeight);
+});
 </script>
 
 <template>
-  <div class="dashboard" :class="{ expanded: isExpanded }">
+  <div 
+    class="dashboard" 
+    :class="{ expanded: isExpanded }"
+    :style="{ 
+      maxHeight: `calc(100vh - ${bottomTabHeight + 65}px)`,
+      minHeight: `calc(100vh - ${bottomTabHeight + 65}px)`
+    }"
+  >
     <!-- Dashboard Header -->
     <div class="dashboard-header">
       <h2 v-if="!isExpanded">Dashboard</h2>
@@ -106,6 +132,7 @@ const getUpdatesForArea = (area) => {
         <div v-if="isExpanded" class="environment-container">
           <h4>Environment Data:</h4>
           <table style="width: 100%;">
+            <tbody>
             <tr>
               <th class="emoji-column">🌡️</th>
               <th class="data-column">{{ overlayAreasData[getAreaKey(area.label)]?.environment?.temperature || '--' }} °C</th>
@@ -124,6 +151,7 @@ const getUpdatesForArea = (area) => {
               <th class="emoji-column">💧</th>
               <th class="data-column">{{ overlayAreasData[getAreaKey(area.label)]?.environment?.humidity || '--' }} %</th>
             </tr>
+            </tbody>
           </table>
         </div>
 
@@ -145,11 +173,9 @@ const getUpdatesForArea = (area) => {
 .dashboard {
   display: flex;
   flex-direction: column;
-  width: 300px;
   padding: 20px;
   background-color: #f8f8ff;
   border-left: 1px solid #ccc;
-  max-height: 100%;
   overflow-y: auto;
   transition: all 0.8s ease-in-out;
   position: relative;
@@ -201,6 +227,12 @@ const getUpdatesForArea = (area) => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
+}
+
+@media (max-width: 600px) {
+  .dashboard.expanded .dashboard-areas {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }
 
 /* Dashboard Area Box */
