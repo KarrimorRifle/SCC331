@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { PropType, ref, computed, watch } from 'vue';
-import UserMovementModal from './UserMovementModal.vue'; // Import modal component
+import { PropType, ref, computed } from 'vue';
+import UserMovementModal from './UserMovementModal.vue'; 
 
-// Props for user IDs, updates (filtered per area), and full updates
+// Props
 const props = defineProps({
   userIds: {
     type: Array as PropType<number[]>,
@@ -26,6 +26,33 @@ const showModal = ref(false);
 const selectedUserId = ref<number | null>(null);
 const userRoomHistory = ref<{ roomLabel: string; loggedAt: string }[]>([]);
 
+// Compute min/max timestamps from user data
+const minMaxTimestamps = computed(() => {
+  const timestamps: number[] = [];
+
+  Object.values(props.updates).forEach(userUpdates => {
+    userUpdates.forEach(({ logged_at }) => {
+      timestamps.push(new Date(logged_at).getTime());
+    });
+  });
+
+  if (timestamps.length === 0) return { min: null, max: null };
+
+  return {
+    min: new Date(Math.min(...timestamps)).toISOString().slice(0, 16), // Earliest timestamp
+    max: new Date(Math.max(...timestamps) + 60000).toISOString().slice(0, 16), // Add 1 minute (60000 ms)
+  };
+});
+
+// Time filter state (default to min/max timestamps)
+const startTime = ref<string>(minMaxTimestamps.value.min || '');
+const endTime = ref<string>(minMaxTimestamps.value.max || '');
+
+// Watch for min/max timestamp updates
+computed(() => {
+  startTime.value = minMaxTimestamps.value.min || '';
+  endTime.value = minMaxTimestamps.value.max || '';
+});
 
 // Function to show modal with user's **full movement history**
 const openUserModal = (userId: number) => {
@@ -54,10 +81,21 @@ const closeModal = () => {
 const groupedUsersByRoom = computed(() => {
   const roomMap = new Map<string, { hour: string; hourNumeric: number; users: { userId: number; loggedAt: string }[] }[]>();
 
+  // Convert filter timestamps to Date objects
+  const start = startTime.value ? new Date(startTime.value).getTime() : null;
+  const end = endTime.value ? new Date(endTime.value).getTime() : null;
+
   // Populate roomMap **only for the filtered users of the area**
   Object.entries(props.updates).forEach(([userId, userUpdates]) => {
     userUpdates.forEach(({ logged_at, roomID }) => {
       const date = new Date(logged_at);
+      const timestamp = date.getTime();
+
+      // Apply time filter if both startTime and endTime are set
+      if (start !== null && end !== null && (timestamp < start || timestamp > end)) {
+        return; // Skip entries outside the range
+      }
+
       const hour = date.toLocaleTimeString([], { hour: 'numeric', hour12: true });
       const hourNumeric = date.getHours();
       const fullTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
@@ -94,6 +132,18 @@ const groupedUsersByRoom = computed(() => {
   <div class="live-updates">
     <div class="live-updates-header">
       <h1>Live Updates</h1>
+    </div>
+
+    <!-- Time Filter Inputs -->
+    <div class="date-time-filter">
+      <div>
+        <label for="start-time">Start Time:</label>
+        <input id="start-time" type="datetime-local" v-model="startTime">
+      </div>
+      <div>
+        <label for="end-time">End Time:</label>
+        <input id="end-time" type="datetime-local" v-model="endTime">
+      </div>
     </div>
 
     <!-- Room List -->
@@ -221,12 +271,13 @@ h3 {
 }
 
 .user-item {
+  cursor: pointer;
   background: #f1f1f1;
   margin-bottom: 5px;
   padding: 8px;
   border-radius: 5px;
   font-size: 14px;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
 }
 
