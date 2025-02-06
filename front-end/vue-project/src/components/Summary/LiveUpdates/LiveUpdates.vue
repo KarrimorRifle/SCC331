@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { PropType, ref, computed, watch } from 'vue';
+import UserMovementModal from './UserMovementModal.vue'; // Import modal component
 
-// Props for user IDs, updates, and room configuration
+// Props for user IDs, updates (filtered per area), and full updates
 const props = defineProps({
   userIds: {
     type: Array as PropType<number[]>,
@@ -11,56 +12,53 @@ const props = defineProps({
     type: Object as PropType<Record<number, { logged_at: string; roomID: number }[]>>,
     required: true,
   },
+  fullUpdates: {  // Pass all updates for accurate modal data
+    type: Object as PropType<Record<number, { logged_at: string; roomID: number }[]>>,
+  },
   overlayAreasConstant: {
     type: Array as PropType<{ label: string; color: string; position: object }[]>,
     required: true,
   },
 });
 
-// Reactive state for selected users
-const selectedUsers = ref<number[]>([...props.userIds]);
+// Modal state
+const showModal = ref(false);
+const selectedUserId = ref<number | null>(null);
+const userRoomHistory = ref<{ roomLabel: string; loggedAt: string }[]>([]);
 
-// Calculate the earliest and latest timestamps from the updates
-const allTimestamps = computed(() =>
-  Object.values(props.updates)
-    .flat()
-    .map(update => new Date(update.logged_at))
-    .sort((a, b) => a.getTime() - b.getTime())
-);
 
-// Initialize startDate and endDate based on timestamps
-const startDate = ref(
-  allTimestamps.value.length
-    ? allTimestamps.value[0].toISOString().slice(0, 16)
-    : new Date().toISOString().slice(0, 16)
-);
+// Function to show modal with user's **full movement history**
+const openUserModal = (userId: number) => {
+  selectedUserId.value = userId;
+  showModal.value = true;
 
-// Add an extra minute to the original end date
-const endDate = ref(
-  allTimestamps.value.length
-    ? new Date(allTimestamps.value[allTimestamps.value.length - 1].getTime() + 60000)
-        .toISOString()
-        .slice(0, 16)
-    : new Date(new Date().getTime() + 60000).toISOString().slice(0, 16)
-);
+  const userData = props.fullUpdates?.[userId] || props.updates[userId];
 
-// Watch for updates in timestamps and adjust startDate and endDate dynamically
-watch(allTimestamps, (timestamps) => {
-  if (timestamps.length) {
-    startDate.value = timestamps[0].toISOString().slice(0, 16);
-    endDate.value = timestamps[timestamps.length - 1].toISOString().slice(0, 16);
-  }
-});
+  // Retrieve **full history** of the selected user across all areas
+  userRoomHistory.value = userData.map(({ logged_at, roomID }) => {
+    return {
+      roomLabel: `Area ${roomID}`,
+      loggedAt: new Date(logged_at).toLocaleString(),
+    };
+  }) || [];
+};
+
+// Close modal function
+const closeModal = () => {
+  showModal.value = false;
+  selectedUserId.value = null;
+  userRoomHistory.value = [];
+};
 
 // Group user visits by area and then by time
 const groupedUsersByRoom = computed(() => {
   const roomMap = new Map<string, { hour: string; hourNumeric: number; users: { userId: number; loggedAt: string }[] }[]>();
 
-  // Populate roomMap with updates
+  // Populate roomMap **only for the filtered users of the area**
   Object.entries(props.updates).forEach(([userId, userUpdates]) => {
     userUpdates.forEach(({ logged_at, roomID }) => {
       const date = new Date(logged_at);
-      const hour = date.toLocaleTimeString([], { hour: 'numeric', hour12: true })
+      const hour = date.toLocaleTimeString([], { hour: 'numeric', hour12: true });
       const hourNumeric = date.getHours();
       const fullTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
@@ -68,20 +66,17 @@ const groupedUsersByRoom = computed(() => {
       const matchingArea = props.overlayAreasConstant.find(area => area.label === formattedRoomLabel);
       if (!matchingArea) return;
 
-      // Apply Date-Time Range Filtering
-      if (date >= new Date(startDate.value) && date <= new Date(endDate.value)) {
-        if (!roomMap.has(formattedRoomLabel)) {
-          roomMap.set(formattedRoomLabel, []);
-        }
+      if (!roomMap.has(formattedRoomLabel)) {
+        roomMap.set(formattedRoomLabel, []);
+      }
 
-        const roomEntry = roomMap.get(formattedRoomLabel);
-        const existingHourEntry = roomEntry?.find(entry => entry.hour === hour);
+      const roomEntry = roomMap.get(formattedRoomLabel);
+      const existingHourEntry = roomEntry?.find(entry => entry.hour === hour);
 
-        if (existingHourEntry) {
-          existingHourEntry.users.push({ userId: Number(userId), loggedAt: fullTime });
-        } else {
-          roomEntry?.push({ hour, hourNumeric, users: [{ userId: Number(userId), loggedAt: fullTime }] });
-        }
+      if (existingHourEntry) {
+        existingHourEntry.users.push({ userId: Number(userId), loggedAt: fullTime });
+      } else {
+        roomEntry?.push({ hour, hourNumeric, users: [{ userId: Number(userId), loggedAt: fullTime }] });
       }
     });
   });
@@ -89,7 +84,7 @@ const groupedUsersByRoom = computed(() => {
   return props.overlayAreasConstant.map((area) => ({
     roomLabel: area.label,
     roomColor: area.color,
-    entries: (roomMap.get(area.label) || []).sort((a, b) => a.hourNumeric - b.hourNumeric), // ✅ Sort hours numerically
+    entries: (roomMap.get(area.label) || []).sort((a, b) => a.hourNumeric - b.hourNumeric),
   }));
 });
 
@@ -99,14 +94,6 @@ const groupedUsersByRoom = computed(() => {
   <div class="live-updates">
     <div class="live-updates-header">
       <h1>Live Updates</h1>
-    </div>
-
-    <!-- Date-Time Filter -->
-    <div class="date-time-filter">
-      <label>Start Date & Time:</label>
-      <input type="datetime-local" v-model="startDate" />
-      <label>End Date & Time:</label>
-      <input type="datetime-local" v-model="endDate" />
     </div>
 
     <!-- Room List -->
@@ -119,36 +106,34 @@ const groupedUsersByRoom = computed(() => {
         >
           <h3 :style="{ backgroundColor: roomColor }">{{ roomLabel }}</h3>
           <template v-if="entries.length">
-            <div
-              v-for="{ hour, users } in entries"
-              :key="hour"
-              class="hour-group"
-            >
+            <div v-for="{ hour, users } in entries" :key="hour" class="hour-group">
               <h4 class="hour-title">{{ hour }}</h4>
               <ul class="user-list">
                 <li
                   v-for="({ userId, loggedAt }, index) in users"
                   :key="index"
                   class="user-item"
+                  @click="openUserModal(userId)"
                 >
                   👤 User {{ userId }} - <span class="timestamp">{{ loggedAt }}</span>
                 </li>
               </ul>
             </div>
           </template>
-          <template v-else>
-            <p class="no-users">No users entered this area.</p>
-          </template>
-        </div>
-      </template>
-      <template v-else>
-        <div class="no-data">
-          <p>No data available for the selected time range.</p>
         </div>
       </template>
     </div>
+
+    <!-- User Movement Modal -->
+    <UserMovementModal
+      :showModal="showModal"
+      :selectedUserId="selectedUserId"
+      :userRoomHistory="userRoomHistory"
+      @close="closeModal"
+    />
   </div>
 </template>
+
 
 <style scoped>
 .live-updates {
@@ -241,6 +226,7 @@ h3 {
   border-radius: 5px;
   font-size: 14px;
   text-align: center;
+  cursor: pointer;
 }
 
 .timestamp {

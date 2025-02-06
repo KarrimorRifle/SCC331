@@ -160,6 +160,7 @@ onUnmounted(() => {
           <LiveUpdates 
             :userIds="userIds" 
             :updates="getUpdatesForArea(area)" 
+            :fullUpdates="updates"
             :overlayAreasConstant="[area]" 
           />
         </div>
