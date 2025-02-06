@@ -127,6 +127,7 @@ const groupedUsersByRoom = computed(() => {
     <!-- User Movement Modal -->
     <UserMovementModal
       :showModal="showModal"
+      :overlayAreasConstant="overlayAreasConstant"
       :selectedUserId="selectedUserId"
       :userRoomHistory="userRoomHistory"
       @close="closeModal"

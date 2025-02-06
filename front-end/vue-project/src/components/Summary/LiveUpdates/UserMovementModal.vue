@@ -6,6 +6,10 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  overlayAreasConstant: {
+    type: Array as PropType<{ label: string; color: string; position: object }[]>,
+    required: true,
+  },
   selectedUserId: {
     type: Number,
     default: null,
@@ -30,6 +34,15 @@ let replayInterval: ReturnType<typeof setInterval> | null = null;
 const timestamps = computed(() => props.userRoomHistory.map(entry => entry.loggedAt));
 const totalSteps = computed(() => props.userRoomHistory.length * 10); // Smoother dragging
 const currentTime = ref(timestamps.value[Math.floor(replayIndex.value / 10)] || '');
+
+// Get color for a room label from overlayAreasConstant
+const getRoomColor = (roomLabel: string): string => {
+  if (isPlaying.value && currentRoom.value === roomLabel) {
+    const area = props.overlayAreasConstant.find(area => area.label === roomLabel);
+    return area?.color || 'lightgray'; // Use color from overlayAreasConstant
+  }
+  return 'lightgray'; // Default gray for all when not playing
+};
 
 // Start Replay Animation
 const startReplay = () => {
@@ -106,8 +119,10 @@ const updateSpeed = (event: Event) => {
       <!-- 4 Grid Area Layout -->
       <div class="grid-container">
         <div v-for="area in ['Area 1', 'Area 2', 'Area 3', 'Area 4']" 
-             :key="area" 
-             :class="['grid-item', { active: currentRoom === area }]">
+            :key="area" 
+            :class="['grid-item', { active: currentRoom === area }]"
+            :style="{ backgroundColor: getRoomColor(area), color: currentRoom === area ? 'white' : 'black' }"
+        >
           {{ area }}
         </div>
       </div>
