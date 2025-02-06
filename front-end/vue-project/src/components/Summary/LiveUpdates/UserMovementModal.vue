@@ -101,7 +101,7 @@ const updateSpeed = (event: Event) => {
 <template>
   <div v-if="showModal" class="modal-overlay">
     <div class="modal-content">
-      <h2>User {{ selectedUserId }} Movement Replay</h2>
+      <h2>User {{ selectedUserId }} Movement </h2>
 
       <!-- 4 Grid Area Layout -->
       <div class="grid-container">
@@ -260,4 +260,15 @@ const updateSpeed = (event: Event) => {
   background: gray;
   cursor: not-allowed;
 }
+
+@media (max-width: 786px) {
+  .modal-content{
+    width: 90%;
+  }
+  .settings{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 </style>
