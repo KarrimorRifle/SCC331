@@ -4,18 +4,12 @@ import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { defineProps, defineEmits, ref, watch, computed, PropType } from 'vue';
 
 const props = defineProps({
-  showModal: {
-    type: Boolean,
-    required: true,
-  },
+  showModal: { type: Boolean, required: true },
   overlayAreasConstant: {
     type: Array as PropType<{ label: string; color: string; position: object }[]>,
     required: true,
   },
-  selectedUserId: {
-    type: Number,
-    default: null,
-  },
+  selectedUserId: { type: Number, default: null },
   userRoomHistory: {
     type: Array as PropType<{ roomLabel: string; loggedAt: string }[]>,
     required: true,
@@ -24,7 +18,50 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
-// State for tracking movement replay
+/* HELPERS */
+const convertToTimestamp = (date: string | Date | null): number =>
+  date ? new Date(date).getTime() : 0;
+
+const getRoomColor = (roomLabel: string): string => {
+  return currentRoom.value === roomLabel
+    ? props.overlayAreasConstant.find(area => area.label === roomLabel)?.color || 'lightgray'
+    : 'lightgray';
+};
+
+const getArrowPosition = (from: string, to: string) => {
+  const positions = areaPositions.value;
+  if (!positions[from] || !positions[to]) return null;
+
+  const start = positions[from];
+  const end = positions[to];
+  const offsetFactor = 0.3; // Adjust arrow length (0 = full length, 0.5 = half length)
+
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  // Normalize the vector and apply offset
+  const normalizedDx = (dx / distance) * (distance * offsetFactor);
+  const normalizedDy = (dy / distance) * (distance * offsetFactor);
+
+  let x1 = start.x + normalizedDx;
+  let y1 = start.y + normalizedDy;
+  let x2 = end.x - normalizedDx;
+  let y2 = end.y - normalizedDy;
+
+  if (start.x === end.x) {
+    x1 += 20;
+    x2 += 20;
+  }
+  if (start.y === end.y) {
+    y1 += 20; 
+    y2 += 20;
+  }
+
+  return { x1, y1, x2, y2 };
+};
+
+/* COMPUTED PROPERTIES */
 const timestamps = computed(() => props.userRoomHistory.map(entry => entry.loggedAt));
 const timelineStart = computed(() =>
   props.userRoomHistory.length ? new Date(props.userRoomHistory[0].loggedAt) : new Date()
@@ -32,31 +69,67 @@ const timelineStart = computed(() =>
 const timelineEnd = computed(() =>
   props.userRoomHistory.length ? new Date(props.userRoomHistory[props.userRoomHistory.length - 1].loggedAt) : new Date()
 );
-const convertToTimestamp = (date: string | Date | null): number => (date ? new Date(date).getTime() : 0);
+const totalSteps = computed(() => props.userRoomHistory.length * 10); // Smoother dragging
+
+/* STATE VARIABLES */
 const currentRoom = ref<string | null>(null);
+const prevRoom = ref<string | null>(null);
 const replayIndex = ref(0);
 const isPlaying = ref(false);
 const speed = ref(500); // Default speed is 500ms per step
-const loopReplay = ref(false); // Loop Replay Toggle
+const loopReplay = ref(false);
 const timelinePosition = ref(convertToTimestamp(timelineStart.value));
-let replayInterval: ReturnType<typeof setInterval> | null = null;
-
-const totalSteps = computed(() => props.userRoomHistory.length * 10); // Smoother dragging
+const movementArrows = ref<{ from: string; to: string }[]>([]);
 const currentTime = ref(timestamps.value[Math.floor(replayIndex.value / 10)] || timelineStart.value.toISOString());
 
-// Get color for a room label from overlayAreasConstant
-const getRoomColor = (roomLabel: string): string => {
-  if (currentRoom.value === roomLabel) {
-    const area = props.overlayAreasConstant.find(area => area.label === roomLabel);
-    return area?.color || 'lightgray'; // Use color from overlayAreasConstant
-  }
-  return 'lightgray'; // Default gray for all when not playing
+let replayInterval: ReturnType<typeof setInterval> | null = null;
+
+/* AREA POSITIONS */
+const areaPositions = computed(() => ({
+  "Area 1": { x: 50, y: 50 },   // Top-left
+  "Area 2": { x: 250, y: 50 },  // Top-right
+  "Area 3": { x: 50, y: 250 },  // Bottom-left
+  "Area 4": { x: 250, y: 250 }, // Bottom-right
+}));
+
+/* TIMELINE & PLAYBACK */
+const updateReplayIndex = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  replayIndex.value = parseFloat(target.value);
+  const index = Math.floor(replayIndex.value / 10);
+  currentRoom.value = props.userRoomHistory[index]?.roomLabel || null;
+  currentTime.value = timestamps.value[index] || '';
 };
 
-// Start Replay Animation
+const updateReplayFromTimeline = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const newTimestamp = parseFloat(target.value);
+  const index = props.userRoomHistory.findIndex(entry => convertToTimestamp(entry.loggedAt) >= newTimestamp);
+
+  if (index >= 0) {
+    replayIndex.value = index * 10;
+    prevRoom.value = currentRoom.value;
+    currentRoom.value = props.userRoomHistory[index]?.roomLabel || null;
+    currentTime.value = props.userRoomHistory[index]?.loggedAt || '';
+    timelinePosition.value = newTimestamp;
+
+    if (prevRoom.value && currentRoom.value && prevRoom.value !== currentRoom.value) {
+      movementArrows.value = [{ from: prevRoom.value, to: currentRoom.value }];
+    }
+  }
+};
+
+const updateSpeed = (event: Event) => {
+  speed.value = parseInt((event.target as HTMLInputElement).value);
+  if (isPlaying.value) {
+    pauseReplay();
+    startReplay();
+  }
+};
+
+/* REPLAY CONTROLS */
 const startReplay = () => {
   if (props.userRoomHistory.length === 0) return;
-
   isPlaying.value = true;
   replayIndex.value = 0;
   currentRoom.value = props.userRoomHistory[0]?.roomLabel || null;
@@ -66,49 +139,38 @@ const startReplay = () => {
     if (replayIndex.value < totalSteps.value - 1) {
       replayIndex.value += 10;
       const index = Math.floor(replayIndex.value / 10);
+      prevRoom.value = currentRoom.value;
       currentRoom.value = props.userRoomHistory[index]?.roomLabel || null;
       currentTime.value = timestamps.value[index] || '';
       timelinePosition.value = convertToTimestamp(props.userRoomHistory[index]?.loggedAt);
 
-    } else if (loopReplay.value) {
-      // Restart the replay if loop is enabled
-      replayIndex.value = 0;
-      currentRoom.value = props.userRoomHistory[0]?.roomLabel || null;
-      currentTime.value = timestamps.value[0] || '';
-      timelinePosition.value = convertToTimestamp(props.userRoomHistory[0]?.loggedAt);
-
+      if (prevRoom.value && currentRoom.value && prevRoom.value !== currentRoom.value) {
+        movementArrows.value = [{ from: prevRoom.value, to: currentRoom.value }];
+      }
     } else {
       clearInterval(replayInterval as ReturnType<typeof setInterval>);
       isPlaying.value = false;
+      movementArrows.value = [];
     }
   }, speed.value);
 };
 
-// Pause Replay
 const pauseReplay = () => {
   isPlaying.value = false;
   if (replayInterval) clearInterval(replayInterval);
 };
 
-// Reset Replay
 const resetReplay = () => {
   if (replayInterval) clearInterval(replayInterval);
   replayIndex.value = 0;
+  prevRoom.value = null;
+  movementArrows.value = [];
   currentRoom.value = props.userRoomHistory[0]?.roomLabel || null;
   currentTime.value = timestamps.value[0] || '';
   isPlaying.value = false;
 };
 
-// **Manual Drag Movement via Scaled Slider**
-const updateReplayIndex = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  replayIndex.value = parseFloat(target.value);
-  const index = Math.floor(replayIndex.value / 10);
-  currentRoom.value = props.userRoomHistory[index]?.roomLabel || null;
-  currentTime.value = timestamps.value[index] || ''; // **Fix: Updates the time instantly**
-};
-
-// Watch for modal close, reset replay
+/* WATCHERS */
 watch(() => props.showModal, (newValue) => {
   if (newValue && props.userRoomHistory.length > 0) {
     replayIndex.value = 0;
@@ -116,31 +178,6 @@ watch(() => props.showModal, (newValue) => {
     currentTime.value = props.userRoomHistory[0]?.loggedAt || '';
   }
 });
-
-const updateReplayFromTimeline = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const newTimestamp = parseFloat(target.value);
-  
-  // Find the closest recorded time
-  const index = props.userRoomHistory.findIndex(entry => convertToTimestamp(entry.loggedAt) >= newTimestamp);
-  
-  if (index >= 0) {
-    replayIndex.value = index * 10; // Ensure smooth dragging
-    currentRoom.value = props.userRoomHistory[index]?.roomLabel || null;
-    currentTime.value = props.userRoomHistory[index]?.loggedAt || '';
-    timelinePosition.value = newTimestamp;
-  }
-};
-
-// Change Speed Control
-const updateSpeed = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  speed.value = parseInt(target.value);
-  if (isPlaying.value) {
-    pauseReplay();
-    startReplay();
-  }
-};
 </script>
 
 <template>
@@ -158,6 +195,21 @@ const updateSpeed = (event: Event) => {
       <div class="flex-container">
         <!-- 4 Grid Area Layout -->
         <div class="grid-container">
+          <svg class="movement-arrows" viewBox="0 0 300 300">
+            <line
+              v-for="arrow in movementArrows"
+              v-bind="getArrowPosition(arrow.from, arrow.to)"
+              :key="`${arrow.from}-${arrow.to}`"
+              stroke="black"
+              stroke-width="1"
+              marker-end="url(#arrowhead)"
+            />
+            <defs>
+              <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                <polygon points="0 0, 6 3, 0 6" fill="black" />
+              </marker>
+            </defs>
+          </svg>
           <div
             v-for="area in ['Area 1', 'Area 2', 'Area 3', 'Area 4']"
             :key="area"
@@ -278,8 +330,16 @@ const updateSpeed = (event: Event) => {
   gap: 0px;
 }
 
+.movement-arrows {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 /* 4-Grid Layout */
 .grid-container {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(2, 150px);
   grid-template-rows: repeat(2, 150px);
