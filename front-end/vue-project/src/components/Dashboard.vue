@@ -161,7 +161,8 @@ onUnmounted(() => {
             :userIds="userIds" 
             :updates="getUpdatesForArea(area)" 
             :fullUpdates="updates"
-            :overlayAreasConstant="[area]" 
+            :overlayAreasConstant="overlayAreasConstant"
+            :areaShown="[area]" 
           />
         </div>
       </div>

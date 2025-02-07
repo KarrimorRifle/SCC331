@@ -19,6 +19,9 @@ const props = defineProps({
     type: Array as PropType<{ label: string; color: string; position: object }[]>,
     required: true,
   },
+  areaShown: {
+    type: Array as PropType<{ label: string; color: string; position: object }[]>,
+  },
 });
 
 // Modal state
@@ -85,15 +88,18 @@ const groupedUsersByRoom = computed(() => {
   const start = startTime.value ? new Date(startTime.value).getTime() : null;
   const end = endTime.value ? new Date(endTime.value).getTime() : null;
 
+  // ✅ **Determine Which Area Filter to Use**
+  const areasToShow = props.areaShown?.length ? props.areaShown : props.overlayAreasConstant;
+
   // Populate roomMap **only for the filtered users of the area**
   Object.entries(props.updates).forEach(([userId, userUpdates]) => {
     userUpdates.forEach(({ logged_at, roomID }) => {
       const date = new Date(logged_at);
       const timestamp = date.getTime();
 
-      // Apply time filter if both startTime and endTime are set
+      // ✅ **Apply time filtering**
       if (start !== null && end !== null && (timestamp < start || timestamp > end)) {
-        return; // Skip entries outside the range
+        return; // Skip entries outside the selected time range
       }
 
       const hour = date.toLocaleTimeString([], { hour: 'numeric', hour12: true });
@@ -101,8 +107,9 @@ const groupedUsersByRoom = computed(() => {
       const fullTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
       const formattedRoomLabel = `Area ${roomID}`;
-      const matchingArea = props.overlayAreasConstant.find(area => area.label === formattedRoomLabel);
-      if (!matchingArea) return;
+
+      // ✅ **Ensure only selected areas are displayed**
+      if (!areasToShow.some(area => area.label === formattedRoomLabel)) return;
 
       if (!roomMap.has(formattedRoomLabel)) {
         roomMap.set(formattedRoomLabel, []);
@@ -119,7 +126,8 @@ const groupedUsersByRoom = computed(() => {
     });
   });
 
-  return props.overlayAreasConstant.map((area) => ({
+  // ✅ **Ensure correct area list is used (Summary = all, Dashboard = filtered)**
+  return areasToShow.map((area) => ({
     roomLabel: area.label,
     roomColor: area.color,
     entries: (roomMap.get(area.label) || []).sort((a, b) => a.hourNumeric - b.hourNumeric),

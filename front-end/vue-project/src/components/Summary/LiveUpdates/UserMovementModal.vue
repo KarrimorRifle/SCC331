@@ -46,7 +46,7 @@ const currentTime = ref(timestamps.value[Math.floor(replayIndex.value / 10)] || 
 
 // Get color for a room label from overlayAreasConstant
 const getRoomColor = (roomLabel: string): string => {
-  if (isPlaying.value && currentRoom.value === roomLabel) {
+  if (currentRoom.value === roomLabel) {
     const area = props.overlayAreasConstant.find(area => area.label === roomLabel);
     return area?.color || 'lightgray'; // Use color from overlayAreasConstant
   }
