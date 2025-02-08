@@ -5,25 +5,38 @@ import {onMounted, onUnmounted, ref, watch }from "vue"
 import axios from "axios";
 import OverlayArea from '@/components/OverlayArea.vue';
 import type { Timeout } from "node:timers";
+import type {preset, presetListType, boxAndData, boxType, summaryType, environmentData, dataObject} from "../utils/mapTypes";
 
 let pollingInterval: Timeout;
-let OverlayAreasData = ref({});
-let presetList = ref();
+let summary = ref<summaryType>(<summaryType>{});
+let presetList = ref<presetListType>();
 let currentPreset = ref();
-let presetData = ref();
+let presetData = ref<preset>(<preset>{});
+  //Data used by the App
+let boxes_and_data = ref<boxAndData>(<boxAndData>{});
+
 
 watch(currentPreset, () => {
   fetchPreset();
 });
 
-onMounted(() => {
+watch(summary, () => {
+  update_data();
+});
+
+onMounted(async() => {
   // Make sure data is always being updated
   pollingInterval = setInterval(fetchSummary, 5000);
   // Grab the list of presets
-  fetchPresets();
-  // Grab default preset and set it to the current one
-  currentPreset.value = presetList.value.default;
-  fetchPreset();
+  try{
+      await fetchPresets();
+    // Grab default preset and set it to the current one
+    currentPreset.value = presetList.value?.default;
+    await fetchPreset();
+  }catch (error){
+    console.log("Error on mount fetching:", error)
+  }
+  create_data();
 });
 
 onUnmounted(() => {
@@ -33,8 +46,8 @@ onUnmounted(() => {
 const fetchSummary = async() => {
   let request = await axios.get("http://localhost:5003/summary",
     { withCredentials: true});
-  OverlayAreasData.value = request.data;
-  console.log(OverlayAreasData.value)
+  summary.value = request.data;
+  // console.log(summary.value)
 }
 
 const fetchPresets = async() => {
@@ -60,18 +73,66 @@ const props = defineProps({
   },
 });
 
+// I need to create a function to construct the object i want to v model on mount
+const create_data = () => {
+  // Add box data per room
+  presetData.value.boxes?.forEach((box: boxType) => {
+    if(boxes_and_data.value[box.roomID]){
+      boxes_and_data.value[box.roomID].box = {
+        top: box.top,
+        left: box.left,
+        width: box.width,
+        height: box.height,
+        colour: box.colour
+      }
+    }else {
+      boxes_and_data.value[box.roomID] = <dataObject>{};
+    }
+  })
+
+  console.log(summary.value)
+  Object.entries(summary.value).forEach(([roomID, environment]: [string, environmentData]) => {
+    if (boxes_and_data.value[roomID]) {
+      boxes_and_data.value[roomID].tracker = environment;
+    }else {
+      boxes_and_data.value[roomID] = <dataObject>{};
+      boxes_and_data.value[roomID].tracker = environment;
+    }
+  });
+  console.log(boxes_and_data.value);
+}
+
+// Create function to update data
+const update_data = () => {
+  Object.entries(summary.value).forEach(([roomID, environment]: [string, environmentData]) => {
+    // console.log("value for:", roomID, "\n",environment)
+    if (boxes_and_data.value[roomID]) {
+      boxes_and_data.value[roomID].tracker = environment;
+    }else {
+      boxes_and_data.value[roomID] = <dataObject>{}
+      boxes_and_data.value[roomID].tracker = environment;
+    }
+  });
+  console.log(boxes_and_data.value);
+}
+
+// I need to create a function to save the object i want to v-model on save
+// const save_data = async() => {
+//   Object.entries(boxes_and_data.value)
+// }
+
+// I need to add an image saving function
+
 </script>
 
 <template>
   <div class="airport-view-container d-flex flex-row">
     <AirportMap
       class="flex-grow-1"
-      :overlayAreasConstant="overlayAreasConstant" 
-      :overlayAreasData="overlayAreasData" 
+      v-model="boxes_and_data"
     />
     <DashBoard
-      :overlayAreasConstant="overlayAreasConstant" 
-      :overlayAreasData="overlayAreasData" 
+      v-model="boxes_and_data"
     />
   </div>
 </template>

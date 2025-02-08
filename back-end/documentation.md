@@ -87,11 +87,11 @@ port: 5003
         "1": {
           "users": {
             "count": 2,
-            "id": [101, 102]
+            "id": ["101", "102"]
           },
           "luggage": {
             "count": 1,
-            "id": [201]
+            "id": ["201"]
           },
           "environment": {
             "temperature": 22.5,
@@ -105,11 +105,11 @@ port: 5003
         "2": {
           "users": {
             "count": 1,
-            "id": [103]
+            "id": ["103"]
           },
           "luggage": {
             "count": 2,
-            "id": [202, 203]
+            "id": ["202", "203"]
           },
           "environment": {
             "temperature": 23.0,

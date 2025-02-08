@@ -1,17 +1,30 @@
 <script setup lang="ts">
 import OverlayArea from './OverlayArea.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
+import type { boxAndData } from '@/utils/mapTypes';
 
 const props = defineProps({
-  overlayAreasConstant: {
-    type: Array,
+  modelValue: {
+    type: Object as () => boxAndData,
     required: true,
-  },
-  overlayAreasData: {
-    type: Object,
-    required: true,
-  },
+  }
 });
+
+const emit = defineEmits(["update:modelValue"]);
+
+const localValue = ref({ ...props.modelValue });
+
+watch(() => props.modelValue, (newValue) => {
+  localValue.value = { ...newValue };
+});
+
+watch(localValue, (newValue) => {
+  emit('update:modelValue', newValue);
+}, { deep: true });
+
+const updateValue = () => {
+  emit('update:modelValue', localValue.value);
+};
 
 // Zoom level and map position state
 const zoomLevel = ref(0.9);
@@ -183,14 +196,19 @@ watch(zoomLevel, () => {
       >
         <img src="@/assets/terminal-map.png" alt="Airport Map" class="map" @dragstart.prevent/>
         <OverlayArea
-          v-for="(area, index) in props.overlayAreasConstant"
-          :key="index"
-          :position="area.position"
-          :label="area.label"
-          :color="area.color"
+          v-for="([key, data]) in Object.entries(localValue).filter(([key, data]) => data.box)"
+          :key="key"
+          :position="data.box"
+          :label="data.label"
+          :color="data.box.colour"
           :zoomLevel="zoomLevel"
-          :data="props.overlayAreasData"
-          @update:position="(newPosition) => overlayAreasConstant[index].position = newPosition"
+          :data="data.tracker"
+          @update:position="(newPosition) => {
+            localValue[key].box.height = newPosition.height
+            localValue[key].box.width = newPosition.width
+            localValue[key].box.top = newPosition.top
+            localValue[key].box.left = newPosition.left
+          }"
         />
       </div>
     </div>

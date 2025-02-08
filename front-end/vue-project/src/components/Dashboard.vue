@@ -1,53 +1,74 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { boxAndData } from '@/utils/mapTypes';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
+import { defineProps, defineEmits } from 'vue';
 
 const props = defineProps({
-  overlayAreasConstant: {
-    type: Array,
+  modelValue: {
+    type: Object as () => boxAndData,
     required: true,
-  },
-  overlayAreasData: {
-    type: Object,
-    required: true,
-  },
+  }
 });
 
-const getTextColor = (color: string): string => {
-  const hex = color.replace('#', '');
+const emit = defineEmits(["update:modelValue"]);
+
+function updateLabel(key: string, newLabel: string) {
+  const updatedData = { ...props.modelValue };
+
+  if (updatedData[key]) {
+    updatedData[key] = {
+      ...updatedData[key],
+      label: newLabel,
+    };
+  }
+
+  emit("update:modelValue", updatedData);
+}
+
+function getTextColor(color: string | undefined): string {
+  const c = color ?? "#FFFFFF";
+  const hex = c.replace("#", "");
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness < 128 ? 'white' : 'black';
-};
-
-const getAreaKey = (label: string): string | null => {
-  const match = label.match(/\d+/);
-  return match ? match[0] : null;
-};
-
+  return brightness < 128 ? "white" : "black";
+}
 </script>
 
 <template>
   <div class="dashboard">
-    <div 
-      v-for="(area, index) in props.overlayAreasData" 
-      :key="index" 
+    <!-- Show "No data available" if empty -->
+    <div v-if="!modelValue || Object.keys(modelValue).length === 0">
+      No data available
+    </div>
+
+    <!-- Render each item -->
+    <div
+      v-for="([key, data]) in Object.entries(modelValue)"
+      :key="key"
       class="dashboard-area"
-      :style="{ backgroundColor: area.color, color: getTextColor(area.color) }"
+      :style="{ backgroundColor: data.box?.colour ?? '#FFFFFF', color: getTextColor(data.box?.colour) }"
     >
       <button class="btn btn-success add-button">+</button>
-      <!-- <h3>{{ area.label }}</h3> -->
-      <input type="Name" v-model="area.label" class="input-group-text text-start" style="width: 80%;">
+
+      <!-- Update only the label -->
+      <input
+        type="text"
+        :value="data.label"
+        :placeholder="data.label || key"
+        class="input-group-text text-start"
+        style="width: 80%;"
+        @input="(evt) => updateLabel(key, evt.target.value)"
+      />
 
       <!-- Luggage Count -->
       <div class="count-container">
         <div class="marker-container">
           <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
         </div>
-        <p>Luggage: {{ props.overlayAreasData[getAreaKey(area.label)]?.luggage?.count || 0 }}</p>
+        <p>Luggage: {{ data.tracker?.luggage?.count || 0 }}</p>
       </div>
       
       <!-- People Count -->
@@ -55,7 +76,7 @@ const getAreaKey = (label: string): string | null => {
         <div class="marker-container">
           <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
         </div>
-        <p>People: {{ props.overlayAreasData[getAreaKey(area.label)]?.users?.count || 0 }}</p>
+        <p>People: {{ data.tracker?.users?.count || 0 }}</p>
       </div>
 
       <!-- Environment Data -->
@@ -65,21 +86,21 @@ const getAreaKey = (label: string): string | null => {
           <tbody>
             <tr>
               <th class="emoji-column">🌡️</th>
-              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.temperature || '--' }} °C</th>
+              <th class="data-column">{{ data.tracker?.environment?.temperature || '--' }} °C</th>
               <th class="emoji-column">🌬️</th>
-              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.IAQ || '--' }} %</th>
+              <th class="data-column">{{ data.tracker?.environment?.IAQ || '--' }} %</th>
             </tr>
             <tr>
               <th class="emoji-column">🔊</th>
-              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.sound || '--' }} dB</th>
+              <th class="data-column">{{ data.tracker?.environment?.sound || '--' }} dB</th>
               <th class="emoji-column">🌡️</th>
-              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.pressure || '--' }} hPa</th>
+              <th class="data-column">{{ data.tracker?.environment?.pressure || '--' }} hPa</th>
             </tr>
             <tr>
               <th class="emoji-column">💡</th>
-              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.light || '--' }} lux</th>
+              <th class="data-column">{{ data.tracker?.environment?.light || '--' }} lux</th>
               <th class="emoji-column">💧</th>
-              <th class="data-column">{{ props.overlayAreasData[getAreaKey(area.label)]?.environment?.humidity || '--' }} %</th>
+              <th class="data-column">{{ data.tracker?.environment?.humidity || '--' }} %</th>
             </tr>
           </tbody>
         </table>
