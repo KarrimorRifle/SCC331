@@ -1,12 +1,30 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted} from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import WarningNotificationModal from "./components/Notifications/WarningNotification/WarningNotificationModal.vue";
+import NotificationIcon from "./components/Notifications/NotificationIcon.vue";
 import Navbar from '@/components/Navbar.vue';
 import { useFetchData } from '@/utils/useFetchData';
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
+const { overlayAreasConstant, overlayAreasData, updates, environmentHistory, warnings } = useFetchData(picoIds);
 
-const { overlayAreasConstant, overlayAreasData, updates, environmentHistory, warnings} = useFetchData(picoIds);
 const isMobile = ref(window.innerWidth < 768);
+const isWarningModalOpen = ref(false); // Controls notification modal state
+const showSeverePopup = ref(false); // Controls full-screen pop-up for severe warnings
+
+// Ensure warnings.value is always treated as an array
+const safeWarnings = computed(() => Array.isArray(warnings.value) ? warnings.value : []);
+
+// Check if we need a full-screen pop-up for severe warnings
+watch(
+  () => safeWarnings.value,
+  (newWarnings) => {
+    if (newWarnings.some(w => ["doomed", "danger"].includes(w.Severity))) {
+      showSeverePopup.value = true;
+    }
+  },
+  { deep: true, immediate: true }
+);
 
 const updateIsMobile = () => {
   isMobile.value = window.innerWidth < 768;
@@ -19,12 +37,12 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener("resize", updateIsMobile);
 });
-
 </script>
 
 <template>
   <div id="app" class="d-flex flex-column max-vh-100">
     <Navbar class="nav"/>
+    
     <router-view
       class="flex-grow-1 app"
       :picoIds="picoIds"
@@ -32,9 +50,37 @@ onUnmounted(() => {
       :overlayAreasData="overlayAreasData" 
       :updates="updates"
       :environmentHistory="environmentHistory"
-      :warnings="warnings"
+      :warnings="safeWarnings"
       :isMobile="isMobile"
     />
+    
+    <!-- Notification Icon Component -->
+    <NotificationIcon 
+      :warnings="safeWarnings" 
+      :isWarningModalOpen="isWarningModalOpen" 
+      @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
+    />
+
+    <!-- Warning Notification Modal -->
+    <WarningNotificationModal 
+      v-if="isWarningModalOpen" 
+      :warnings="safeWarnings" 
+      :isMobile="isMobile"
+      @close="isWarningModalOpen = false" 
+    />
+
+    <!-- Full-Screen Pop-up for Severe Warnings
+    <transition name="fade">
+      <div v-if="showSeverePopup" class="full-screen-warning">
+        <div class="warning-content">
+          <h2>⚠️ CRITICAL WARNING</h2>
+          <p>A severe issue has been detected that requires immediate attention.</p>
+          <button @click="showSeverePopup = false" class="close-popup">Dismiss</button>
+        </div>
+      </div>
+    </transition>
+    -->
+
   </div>
 </template>
 
@@ -64,7 +110,7 @@ html, body, #app {
 }
 
 .app {
-  max-height: calc(100% - var(--nav-height))
+  max-height: calc(100% - var(--nav-height));
 }
 
 .router-view {
@@ -73,7 +119,51 @@ html, body, #app {
   max-height: calc(100% - var(--nav-height));
 }
 
-.flex-grow-1 {
-  flex-grow: 1;
+/* Full-Screen Pop-up for Severe Warnings */
+.full-screen-warning {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+}
+
+.warning-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.warning-content h2 {
+  color: red;
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.warning-content p {
+  color: black;
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.close-popup {
+  background: red;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.close-popup:hover {
+  background: darkred;
 }
 </style>

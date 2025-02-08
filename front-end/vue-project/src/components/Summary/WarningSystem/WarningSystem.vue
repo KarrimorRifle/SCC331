@@ -9,7 +9,6 @@ const props = defineProps({
   },
 });
 
-console.log("warnings: ", props.warnings);
 // Map severity levels to colors
 const severityColors: Record<string, string> = {
   doomed: "#FF0000",

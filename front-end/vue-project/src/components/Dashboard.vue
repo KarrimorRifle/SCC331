@@ -213,7 +213,7 @@ onUnmounted(() => {
 .dashboard.expanded {
   flex: 5;
   background-color: white;
-  z-index: 999;
+  z-index: 888;
   padding: 20px;
 }
 
