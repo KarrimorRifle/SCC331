@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import OverlayArea from './OverlayArea.vue';
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, PropType} from 'vue';
 
 const props = defineProps({
   overlayAreasConstant: {
@@ -9,6 +9,10 @@ const props = defineProps({
   },
   overlayAreasData: {
     type: Object,
+    required: true,
+  },
+  warnings: {
+    type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
     required: true,
   },
 });
@@ -20,6 +24,9 @@ const isDragging = ref(false);
 const dragStart = ref({ x: 0, y: 0 });
 const isZooming = ref(false);
 
+const getWarningsByArea = (areaLabel: string) => {
+  return props.warnings?.filter((warning) => warning.Location === areaLabel);
+}
 // Zoom controls
 const zoomIn = (ease?: boolean) => {
   if (zoomLevel.value < 2) {
@@ -189,6 +196,7 @@ watch(zoomLevel, () => {
           :color="area.color"
           :zoomLevel="zoomLevel"
           :data="props.overlayAreasData"
+          :warnings="getWarningsByArea(area.label)" 
           @update:position="(newPosition) => overlayAreasConstant[index].position = newPosition"
         />
       </div>

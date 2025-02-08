@@ -46,6 +46,7 @@ const toggleDashboard = () => {
       <AirportMap
         :overlayAreasConstant="overlayAreasConstant"
         :overlayAreasData="overlayAreasData"
+        :warnings="warnings"
       />
     </template>
 
@@ -66,6 +67,7 @@ const toggleDashboard = () => {
       class="flex-grow-1"
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
+      :warnings="warnings"
     />
     <DashBoard
       :overlayAreasConstant="overlayAreasConstant" 

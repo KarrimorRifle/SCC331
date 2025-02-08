@@ -2,6 +2,7 @@
 import { ref, PropType, onMounted, onUnmounted, computed } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faExpand, faCompress, faExclamationTriangle} from '@fortawesome/free-solid-svg-icons';
+import { handleWarningButtonPressed } from '@/utils/helper/warningUtils';
 import { updateTabHeight } from '@/utils/helper/domUtils';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
@@ -77,8 +78,8 @@ const warningsByArea = computed(() => {
   }, {} as Record<string, { Title: string; Location: string; Severity: string; Summary: string }[]>);
 });
 
-const hanldeWarningButtonPressed = (areaLabel: string) => {
-  console.log(`⚠️ Warnings for ${areaLabel}:`, warningsByArea.value[areaLabel]);
+const onWarningButtonClick = (areaLabel: string) => {
+  handleWarningButtonPressed(areaLabel, warningsByArea.value);
 };
 
 
@@ -125,7 +126,7 @@ onUnmounted(() => {
           <button 
             v-if="warningsByArea[area.label]?.length"
             class="warning-btn"
-            @click="hanldeWarningButtonPressed(area.label)"
+            @click="onWarningButtonClick(area.label)"
           >
             <font-awesome-icon :icon="faExclamationTriangle" />
           </button>
