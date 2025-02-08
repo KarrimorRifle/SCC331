@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import OverlayArea from './OverlayArea.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
-import type { boxAndData } from '@/utils/mapTypes';
+import type { boxAndData, dataObject } from '@/utils/mapTypes';
 
 const props = defineProps({
   modelValue: {
@@ -12,19 +12,16 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
-const localValue = ref({ ...props.modelValue });
-
-watch(() => props.modelValue, (newValue) => {
-  localValue.value = { ...newValue };
-});
-
-watch(localValue, (newValue) => {
-  emit('update:modelValue', newValue);
-}, { deep: true });
-
-const updateValue = () => {
-  emit('update:modelValue', localValue.value);
-};
+/** Update only the box data for a given key. */
+function updateBox(key: string, newPosition: any) {
+  const updated = { ...props.modelValue };
+  if (!updated[key]) updated[key] = <dataObject>{};
+  updated[key] = {
+    ...updated[key],
+    box: { ...updated[key].box, ...newPosition },
+  };
+  emit("update:modelValue", updated);
+}
 
 // Zoom level and map position state
 const zoomLevel = ref(0.9);
@@ -49,7 +46,7 @@ const zoomOut = (ease?: boolean) => {
 };
 
 // Handle scrolling for zooming
-const handleScroll = (event) => {
+const handleScroll = (event: WheelEvent) => {
   event.preventDefault(); // Prevent the default scrolling behavior
   if (event.deltaY < 0) {
     zoomIn(false);
@@ -59,17 +56,17 @@ const handleScroll = (event) => {
 };
 
 // Handle dragging start
-const handleMouseDown = (event) => {
+const handleMouseDown = (event: MouseEvent) => {
   // Check if the target is an OverlayArea
-  if (event.target.closest('.overlay-area')) {
+  if ((event.target as HTMLElement)?.closest('.overlay-area')) {
     return;
   }
   isDragging.value = true;
   dragStart.value = { x: event.clientX, y: event.clientY };
 };
 
-const handleTouchStart = (event) => {
-  if (event.target.closest('.overlay-area')) {
+const handleTouchStart = (event: TouchEvent) => {
+  if ((event.target as HTMLElement)?.closest('.overlay-area')) {
     return;
   }
   isDragging.value = true;
@@ -78,7 +75,7 @@ const handleTouchStart = (event) => {
 };
 
 // Handle dragging
-const handleMouseMove = (event) => {
+const handleMouseMove = (event: MouseEvent) => {
   if (isDragging.value) {
     const speedFactor = 1.3; // Adjust this factor to make the dragging faster
     mapPosition.value = {
@@ -89,7 +86,7 @@ const handleMouseMove = (event) => {
   }
 };
 
-const handleTouchMove = (event) => {
+const handleTouchMove = (event: TouchEvent) => {
   if (isDragging.value) {
     const touch = event.touches[0];
     const speedFactor = 1.3; // Adjust this factor to make the dragging faster
@@ -196,19 +193,14 @@ watch(zoomLevel, () => {
       >
         <img src="@/assets/terminal-map.png" alt="Airport Map" class="map" @dragstart.prevent/>
         <OverlayArea
-          v-for="([key, data]) in Object.entries(localValue).filter(([key, data]) => data.box)"
+          v-for="([key, data]) in Object.entries(props.modelValue).filter(([k, d]) => d.box)"
           :key="key"
           :position="data.box"
           :label="data.label"
           :color="data.box.colour"
           :zoomLevel="zoomLevel"
           :data="data.tracker"
-          @update:position="(newPosition) => {
-            localValue[key].box.height = newPosition.height
-            localValue[key].box.width = newPosition.width
-            localValue[key].box.top = newPosition.top
-            localValue[key].box.left = newPosition.left
-          }"
+          @update:position="(pos) => updateBox(key, pos)"
         />
       </div>
     </div>
