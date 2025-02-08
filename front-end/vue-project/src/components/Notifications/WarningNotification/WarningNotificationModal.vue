@@ -12,10 +12,7 @@ const props = defineProps({
   isMobile: Boolean, 
 });
 
-const emit = defineEmits(["close"]);
-
-// Notification state (now always reflects `props.warnings`)
-const notificationQueue = ref<{ Title: string; Location: string; Summary: string; Severity: string }[]>([]);
+const emit = defineEmits(["close", "dismiss"]);
 
 // Background color based on severity
 const getCardBackgroundColor = (severity: string): string => {
@@ -28,20 +25,6 @@ const getCardBackgroundColor = (severity: string): string => {
   return severityColors[severity] || "#ccc";
 };
 
-// Remove notification manually
-const dismissNotification = (index: number) => {
-  notificationQueue.value.splice(index, 1);
-};
-
-// Always sync modal warnings list with `props.warnings`
-watch(
-  () => props.warnings,
-  (newWarnings) => {
-    if (!newWarnings) return;
-    notificationQueue.value = [...newWarnings]; // ✅ Always updates instantly
-  },
-  { deep: true, immediate: true }
-);
 </script>
 
 <template>
@@ -56,9 +39,9 @@ watch(
         </div>
 
         <div class="modal-body">
-          <div v-if="notificationQueue.length > 0">
+          <div v-if="warnings.length > 0">
             <div
-              v-for="(notification, index) in notificationQueue"
+              v-for="(notification, index) in warnings"
               :key="index"
               class="warning-card"
               :style="{ backgroundColor: getCardBackgroundColor(notification.Severity) }"
@@ -68,7 +51,7 @@ watch(
               </h4>
               <p><strong>📍 Location:</strong> {{ notification.Location }}</p>
               <p><strong>📢 {{ notification.Summary }}</strong></p>
-              <button class="dismiss-btn" @click="dismissNotification(index)">Dismiss</button>
+              <button class="dismiss-btn" @click="emit('dismiss', index)">Dismiss</button>
             </div>
           </div>
           <div v-else class="no-warnings">✅ No active warnings.</div>
@@ -112,6 +95,7 @@ watch(
   .modal-content{
     border-radius: 0px;
     max-height: 100vh;
+    min-height: 100vh;
   }
 }
 /* Modal Header */

@@ -9,25 +9,43 @@ const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
 const { overlayAreasConstant, overlayAreasData, updates, environmentHistory, warnings } = useFetchData(picoIds);
 
 const isMobile = ref(window.innerWidth < 768);
-const updateIsMobile = () => {
-  isMobile.value = window.innerWidth < 768;
+const isWarningModalOpen = ref(false);
+const showSeverePopup = ref(false);
+const safeWarnings = computed(() => Array.isArray(warnings.value) ? warnings.value : []);
+const warningCount = computed(() => notificationQueue.value.length);
+
+// ** Move notification storage to parent **
+const notificationQueue = ref<{ Title: string; Location: string; Severity: string; Summary: string }[]>([]);
+
+const dismissNotification = (index: number) => {
+  notificationQueue.value.splice(index, 1);
 };
 
-const isWarningModalOpen = ref(false); // Controls notification modal state
-const showSeverePopup = ref(false); // Controls full-screen pop-up for severe warnings
-const safeWarnings = computed(() => Array.isArray(warnings.value) ? warnings.value : []);
-const warningCount = computed(() => safeWarnings.value.length);
-
-
+// Sync `notificationQueue` when `safeWarnings` updates
 watch(
   () => safeWarnings.value,
   (newWarnings) => {
+    if (!newWarnings) return;
+
+    // Ensure new warnings are added only if they haven't been dismissed
+    newWarnings.forEach((warning) => {
+      const exists = notificationQueue.value.some(n => n.Title === warning.Title && n.Location === warning.Location);
+      if (!exists) {
+        notificationQueue.value.push(warning);
+      }
+    });
+
+    // Show severe pop-up if applicable
     if (newWarnings.some(w => ["doomed", "danger"].includes(w.Severity))) {
       showSeverePopup.value = true;
     }
   },
   { deep: true, immediate: true }
 );
+
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth < 768;
+};
 
 onMounted(() => {
   window.addEventListener("resize", updateIsMobile);
@@ -40,13 +58,15 @@ onUnmounted(() => {
 
 <template>
   <div id="app" class="d-flex flex-column max-vh-100">
-    <Navbar class="nav" 
+    <Navbar 
+      class="nav" 
       :isMobile="isMobile" 
       :isWarningModalOpen="isWarningModalOpen" 
-      :warnings="safeWarnings"
+      :warnings="notificationQueue"
       :warningCount="warningCount"
       @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
     />
+
     <router-view
       class="flex-grow-1 app"
       :picoIds="picoIds"
@@ -54,26 +74,27 @@ onUnmounted(() => {
       :overlayAreasData="overlayAreasData" 
       :updates="updates"
       :environmentHistory="environmentHistory"
-      :warnings="safeWarnings"
+      :warnings="notificationQueue"
       :isMobile="isMobile"
     />
     
     <!-- Notification Icon Component -->
     <NotificationIcon 
       v-if="!isMobile" 
-      :warnings="safeWarnings" 
+      :warnings="notificationQueue" 
       :warningCount="warningCount"
-      :isWarningModalOpen="isWarningModalOpen" 
+      :isWarningModalOpen="isWarningModalOpen"
       @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
     />
 
     <!-- Warning Notification Modal -->
     <WarningNotificationModal 
       v-if="isWarningModalOpen" 
-      :warnings="safeWarnings" 
+      :warnings="notificationQueue" 
       :warningCount="warningCount"
       :isMobile="isMobile"
       @close="isWarningModalOpen = false" 
+      @dismiss="dismissNotification"
     />
 
     <!-- Full-Screen Pop-up for Severe Warnings
@@ -90,6 +111,7 @@ onUnmounted(() => {
 
   </div>
 </template>
+
 
 <style>
 :root {
