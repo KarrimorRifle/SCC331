@@ -73,5 +73,29 @@ class TestAccounts(unittest.TestCase):
         self.assertEqual(register_response.status_code, 500)
         self.assertIn("Duplicate entry", register_response.json().get("error"))
 
+    def test_6_logout(self):
+        # Login with the registered user
+        login_response = requests.post(f"{self.BASE_URL_LOGIN}/login", headers={
+            'email': self.email,
+            'password': self.password
+        })
+        self.assertEqual(login_response.status_code, 200)
+        self.assertIn("Login successful", login_response.json().get("message"))
+
+        # Logout the user
+        session_id = login_response.cookies.get('session_id')
+        logout_response = requests.post(f"{self.BASE_URL_LOGIN}/logout", headers={
+            'session-id': session_id
+        })
+        self.assertEqual(logout_response.status_code, 200)
+        self.assertIn("Logout successful", logout_response.json().get("message"))
+
+        # Validate the cookie after logout
+        validate_response = requests.get(f"{self.BASE_URL_LOGIN}/validate_cookie", headers={
+            'session-id': session_id
+        })
+        self.assertEqual(validate_response.status_code, 401)
+        self.assertIn("Invalid cookie", validate_response.json().get("error"))
+
 if __name__ == '__main__':
     unittest.main()

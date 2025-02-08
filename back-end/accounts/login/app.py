@@ -79,6 +79,24 @@ def validate_cookie():
     else:
         return jsonify({"error": "Invalid cookie", "valid": False}), 401
 
+@app.route('/logout', methods=['POST'])
+def logout():
+    session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+    if not session_id:
+        return jsonify({"error": "No session cookie or header provided"}), 400
+
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    cursor = connection.cursor()
+    cursor.execute("UPDATE users SET cookie = NULL WHERE cookie = %s", (session_id,))
+    connection.commit()
+    cursor.close()
+
+    response = make_response(jsonify({"message": "Logout successful"}), 200)
+    response.set_cookie("session_id", '', expires=0)
+    return response
 
 if __name__ == '__main__':
     get_db_connection()  # Ensure the connection is established at startup

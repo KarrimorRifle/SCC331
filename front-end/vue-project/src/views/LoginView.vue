@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import { RouterLink, useRouter } from 'vue-router';
-import { ref, computed } from 'vue';
+import { ref, computed, defineEmits } from 'vue';
 import axios from 'axios';
 
 const router = useRouter();
@@ -39,6 +39,8 @@ const password = ref('');
 const errorMessage = ref<string | null>(null);
 
 const email_compliance = computed(() => email.value.toLowerCase().endsWith('@fakecompany.co.uk'));
+
+const emit = defineEmits(["login"])
 
 const handleSubmit = async () => {
   if (!email_compliance.value) {
@@ -63,6 +65,7 @@ const handleSubmit = async () => {
 
       if (response.status === 200) {
         router.push("/");
+        emit("login");
       } else {
         errorMessage.value = 'Login failed. Please check your credentials and try again.';
       }
