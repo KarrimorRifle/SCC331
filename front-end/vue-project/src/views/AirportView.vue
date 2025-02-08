@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AirportMap from '@/components/AirportMap.vue';
 import DashBoard from "@/components/Dashboard.vue";
-import {onMounted, onUnmounted, ref, watch }from "vue"
+import {onMounted, onUnmounted, ref, watch, computed }from "vue"
 import axios from "axios";
 import OverlayArea from '@/components/OverlayArea.vue';
 import type { Timeout } from "node:timers";
@@ -9,15 +9,31 @@ import type {preset, presetListType, boxAndData, boxType, summaryType, environme
 
 let pollingInterval: Timeout;
 let summary = ref<summaryType>(<summaryType>{});
-let presetList = ref<presetListType>();
-let currentPreset = ref();
+let presetList = ref<presetListType>(<presetListType>{});
+let canEdit = ref<boolean>(false);
+let currentPreset = ref<number|string>();
 let presetData = ref<preset>(<preset>{});
   //Data used by the App
 let boxes_and_data = ref<boxAndData>(<boxAndData>{});
 
+async function validateUser() {
+  try {
+    let userValidationRequest = await axios.get("http://localhost:5002/validate_cookie", {
+      withCredentials: true,
+    });
+
+    let uid = userValidationRequest.data.uid;
+    canEdit.value = uid in presetData.value.trusted;
+  } catch (error) {
+    console.error("Error validating user:", error);
+    canEdit.value = false;
+  }
+}
 
 watch(currentPreset, () => {
   fetchPreset();
+  create_data();
+  validateUser();
 });
 
 watch(summary, () => {
@@ -31,11 +47,13 @@ onMounted(async() => {
   try{
       await fetchPresets();
     // Grab default preset and set it to the current one
+    console.log("Default:",presetList.value?.default)
     currentPreset.value = presetList.value?.default;
     await fetchPreset();
   }catch (error){
     console.log("Error on mount fetching:", error)
   }
+  validateUser();
   create_data();
 });
 
@@ -123,6 +141,10 @@ const update_data = () => {
 
 // I need to add an image saving function
 
+const handleSelectPreset = (id: number) => {
+  currentPreset.value = id;
+}
+
 </script>
 
 <template>
@@ -130,9 +152,11 @@ const update_data = () => {
     <AirportMap
       class="flex-grow-1"
       v-model="boxes_and_data"
+      :presetList="presetList"
     />
     <DashBoard
       v-model="boxes_and_data"
+      @selectPreset="handleSelectPreset"
     />
   </div>
 </template>

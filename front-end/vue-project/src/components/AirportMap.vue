@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import OverlayArea from './OverlayArea.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
-import type { boxAndData, dataObject } from '@/utils/mapTypes';
+import type { boxAndData, dataObject, presetListType } from '@/utils/mapTypes';
 
 const props = defineProps({
   modelValue: {
     type: Object as () => boxAndData,
     required: true,
+  },
+  presetList: {
+    type: Object as () => presetListType,
+    required: true,
   }
 });
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue", "selectPreset"]);
 
 /** Update only the box data for a given key. */
 function updateBox(key: string, newPosition: any) {
@@ -155,16 +159,13 @@ watch(zoomLevel, () => {
           <label class="input-group-text bg-dark text-light" for="inputGroupSelect01">Preset</label>
           <!-- add v-model and make it a v-if to change the name -->
           <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem">
-            <option selected>Choose...</option>
-            <option value="1">One</option>
-            <option value="2">Two</option>
-            <option value="3">Three</option>
+            <option v-for="preset in presetList.presets" :value="preset.name" :key="preset.id" @click="emit('selectPreset', preset.id)">{{preset.name ?? "N/A"}}</option>
           </select>
         </div>
       </div>
       <div class="button-container d-flex flex-column align-items-end" style="pointer-events: all;">
-        <button class="mb-1" @click="zoomIn">+</button>
-        <button class="mb-1" @click="zoomOut">-</button>
+        <button class="mb-1" @click="zoomIn(true)">+</button>
+        <button class="mb-1" @click="zoomOut(true)">-</button>
         <div> <!--will add v-if-->
           <hr class="text-dark my-1" style="width: 100%; height: 3px;">
           <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center">
