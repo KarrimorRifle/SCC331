@@ -3,10 +3,21 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faXmark, faBars} from '@fortawesome/free-solid-svg-icons';
 import { RouterLink } from 'vue-router';
 import { useCookies } from 'vue3-cookies';
-import { ref } from 'vue';
+import { ref, defineProps, defineEmits } from 'vue';
+import NotificationIcon from './Notifications/NotificationIcon.vue';
 
 const { cookies } = useCookies();
 const sessionId = cookies.get('session_id');
+
+// Receive props from App.vue
+const props = defineProps({
+  isMobile: Boolean,
+  isWarningModalOpen: Boolean,
+  warnings: Array,
+  warningCount: Number, 
+});
+
+const emit = defineEmits(["toggleWarningModal"]);
 
 // State to track menu visibility
 const isMenuOpen = ref(false);
@@ -20,9 +31,19 @@ const toggleMenu = () => {
 <template>
   <nav class="navbar">
     <!-- Hamburger Menu Button (Visible on Mobile) -->
-    <button class="hamburger" @click="toggleMenu">
-      <font-awesome-icon :icon="faBars" />
-    </button>
+    <div class="navbar-header">
+      <button class="hamburger" @click="toggleMenu">
+        <font-awesome-icon :icon="faBars" />
+      </button>
+
+      <NotificationIcon 
+        v-if="props.isMobile" 
+        :warnings="props.warnings" 
+        :warningCount="props.warningCount"
+        :isWarningModalOpen="props.isWarningModalOpen" 
+        @toggleWarningModal="emit('toggleWarningModal')"
+      />
+    </div>
 
     <!-- Desktop Navigation -->
     <div class="nav-links">

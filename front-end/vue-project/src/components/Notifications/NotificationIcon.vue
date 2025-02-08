@@ -8,7 +8,9 @@ const props = defineProps({
     type: Array as () => { Title: string; Location: string; Severity: string; Summary: string }[],
     required: true,
   },
+  warningCount: Number,
   isWarningModalOpen: Boolean,
+  isMobile: Boolean,
 });
 
 const emit = defineEmits(["toggleWarningModal"]);
@@ -45,12 +47,12 @@ watch(
 </script>
 
 <template>
-  <div class="notification-wrapper">
+  <div class="notification-wrapper" :class="{ 'mobile-notification': isMobile }">
     <button
       class="notification-icon"
       :class="{ 'new-warning': hasNewWarning }"
       :style="{ backgroundColor: getHighestSeverity }"
-      @click="hasActiveWarnings ? emit('toggleWarningModal') : null"
+      @click="emit('toggleWarningModal')"
       :disabled="!hasActiveWarnings"
     >
       <font-awesome-icon :icon="isWarningModalOpen ? faXmark : faBell" class="bell-icon" />
@@ -64,11 +66,21 @@ watch(
 </template>
 
 <style scoped>
-/* Floating Notification Icon */
-.notification-icon {
-  position: fixed;
-  bottom: 20px;
+/* Default (Desktop) - Bottom Right */
+.notification-wrapper {
+  position: absolute;
+  bottom: 8px;
   right: 20px;
+  z-index: 888;
+}
+
+/* Mobile Position - Inside Navbar */
+.mobile-notification {
+  position: static;
+  margin-left: auto; /* Push it to the right inside the navbar */
+}
+
+.notification-icon {
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -80,13 +92,6 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 888;
-}
-
-@media (max-width: 768px) {
-    .notification-icon{
-        bottom: 80px;
-    }
 }
 
 .notification-icon:disabled {

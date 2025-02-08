@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faExpand, faCompress } from '@fortawesome/free-solid-svg-icons';
+import { updateTabHeight } from '@/utils/helper/domUtils';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 import LiveUpdates from './Summary/LiveUpdates/LiveUpdates.vue';
@@ -31,13 +32,6 @@ const bottomTabHeight = ref(0);
 
 const toggleDashboard = () => {
   isExpanded.value = !isExpanded.value;
-};
-
-const updateBottomTabHeight = () => {
-  const bottomTab = document.querySelector('.tab-bar');
-  if (bottomTab) {
-    bottomTabHeight.value = bottomTab?.clientHeight;
-  }
 };
 
 // Helper functions remain unchanged
@@ -73,13 +67,13 @@ const getUpdatesForArea = (area) => {
 };
 
 onMounted(() => {
-  updateBottomTabHeight();
-  window.addEventListener('resize', updateBottomTabHeight);
+  updateTabHeight('.tab-bar', bottomTabHeight);
+  window.addEventListener('resize', updateTabHeight);
 });
 
 // Cleanup event listener
 onUnmounted(() => {
-  window.removeEventListener('resize', updateBottomTabHeight);
+  window.removeEventListener('resize', () => updateTabHeight('.tab-bar', bottomTabHeight));
 });
 </script>
 

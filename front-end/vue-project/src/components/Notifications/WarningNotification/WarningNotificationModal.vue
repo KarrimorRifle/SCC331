@@ -8,9 +8,8 @@ const props = defineProps({
     type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
     required: true,
   },
-  isMobile: {
-    type: Boolean, 
-  }
+  warningCount: Number, 
+  isMobile: Boolean, 
 });
 
 const emit = defineEmits(["close"]);
@@ -98,19 +97,34 @@ watch(
   background: white;
   color: #333;
   width: 100%;
-  padding: 20px;
   border-radius: 10px;
   border-left: 6px solid #305f72;
   max-height: 40vh;
   overflow-y: auto;
 }
-
+@media (max-width: 768px) {
+  .notification-modal {
+    width: 100%;
+    right: 0px;
+    bottom: 0px;
+    border-radius: 0px;
+  }
+  .modal-content{
+    border-radius: 0px;
+    max-height: 100vh;
+  }
+}
 /* Modal Header */
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 888;
+  padding: 10px 20px;
+  background: white;
 }
 
 .modal-header h3 {
@@ -136,9 +150,8 @@ watch(
 .warning-card {
   border-left: 5px solid;
   padding: 12px;
-  margin-bottom: 12px;
-  border-radius: 6px;
-  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+  margin: 20px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   color: white;

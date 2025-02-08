@@ -9,13 +9,16 @@ const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
 const { overlayAreasConstant, overlayAreasData, updates, environmentHistory, warnings } = useFetchData(picoIds);
 
 const isMobile = ref(window.innerWidth < 768);
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth < 768;
+};
+
 const isWarningModalOpen = ref(false); // Controls notification modal state
 const showSeverePopup = ref(false); // Controls full-screen pop-up for severe warnings
-
-// Ensure warnings.value is always treated as an array
 const safeWarnings = computed(() => Array.isArray(warnings.value) ? warnings.value : []);
+const warningCount = computed(() => safeWarnings.value.length);
 
-// Check if we need a full-screen pop-up for severe warnings
+
 watch(
   () => safeWarnings.value,
   (newWarnings) => {
@@ -25,10 +28,6 @@ watch(
   },
   { deep: true, immediate: true }
 );
-
-const updateIsMobile = () => {
-  isMobile.value = window.innerWidth < 768;
-};
 
 onMounted(() => {
   window.addEventListener("resize", updateIsMobile);
@@ -41,8 +40,13 @@ onUnmounted(() => {
 
 <template>
   <div id="app" class="d-flex flex-column max-vh-100">
-    <Navbar class="nav"/>
-    
+    <Navbar class="nav" 
+      :isMobile="isMobile" 
+      :isWarningModalOpen="isWarningModalOpen" 
+      :warnings="safeWarnings"
+      :warningCount="warningCount"
+      @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
+    />
     <router-view
       class="flex-grow-1 app"
       :picoIds="picoIds"
@@ -56,7 +60,9 @@ onUnmounted(() => {
     
     <!-- Notification Icon Component -->
     <NotificationIcon 
+      v-if="!isMobile" 
       :warnings="safeWarnings" 
+      :warningCount="warningCount"
       :isWarningModalOpen="isWarningModalOpen" 
       @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
     />
@@ -65,6 +71,7 @@ onUnmounted(() => {
     <WarningNotificationModal 
       v-if="isWarningModalOpen" 
       :warnings="safeWarnings" 
+      :warningCount="warningCount"
       :isMobile="isMobile"
       @close="isWarningModalOpen = false" 
     />
