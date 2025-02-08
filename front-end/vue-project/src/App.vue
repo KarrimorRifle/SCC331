@@ -23,20 +23,20 @@ const dismissNotification = (index: number) => {
 
 // Sync `notificationQueue` when `safeWarnings` updates
 watch(
-  () => safeWarnings.value,
+  () => JSON.stringify(safeWarnings.value), // 🔄 Track JSON string to detect deep changes
   (newWarnings) => {
     if (!newWarnings) return;
 
-    // Ensure new warnings are added only if they haven't been dismissed
-    newWarnings.forEach((warning) => {
-      const exists = notificationQueue.value.some(n => n.Title === warning.Title && n.Location === warning.Location);
-      if (!exists) {
-        notificationQueue.value.push(warning);
-      }
+    const parsedWarnings = JSON.parse(newWarnings);
+
+    // ✅ Clear and re-add warnings to force reactivity
+    notificationQueue.value = [];
+    parsedWarnings.forEach((warning) => {
+      notificationQueue.value.push(warning);
     });
 
     // Show severe pop-up if applicable
-    if (newWarnings.some(w => ["doomed", "danger"].includes(w.Severity))) {
+    if (parsedWarnings.some(w => ["doomed", "danger"].includes(w.Severity))) {
       showSeverePopup.value = true;
     }
   },

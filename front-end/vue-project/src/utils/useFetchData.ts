@@ -51,7 +51,13 @@ export function useFetchData(picoIds) {
     try {
       // const response = await axios.get("http://localhost:5003/warnings", { withCredentials: true });
       const response = await axios.get("/data.json");
-      warnings.value = response.data;
+      //warnings.value = response.data;
+
+      
+      if (JSON.stringify(warnings.value) !== JSON.stringify(response.data.warnings)) {
+        warnings.value = response.data;
+      }
+      
     } catch (error) {
       console.error("Error fetching warnings:", error);
     }

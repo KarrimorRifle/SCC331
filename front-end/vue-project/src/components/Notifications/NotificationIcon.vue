@@ -28,7 +28,7 @@ const getHighestSeverity = computed(() => {
 
 // Determine if there are active warnings for bell icon interaction
 const hasActiveWarnings = computed(() => {
-  return props.warnings.some(w => ["warning", "notification"].includes(w.Severity));
+  return props.warnings.some(w => ["warning", "notification", "danger", "doomed"].includes(w.Severity));
 });
 
 // Watch for new warnings and trigger bell animation

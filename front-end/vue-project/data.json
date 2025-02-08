@@ -25,7 +25,7 @@
   },
   {
     "Title": "Humidity Warning",
-    "Location": "Room 2",
+    "Location": "Area 2",
     "Severity": "notification",
     "Summary": "Humidity levels in Room 208 have risen above normal levels."
   }

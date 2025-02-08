@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, PropType, onMounted, onUnmounted, computed } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faExpand, faCompress } from '@fortawesome/free-solid-svg-icons';
+import { faExpand, faCompress, faExclamationTriangle} from '@fortawesome/free-solid-svg-icons';
 import { updateTabHeight } from '@/utils/helper/domUtils';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
@@ -23,7 +23,11 @@ const props = defineProps({
   updates: {
     type: Object,
     required: true,
-  }
+  },
+  warnings: {
+    type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
+    required: true,
+  },
 });
 
 // Dashboard state
@@ -66,6 +70,18 @@ const getUpdatesForArea = (area) => {
   return filteredUpdates;
 };
 
+const warningsByArea = computed(() => {
+  return props.overlayAreasConstant.reduce((acc, area) => {
+    acc[area.label] = props.warnings.filter(warning => warning.Location === area.label);
+    return acc;
+  }, {} as Record<string, { Title: string; Location: string; Severity: string; Summary: string }[]>);
+});
+
+const hanldeWarningButtonPressed = (areaLabel: string) => {
+  console.log(`⚠️ Warnings for ${areaLabel}:`, warningsByArea.value[areaLabel]);
+};
+
+
 onMounted(() => {
   updateTabHeight('.tab-bar', bottomTabHeight);
   window.addEventListener('resize', updateTabHeight);
@@ -104,7 +120,16 @@ onUnmounted(() => {
         class="dashboard-area"
         :style="{ backgroundColor: area.color, color: getTextColor(area.color) }"
       >
-        <h3>{{ area.label }}</h3>
+        <div class="area-header">
+          <h3>{{ area.label }}</h3>
+          <button 
+            v-if="warningsByArea[area.label]?.length"
+            class="warning-btn"
+            @click="hanldeWarningButtonPressed(area.label)"
+          >
+            <font-awesome-icon :icon="faExclamationTriangle" />
+          </button>
+        </div>
 
         <!-- Luggage Count -->
         <div class="count-container">
@@ -241,11 +266,30 @@ onUnmounted(() => {
   position: relative;
 }
 
-.dashboard-area h3 {
+.area-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.area-header h3{
   margin: 0;
   font-size: 18px;
   font-weight: bold;
   text-decoration: underline;
+}
+
+.warning-btn {
+  background: red;
+  color: white;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.warning-btn:hover {
+  background: darkred;
 }
 
 /* Counters for Luggage & People */

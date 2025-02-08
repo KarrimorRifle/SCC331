@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, PropType} from "vue";
 import AirportMap from "@/components/AirportMap.vue";
 import DashBoard from "@/components/Dashboard.vue";
 import BottomTabNavigator from "@/components/BottomTabNavigator.vue";
@@ -25,7 +25,11 @@ const props = defineProps({
   updates: {
     type: Object,
     required: true,
-  }
+  },
+  warnings: {
+    type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
+    required: true,
+  },
 });
 
 // Dashboard toggle
@@ -52,6 +56,7 @@ const toggleDashboard = () => {
         :overlayAreasData="overlayAreasData"
         :userIds="picoIds"
         :updates="updates"
+        :warnings="warnings"
       />
     </template>
   </BottomTabNavigator>
@@ -67,6 +72,7 @@ const toggleDashboard = () => {
       :overlayAreasData="overlayAreasData" 
       :userIds="picoIds"
       :updates="updates"
+      :warnings="warnings"
     />
   </div>
 </template>
