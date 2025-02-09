@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import OverlayArea from './OverlayArea.vue';
+import NewPreset from './Maps/NewPreset.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import type { boxAndData, dataObject, presetListType } from '@/utils/mapTypes';
+import { Modal } from 'bootstrap';
 
 const props = defineProps({
   modelValue: {
@@ -18,7 +20,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(["update:modelValue", "selectPreset", "createNew"]);
+const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset"]);
 
 /** Update only the box data for a given key. */
 function updateBox(key: string, newPosition: any) {
@@ -136,6 +138,15 @@ watch(zoomLevel, () => {
     isZooming.value = false;
   }, 120); // Match the transition duration
 });
+
+// Function to show the modal
+const showModal = () => {
+  const modalElement = document.getElementById('newPresetModal');
+  if (modalElement) {
+    const modal = new Modal(modalElement);
+    modal.show();
+  }
+};
 </script>
 
 <template>
@@ -164,22 +175,28 @@ watch(zoomLevel, () => {
           <!-- add v-model and make it a v-if to change the name -->
           <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem">
             <option v-for="preset in presetList.presets" :value="preset.name" :key="preset.id" @click="emit('selectPreset', preset.id)">{{preset.name ?? "N/A"}}</option>
-            <option v-if="props.canCreate" class="bg-success rounded-bottom text-light" @click.prevent="emit('createNew')" style="font-weight: 600;">New Preset</option>
+            <option v-if="presetList.presets?.length == 0" style="font-weight: 600;">-------------</option>
           </select>
         </div>
       </div>
       <div class="button-container d-flex flex-column align-items-end" style="pointer-events: all;">
-        <button class="mb-1" @click="zoomIn(true)">+</button>
-        <button class="mb-1" @click="zoomOut(true)">-</button>
+        <button class="mb-1" @click="zoomIn(true)" title="Zoom in">+</button>
+        <button class="mb-1" @click="zoomOut(true)" title="Zoom out">-</button>
         <div> <!--will add v-if-->
           <hr class="text-dark my-1" style="width: 100%; height: 3px;">
-          <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center">
+          <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center" title="Edit preset">
             <img src="@/assets/pencil.svg" alt="" style="max-width: 1.5rem;">
           </button>
-          <button class="p-0 py-1 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+          <button class="p-0 py-1 d-flex align-items-center justify-content-center mb-1" data-bs-toggle="modal" data-bs-target="#staticBackdrop" title="Change preset image">
             <img src="@/assets/image.svg" alt="" style="max-width: 1.5rem;">
             <!-- Add a modal popout for this -->
           </button>
+          <button v-if="props.canCreate"
+            class="bg-success rounded-end text-light"
+            style="font-weight: 600;"
+            title="Create new preset"
+            @click="showModal"
+          >+</button>
         </div>
       </div>
     </div>
@@ -210,6 +227,8 @@ watch(zoomLevel, () => {
         />
       </div>
     </div>
+    <!-- New Preset Modal -->
+    <NewPreset />
   </div>
 </template>
 
