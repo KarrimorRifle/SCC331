@@ -66,6 +66,7 @@ const activeSection = ref("all");
       <WarningSystem
         v-if="activeSection === 'warnings' || activeSection === 'all'"
         :warnings="warnings"
+        :overlayAreasConstant="overlayAreasConstant"
       />
     </div>
   </div>
