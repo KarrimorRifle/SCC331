@@ -6,6 +6,7 @@ import bcrypt
 import uuid
 from datetime import datetime
 import os
+import time
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -14,17 +15,20 @@ CORS(app, supports_credentials=True)
 db_connection = None
 
 def get_db_connection():
-    try:
-        db_connection = mysql.connector.connect(
-            host=os.getenv('DB_HOST'),
-            user=os.getenv('DB_USER'),
-            password=os.getenv('DB_PASSWORD'),
-            database=os.getenv('DB_NAME')
-        )
-    except Error as e:
-        print(f"Error connecting to MySQL: {e}")
-        db_connection = None
-    return db_connection
+    attempts = 5
+    for attempt in range(attempts):
+        try:
+            db_connection = mysql.connector.connect(
+                host=os.getenv('DB_HOST'),
+                user=os.getenv('DB_USER'),
+                password=os.getenv('DB_PASSWORD'),
+                database=os.getenv('DB_NAME')
+            )
+            return db_connection
+        except Error as e:
+            print(f"Error connecting to MySQL (attempt {attempt + 1}/{attempts}): {e}")
+            time.sleep(2)  # Wait for 2 seconds before retrying
+    return None
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -97,6 +101,31 @@ def logout():
     response = make_response(jsonify({"message": "Logout successful"}), 200)
     response.set_cookie("session_id", '', expires=0)
     return response
+
+@app.route('/get_users', methods=['GET'])
+def get_users():
+    session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+    if not session_id:
+        return jsonify({"error": "No session cookie or header provided"}), 400
+    
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
+    user = cursor.fetchone()
+
+    if user is None or user["authority"] != "Admin":
+        print("Not admin")
+        return jsonify({"error": "Unauthorized access", "message": "Insufficient permission to check user list"}), 401
+    
+    cursor.execute("SELECT user_id as uid, email, full_name as name FROM users")
+    users = cursor.fetchall()
+    cursor.close()
+    connection.close()
+
+    return jsonify({"users": users}), 200
 
 if __name__ == '__main__':
     get_db_connection()  # Ensure the connection is established at startup

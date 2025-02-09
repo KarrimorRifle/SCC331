@@ -32,6 +32,40 @@ port: 5002
   - `401`: Invalid cookie
   - `500`: Database connection failed or other server error
 
+### POST: `/logout`
+- **Headers or Cookies:**
+  - `session-id`: Session ID cookie (required)
+- **Responses:**
+  - `200`: Logout successful, removes `session_id` cookie
+  - `400`: No session cookie or header provided
+  - `500`: Database connection failed or other server error
+
+### GET: `/get_users`
+- **Headers or Cookies:**
+  - `session-id`: Session ID cookie (required)
+- **Responses:**
+  - `200`: Returns a list of users (requires admin authority)
+    - **Example:**
+      ```json
+      {
+        "users": [
+          {
+            "uid": 1,
+            "email": "user1@fakecompany.co.uk",
+            "name": "User One"
+          },
+          {
+            "uid": 2,
+            "email": "user2@fakecompany.co.uk",
+            "name": "User Two"
+          }
+        ]
+      }
+      ```
+  - `400`: No session cookie or header provided
+  - `401`: Unauthorized access or insufficient permission
+  - `500`: Database connection failed or other server error
+
 # Data
 ## processing
 All messages are to be sent through the MQTT server on topic: `feeds/hardware-data/#`
