@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import WarningNotificationModal from "./components/Notifications/WarningNotification/WarningNotificationModal.vue";
+import WarningAreaModal from "./components/Notifications/WarningNotification/WarningAreaModal.vue";
 import NotificationIcon from "./components/Notifications/NotificationIcon.vue";
 import Navbar from '@/components/Navbar.vue';
 import { useFetchData } from '@/utils/useFetchData';
@@ -85,6 +86,10 @@ onUnmounted(() => {
       :warningCount="warningCount"
       :isWarningModalOpen="isWarningModalOpen"
       @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
+    />
+
+    <WarningAreaModal 
+      :overlayAreasConstant="overlayAreasConstant"
     />
 
     <!-- Warning Notification Modal -->

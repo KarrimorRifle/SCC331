@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faBell, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { getCardBackgroundColor } from "@/utils/helper/warningUtils";
 
 const props = defineProps({
   warnings: {
@@ -19,11 +20,13 @@ const hasNewWarning = ref(false);
 
 // Get the highest severity for notification color (affects bell icon)
 const getHighestSeverity = computed(() => {
-  if (props.warnings.some(w => w.Severity === "doomed")) return "#FF0000";
-  if (props.warnings.some(w => w.Severity === "danger")) return "#FF4500";
-  if (props.warnings.some(w => w.Severity === "warning")) return "#FFA500";
-  if (props.warnings.some(w => w.Severity === "notification")) return "#4682B4";
-  return "#ccc"; // Default color
+  const severityPriority = ["doomed", "danger", "warning", "notification"]; // Ordered by priority
+
+  const highestSeverity = severityPriority.find(severity =>
+    props.warnings.some(w => w.Severity === severity)
+  );
+
+  return highestSeverity ? getCardBackgroundColor(highestSeverity) : "#ccc"; // Default color
 });
 
 // Determine if there are active warnings for bell icon interaction

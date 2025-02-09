@@ -79,7 +79,8 @@ const warningsByArea = computed(() => {
 });
 
 const onWarningButtonClick = (areaLabel: string) => {
-  handleWarningButtonPressed(areaLabel, warningsByArea.value);
+  const warningsForArea = warningsByArea.value[areaLabel] || [];
+  handleWarningButtonPressed(areaLabel, warningsForArea);
 };
 
 
