@@ -287,6 +287,7 @@ onUnmounted(() => {
   padding: 5px 8px;
   border-radius: 5px;
   cursor: pointer;
+  animation: bounce 0.5s infinite alternate ease-in-out;
 }
 
 .warning-btn:hover {
@@ -312,5 +313,14 @@ onUnmounted(() => {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid #ccc;
+}
+
+@keyframes bounce {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-5px);
+  }
 }
 </style>

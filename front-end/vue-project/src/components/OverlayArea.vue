@@ -220,6 +220,9 @@ const endResize = () => {
   cursor: pointer;
   z-index: 100;
 }
+.warning-btn:hover {
+  background: darkred;
+}
 
 .overlay-area-label{
     user-select: none;
