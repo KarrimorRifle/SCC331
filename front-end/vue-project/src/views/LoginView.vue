@@ -12,10 +12,6 @@
           <label for="password" class="form-label mb-0 fw-bold text-light">Password</label>
           <input type="password" class="form-control" id="password" v-model="password">
         </div>
-        <!-- <div class="mb-3 form-check">
-          <input type="checkbox" class="form-check-input" id="admin" v-model="isAdmin">
-          <label class="form-check-label" for="admin">Admin</label>
-        </div> -->
         <button type="submit" class="btn btn-primary">Submit</button>
       </form>
       <div class="d-flex justify-content-center align-items-center mt-3">
@@ -35,7 +31,6 @@ const router = useRouter();
 
 const email = ref('');
 const password = ref('');
-// const isAdmin = ref(false);
 const errorMessage = ref<string | null>(null);
 
 const email_compliance = computed(() => email.value.toLowerCase().endsWith('@fakecompany.co.uk'));

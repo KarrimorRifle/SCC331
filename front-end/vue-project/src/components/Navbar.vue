@@ -2,7 +2,8 @@
 import { RouterLink } from 'vue-router';
 import { useCookies } from 'vue3-cookies';
 import { defineProps, defineEmits } from "vue";
-import axios from "axios";
+import axios from "axios"
+import router from '@/router';
 
 const props = defineProps({
   loggedIn: {
@@ -22,6 +23,7 @@ const handleLogout = async() => {
     })
     cookies.remove('session_id');
     emit("logout");
+    router.push("/");
   }catch(err) {
     console.log("Error encountered logging out:", err)
   }
@@ -30,10 +32,11 @@ const handleLogout = async() => {
 
 <template>
   <nav class="navbar">
-    <RouterLink to="/" class="nav-link" exact-active-class="active">Airport View</RouterLink>
-    <RouterLink to="/summary" class="nav-link" exact-active-class="active">Summary View</RouterLink>
+    <RouterLink to="/" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
+    <RouterLink to="/map" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
+    <RouterLink to="/summary" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
     <RouterLink to="/login" class="nav-link" exact-active-class="active" v-if="!props.loggedIn">Login</RouterLink>
-    <RouterLink to="/" class="nav-link" v-if="props.loggedIn" @click.prevent="handleLogout">
+    <RouterLink to="#" class="nav-link" v-if="props.loggedIn" @click.prevent="handleLogout">
       Log out
     </RouterLink>
   </nav>

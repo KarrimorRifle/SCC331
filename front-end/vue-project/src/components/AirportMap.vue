@@ -11,10 +11,14 @@ const props = defineProps({
   presetList: {
     type: Object as () => presetListType,
     required: true,
+  },
+  canCreate: {
+    type: Boolean,
+    required: true,
   }
 });
 
-const emit = defineEmits(["update:modelValue", "selectPreset"]);
+const emit = defineEmits(["update:modelValue", "selectPreset", "createNew"]);
 
 /** Update only the box data for a given key. */
 function updateBox(key: string, newPosition: any) {
@@ -160,6 +164,7 @@ watch(zoomLevel, () => {
           <!-- add v-model and make it a v-if to change the name -->
           <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem">
             <option v-for="preset in presetList.presets" :value="preset.name" :key="preset.id" @click="emit('selectPreset', preset.id)">{{preset.name ?? "N/A"}}</option>
+            <option v-if="props.canCreate" class="bg-success rounded-bottom text-light" @click.prevent="emit('createNew')" style="font-weight: 600;">New Preset</option>
           </select>
         </div>
       </div>

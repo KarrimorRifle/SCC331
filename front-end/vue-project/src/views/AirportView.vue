@@ -11,6 +11,7 @@ let pollingInterval: Timeout;
 let summary = ref<summaryType>(<summaryType>{});
 let presetList = ref<presetListType>(<presetListType>{});
 let canEdit = ref<boolean>(false);
+let canCreate = ref<boolean>(false);
 let currentPreset = ref<number|string>();
 let presetData = ref<preset>(<preset>{});
   //Data used by the App
@@ -23,7 +24,9 @@ async function validateUser() {
     });
 
     let uid = userValidationRequest.data.uid;
-    canEdit.value = uid in presetData.value.trusted;
+    canEdit.value = presetData.value?.trusted?.includes(uid);
+    canCreate.value = userValidationRequest.data.authority == "Admin";
+    console.log(canCreate.value)
   } catch (error) {
     console.error("Error validating user:", error);
     canEdit.value = false;
@@ -148,11 +151,12 @@ const handleSelectPreset = (id: number) => {
 </script>
 
 <template>
-  <div class="airport-view-container d-flex flex-row">
+  <div class="airport-view-container d-flex flex-row" id="map">
     <AirportMap
       class="flex-grow-1"
       v-model="boxes_and_data"
       :presetList="presetList"
+      :canCreate="canCreate"
     />
     <DashBoard
       v-model="boxes_and_data"
