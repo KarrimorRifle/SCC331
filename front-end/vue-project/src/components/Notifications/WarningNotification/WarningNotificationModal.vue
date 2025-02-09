@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import { getCardBackgroundColor } from "@/utils/helper/warningUtils"; // Import the function
 import { ref, watch, PropType } from "vue";
 
 const props = defineProps({
@@ -13,17 +14,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close", "dismiss"]);
-
-// Background color based on severity
-const getCardBackgroundColor = (severity: string): string => {
-  const severityColors: Record<string, string> = {
-    doomed: "#FF0000",
-    danger: "#FF4500",
-    warning: "#FFA500",
-    notification: "#4682B4",
-  };
-  return severityColors[severity] || "#ccc";
-};
 
 </script>
 
