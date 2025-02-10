@@ -17,18 +17,26 @@ const props = defineProps({
   canCreate: {
     type: Boolean,
     required: true,
+  },
+  settable: {
+    type: Boolean,
+    required: true,
+  },
+  defaultPresetId: {
+    type: [Number, String],
+    required: true,
   }
 });
 
-const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset"]);
+const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault"]);
 
 /** Update only the box data for a given key. */
 function updateBox(key: string, newPosition: any) {
   const updated = { ...props.modelValue };
   if (!updated[key]) updated[key] = <dataObject>{};
   updated[key] = {
-    ...updated[key],
-    box: { ...updated[key].box, ...newPosition },
+    ...updated[key].box,
+    ...newPosition,
   };
   emit("update:modelValue", updated);
 }
@@ -171,10 +179,13 @@ const showModal = () => {
     <div class="zoom-controls d-flex flex-column align-items-end" style="pointer-events: none;">
       <div class="preset-container card p-2">
         <div class="input-group" style="pointer-events: all;">
-          <label class="input-group-text bg-dark text-light" for="inputGroupSelect01">Preset</label>
+          <button v-if="props.settable" class="btn btn-success ms-2" @click="emit('setDefault')" for="inputGroupSelect01">Set Default</button>
+          <label v-else class="input-group-text bg-dark text-light" for="inputGroupSelect01">Preset</label>
           <!-- add v-model and make it a v-if to change the name -->
-          <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem">
-            <option v-for="preset in presetList.presets" :value="preset.name" :key="preset.id" @click="emit('selectPreset', preset.id)">{{preset.name ?? "N/A"}}</option>
+          <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem" @change="emit('selectPreset', $event.target.value)">
+            <option v-for="preset in presetList.presets" :value="preset.id" :key="preset.id">
+              {{ preset.id === defaultPresetId ? `Default: ${preset.name}` : preset.name }}
+            </option>
             <option v-if="presetList.presets?.length == 0" style="font-weight: 600;">-------------</option>
           </select>
         </div>

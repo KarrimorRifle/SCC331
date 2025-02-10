@@ -14,6 +14,7 @@ let canEdit = ref<boolean>(false);
 let canCreate = ref<boolean>(false);
 let currentPreset = ref<number|string>();
 let presetData = ref<preset>(<preset>{});
+const defaultPresetId = ref<number|string>();
   //Data used by the App
 let boxes_and_data = ref<boxAndData>(<boxAndData>{});
 
@@ -26,7 +27,6 @@ async function validateUser() {
     let uid = userValidationRequest.data.uid;
     canEdit.value = presetData.value?.trusted?.includes(uid);
     canCreate.value = userValidationRequest.data.authority == "Admin";
-    console.log(canCreate.value)
   } catch (error) {
     console.error("Error validating user:", error);
     canEdit.value = false;
@@ -50,7 +50,6 @@ onMounted(async() => {
   try{
       await fetchPresets();
     // Grab default preset and set it to the current one
-    console.log("Default:",presetList.value?.default)
     currentPreset.value = presetList.value?.default;
     await fetchPreset();
   }catch (error){
@@ -75,10 +74,12 @@ const fetchPresets = async() => {
   let request = await axios.get("http://localhost:5010/presets",
     {withCredentials: true});
   presetList.value = request.data;
+  // Set the default preset ID
+  defaultPresetId.value = presetList.value.default;
 }
 
 const fetchPreset = async() => {
-  let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}}`,
+  let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}`,
     {withCredentials: true});
   presetData.value = request.data;
 }
@@ -111,7 +112,6 @@ const create_data = () => {
     }
   })
 
-  console.log(summary.value)
   Object.entries(summary.value).forEach(([roomID, environment]: [string, environmentData]) => {
     if (boxes_and_data.value[roomID]) {
       boxes_and_data.value[roomID].tracker = environment;
@@ -120,13 +120,11 @@ const create_data = () => {
       boxes_and_data.value[roomID].tracker = environment;
     }
   });
-  console.log(boxes_and_data.value);
 }
 
 // Create function to update data
 const update_data = () => {
   Object.entries(summary.value).forEach(([roomID, environment]: [string, environmentData]) => {
-    // console.log("value for:", roomID, "\n",environment)
     if (boxes_and_data.value[roomID]) {
       boxes_and_data.value[roomID].tracker = environment;
     }else {
@@ -134,7 +132,6 @@ const update_data = () => {
       boxes_and_data.value[roomID].tracker = environment;
     }
   });
-  console.log(boxes_and_data.value);
 }
 
 // I need to create a function to save the object i want to v-model on save
@@ -146,7 +143,28 @@ const update_data = () => {
 
 const handleSelectPreset = (id: number) => {
   currentPreset.value = id;
+  console.log("PRESET VALUE CHANGED");
 }
+
+const setDefaultPreset = async () => {
+  try {
+    await axios.patch("http://localhost:5011/presets/default", {
+      preset_id: currentPreset.value
+    }, {
+      withCredentials: true
+    });
+    alert("Default preset set successfully");
+    await fetchPresets();
+  } catch (error) {
+    console.error("Error setting default preset:", error);
+    alert("Failed to set default preset");
+  }
+};
+
+const settable = computed(() => {
+  console.log(presetList.value.default, currentPreset.value)
+  return canCreate.value && presetList.value.default + "" !== currentPreset.value;
+});
 
 </script>
 
@@ -157,10 +175,13 @@ const handleSelectPreset = (id: number) => {
       v-model="boxes_and_data"
       :presetList="presetList"
       :canCreate="canCreate"
+      :settable="settable"
+      :defaultPresetId="defaultPresetId"
+      @selectPreset="handleSelectPreset"
+      @setDefault="setDefaultPreset"
     />
     <DashBoard
       v-model="boxes_and_data"
-      @selectPreset="handleSelectPreset"
     />
   </div>
 </template>
