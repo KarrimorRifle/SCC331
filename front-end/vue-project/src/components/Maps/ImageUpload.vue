@@ -9,7 +9,7 @@
         <div class="modal-body">
           <div class="mb-3">
             <label for="imageFile" class="form-label">Choose Image</label>
-            <input type="file" class="form-control" id="imageFile" @change="handleFileChange">
+            <input type="file" class="form-control" id="imageFile" ref="fileInput" @change="handleFileChange">
           </div>
           <div v-if="loading" class="text-center">
             <div class="spinner-border" role="status">
@@ -29,8 +29,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, defineEmits } from 'vue';
 import axios from 'axios';
+
+const emit = defineEmits(["newImage"]);
 
 const props = defineProps({
   currentPresetId: {
@@ -44,12 +46,22 @@ const imageData = ref('');
 const loading = ref(false);
 const successMessage = ref('');
 const warningMessage = ref('');
+const confirmReset = ref(false);
+const fileInput = ref<HTMLInputElement>(<HTMLInputElement>{});
 
 // Function to handle image upload
 const uploadImage = async () => {
   if (!imageData.value) {
-    warningMessage.value = "Please select an image.";
-    return;
+    if (!confirmReset.value) {
+      setTimeout(() => {
+        warningMessage.value = "This will reset the image to default, are you sure?";
+      }, 10);
+      confirmReset.value = true;
+      return;
+    } else {
+      warningMessage.value = "";
+      confirmReset.value = false;
+    }
   }
   loading.value = true;
 
@@ -65,10 +77,12 @@ const uploadImage = async () => {
       warningMessage.value = "";
       imageName.value = "";
       imageData.value = "";
+      fileInput.value.value = ""; // Clear the file input
       setTimeout(() => {
         successMessage.value = "Image uploaded successfully";
       }, 10);
     }
+    emit("newImage");
   } catch (error) {
     warningMessage.value = 'Failed to upload image';
   } finally {
@@ -88,8 +102,10 @@ const handleFileChange = (event) => {
 };
 
 const clearMessages = () => {
-  successMessage.value = "";
-  warningMessage.value = "";
+  if (!confirmReset.value) {
+    successMessage.value = "";
+    warningMessage.value = "";
+  }
 };
 </script>
 

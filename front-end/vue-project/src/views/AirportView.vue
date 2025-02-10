@@ -15,6 +15,7 @@ let canCreate = ref<boolean>(false);
 let currentPreset = ref<number|string>(-1);
 let presetData = ref<preset>(<preset>{});
 const defaultPresetId = ref<number|string>(-1);
+let presetImage = ref<string>("");
   //Data used by the App
 let boxes_and_data = ref<boxAndData>(<boxAndData>{});
 
@@ -33,11 +34,24 @@ async function validateUser() {
   }
 }
 
-watch(currentPreset, () => {
-  fetchPreset();
+const processPresetImage = () => {
+  if (presetData.value.image?.data && presetData.value.image?.name) {
+    const imageType = presetData.value.image.name.split('.').pop();
+    presetImage.value = `data:image/${imageType};base64,${presetData.value.image.data}`;
+    console.log("presetImage", presetImage.value);
+  } else {
+    presetImage.value = "";
+    console.log("presetImage", presetImage.value);
+
+  }
+};
+
+watch(currentPreset, async () => {
+  await fetchPreset();
   create_data();
   validateUser();
 });
+
 
 watch(summary, () => {
   update_data();
@@ -82,6 +96,7 @@ const fetchPreset = async() => {
   let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}`,
     {withCredentials: true});
   presetData.value = request.data;
+  processPresetImage();
 }
 
 const props = defineProps({
@@ -139,7 +154,7 @@ const update_data = () => {
 //   Object.entries(boxes_and_data.value)
 // }
 
-// I need to add an image saving function
+// New function to grab image
 
 const handleSelectPreset = (id: number) => {
   currentPreset.value = id;
@@ -178,9 +193,11 @@ const settable = computed(() => {
       :settable="settable"
       :defaultPresetId="defaultPresetId"
       :currentPreset="currentPreset"
+      :backgroundImage="presetImage"
       @selectPreset="handleSelectPreset"
       @setDefault="setDefaultPreset"
       @newPreset="fetchPresets"
+      @newImage="fetchPreset"
     />
     <DashBoard
       v-model="boxes_and_data"

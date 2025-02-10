@@ -6,6 +6,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue';
 import type { boxAndData, dataObject, presetListType } from '@/utils/mapTypes';
 import { Modal } from 'bootstrap';
 import axios from 'axios';
+import terminalMap from '@/assets/terminal-map.png';
 
 const props = defineProps({
   modelValue: {
@@ -32,9 +33,13 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
+  backgroundImage: {
+    type: String,
+    default: ''
+  }
 });
 
-const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault", "newPreset"]);
+const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault", "newPreset", "newImage"]);
 
 /** Update only the box data for a given key. */
 function updateBox(key: string, newPosition: any) {
@@ -212,7 +217,7 @@ const showModal = () => {
           transform: `scale(${zoomLevel}) translate(${mapPosition.x}px, ${mapPosition.y}px)`,
         }"
       >
-        <img src="@/assets/terminal-map.png" alt="Airport Map" class="map" @dragstart.prevent/>
+        <img :src="props.backgroundImage && props.backgroundImage.length > 0 ? props.backgroundImage : terminalMap" alt="Airport Map" class="map" @dragstart.prevent/>
         <OverlayArea
           v-for="([key, data]) in Object.entries(props.modelValue).filter(([k, d]) => d.box)"
           :key="key"
@@ -226,7 +231,7 @@ const showModal = () => {
       </div>
     </div>
     <NewPreset @new-preset="emit('newPreset')"/>
-    <ImageUpload :defaultPresetId="props.defaultPresetId" />
+    <ImageUpload :currentPresetId="props.currentPreset" @new-image="emit('newImage')"/>
   </div>
 </template>
 

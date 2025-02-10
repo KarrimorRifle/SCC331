@@ -4,7 +4,11 @@ export interface preset {
   id: string | number,
   name: string,
   trusted: Array<number>,
-  boxes: Array<box>
+  boxes: Array<boxType>,
+  image: {
+    name: string,
+    data: string,
+  },
 }
 
 export interface boxType {
