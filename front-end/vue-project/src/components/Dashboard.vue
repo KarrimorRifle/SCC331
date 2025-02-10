@@ -2,7 +2,8 @@
 import { boxAndData } from '@/utils/mapTypes';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
-import { defineProps, defineEmits } from 'vue';
+import { defineProps, defineEmits, ref } from 'vue';
+import { Sketch } from '@ckpack/vue-color';
 
 const props = defineProps({
   modelValue: {
@@ -11,7 +12,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue", "newBox","colourChange", "removeBox"]);
 
 function updateLabel(key: string, newLabel: string) {
   const updatedData = { ...props.modelValue };
@@ -35,6 +36,22 @@ function getTextColor(color: string | undefined): string {
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   return brightness < 128 ? "white" : "black";
 }
+
+const colorPickerVisible = ref<string | null>(null);
+const selectedColor = ref<string>('#FFFFFF');
+
+function showColorPicker(key: string) {
+  colorPickerVisible.value = key;
+}
+
+function hideColorPicker() {
+  colorPickerVisible.value = null;
+}
+
+function changeColor(key: string) {
+  emit('colourChange', key, selectedColor.value );
+  hideColorPicker();
+}
 </script>
 
 <template>
@@ -51,7 +68,24 @@ function getTextColor(color: string | undefined): string {
       class="dashboard-area"
       :style="{ backgroundColor: data.box?.colour ?? '#FFFFFF', color: getTextColor(data.box?.colour) }"
     >
-      <button class="btn btn-success add-button">+</button>
+      <button class="btn btn-success add-button" @click="emit('newBox', key)" v-if="!data.box">+</button>
+      <button class="btn btn-danger add-button" @click="emit('removeBox', key)" v-else-if="data.box && !data.tracker">-</button>
+      <button
+        title="Change box colour"
+        class="btn add-button d-flex align-items-center justify-content-center"
+        style="max-width: 2.5rem; background-color: #568ea6;"
+        @click="showColorPicker(key)"
+        v-else
+      >
+        <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
+      </button>
+
+      <!-- Color Picker Popover -->
+      <div v-if="colorPickerVisible === key" class="color-picker-popover">
+        <Sketch v-model="selectedColor" />
+        <button class="btn btn-success me-2 mt-2 btn-sm" @click="changeColor(key)">Done</button>
+        <button class="btn btn-secondary mt-2 btn-sm" @click="hideColorPicker">Cancel</button>
+      </div>
 
       <!-- Update only the label -->
       <input
@@ -181,5 +215,17 @@ function getTextColor(color: string | undefined): string {
   position: absolute;
   right: 10px;
   top: 10px;
+}
+
+.color-picker-popover {
+  position: absolute;
+  top: 40px;
+  right: 10px;
+  z-index: 1000;
+  background: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 </style>

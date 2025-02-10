@@ -48,7 +48,7 @@ export interface dataObject {
     width: number,
     height: number,
     colour: string
-  }
+  } | null
 }
 
 export interface environmentData {

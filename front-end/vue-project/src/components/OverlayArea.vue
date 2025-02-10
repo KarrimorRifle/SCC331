@@ -22,6 +22,9 @@ const props = defineProps({
 });
 
 const getAreaKey = (label: string): string | null => {
+  if (!label || !label.match) {
+    return null;
+  }
   const match = label.match(/\d+/);
   return match ? match[0] : null;
 };

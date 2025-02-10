@@ -208,6 +208,26 @@ const deletePreset = async () => {
   }
 };
 
+const createNewBox = (roomID: number | string) => {
+  const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+  boxes_and_data.value[roomID].box = {
+    top: 10,
+    left: 10,
+    width: 100,
+    height: 100,
+    colour: randomColor,
+  };
+}
+
+const changeBoxColour =  (roomID: number | string, colour: string) => {
+  if(boxes_and_data.value[roomID].box)
+    boxes_and_data.value[roomID].box.colour = colour;
+}
+
+const removeBox = (roomID: number | string) => {
+  boxes_and_data.value[roomID].box = null;
+}
+
 </script>
 
 <template>
@@ -232,6 +252,9 @@ const deletePreset = async () => {
     />
     <DashBoard
       v-model="boxes_and_data"
+      @newBox="createNewBox"
+      @colourChange="changeBoxColour"
+      @removeBox="removeBox"
     />
   </div>
 </template>

@@ -54,13 +54,27 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault", "newPreset", "newImage", "delete"]);
 
 /** Update only the box data for a given key. */
+const internalModelValue = ref<boxAndData>({ ...props.modelValue });
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    internalModelValue.value = { ...newValue };
+  },
+  { deep: true }
+);
+
 function updateBox(key: string, newPosition: any) {
-  const updated = { ...props.modelValue };
+  const updated = { ...internalModelValue.value };
   if (!updated[key]) updated[key] = <dataObject>{};
   updated[key] = {
-    ...updated[key].box,
-    ...newPosition,
+    ...updated[key],
+    box: {
+      ...updated[key].box,
+      ...newPosition,
+    },
   };
+  internalModelValue.value = updated;
   emit("update:modelValue", updated);
 }
 
@@ -243,10 +257,10 @@ const updateMode = ref<boolean>(false);
       >
         <img :src="props.backgroundImage && props.backgroundImage.length > 0 ? props.backgroundImage : terminalMap" alt="Airport Map" class="map" @dragstart.prevent/>
         <OverlayArea
-          v-for="([key, data]) in Object.entries(props.modelValue).filter(([k, d]) => d.box)"
+          v-for="([key, data]) in Object.entries(internalModelValue).filter(([k, d]) => d.box)"
           :key="key"
           :position="data.box"
-          :label="data.label"
+          :label="data.label?.length > 0 ? data.label : key"
           :color="data.box.colour"
           :zoomLevel="zoomLevel"
           :data="data.tracker"
