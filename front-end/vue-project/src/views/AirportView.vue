@@ -17,8 +17,8 @@ let currentPreset = ref<number|string>(-1);
 let presetData = ref<preset>(<preset>{});
 const defaultPresetId = ref<number|string>(-1);
 let presetImage = ref<string>("");
-  //Data used by the App
 let boxes_and_data = ref<boxAndData>(<boxAndData>{});
+let editMode = ref<boolean>(false);
 
 async function validateUser() {
   try {
@@ -228,6 +228,15 @@ const removeBox = (roomID: number | string) => {
   boxes_and_data.value[roomID].box = null;
 }
 
+const uploadBoxes = () => {
+  console.log("uploading");
+}
+
+const cancelBoxEdit = () => {
+  fetchPreset();
+  editMode.value = false;
+}
+
 </script>
 
 <template>
@@ -244,14 +253,19 @@ const removeBox = (roomID: number | string) => {
       :canDelete="canDelete"
       :canEdit="canEdit"
       :presetData="presetData"
+      :editMode="editMode"
       @selectPreset="handleSelectPreset"
       @setDefault="setDefaultPreset"
       @newPreset="fetchPresets"
       @newImage="fetchPreset"
       @delete="deletePreset"
+      @edit="editMode = true"
+      @save="uploadBoxes"
+      @cancel="cancelBoxEdit"
     />
     <DashBoard
       v-model="boxes_and_data"
+      :editMode="editMode"
       @newBox="createNewBox"
       @colourChange="changeBoxColour"
       @removeBox="removeBox"

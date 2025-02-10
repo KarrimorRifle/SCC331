@@ -48,10 +48,14 @@ const props = defineProps({
   presetData: {
     type: Object as () => preset,
     required: true,
+  },
+  editMode: {
+    type: Boolean,
+    required: true
   }
 });
 
-const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault", "newPreset", "newImage", "delete"]);
+const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault", "newPreset", "newImage", "delete", "edit", "save", "cancel"]);
 
 /** Update only the box data for a given key. */
 const internalModelValue = ref<boxAndData>({ ...props.modelValue });
@@ -229,6 +233,33 @@ const updateMode = ref<boolean>(false);
           title="Create new preset"
           @click="updateMode = false; showModal()"
         >+</button>
+        <div v-if="canEdit">
+          <hr class="text-dark my-1" style="width: 100%; height: 3px;">
+          <button
+            v-if="!editMode"
+            class="p-0 py-1 d-flex align-items-center justify-content-center mb-1"
+            @click="emit('edit')"
+            title="Enable edit mode"
+          >
+            <img src="@/assets/pencil.svg" alt="" style="max-width: 1.5rem;">
+          </button>
+          <template v-else>
+            <button
+              class="p-0 py-1 d-flex align-items-center justify-content-center mb-1 bg-success"
+              @click="emit('save')"
+              title="save"
+            >
+              <img src="@/assets/tick.svg" alt="" style="max-width: 1.5rem;">
+            </button>
+            <button
+              class="p-0 py-1 d-flex align-items-center justify-content-center mb-1 bg-danger"
+              @click="emit('cancel')"
+              title="cancel"
+            >
+              <img src="@/assets/cross.svg" alt="" style="max-width: 1.5rem;">
+            </button>
+          </template>
+        </div>
         <div v-if="canDelete">
           <hr class="text-dark my-1" style="width: 100%; height: 3px;">
           <button

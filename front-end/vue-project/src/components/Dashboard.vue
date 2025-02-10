@@ -9,6 +9,10 @@ const props = defineProps({
   modelValue: {
     type: Object as () => boxAndData,
     required: true,
+  },
+  editMode: {
+    type: Boolean,
+    required: true
   }
 });
 
@@ -28,6 +32,9 @@ function updateLabel(key: string, newLabel: string) {
 }
 
 function getTextColor(color: string | undefined): string {
+  if (typeof color !== 'string') {
+    return "black";
+  }
   const c = color ?? "#FFFFFF";
   const hex = c.replace("#", "");
   const r = parseInt(hex.slice(0, 2), 16);
@@ -38,7 +45,7 @@ function getTextColor(color: string | undefined): string {
 }
 
 const colorPickerVisible = ref<string | null>(null);
-const selectedColor = ref<string>('#FFFFFF');
+const selectedColor = ref();
 
 function showColorPicker(key: string) {
   colorPickerVisible.value = key;
@@ -49,7 +56,9 @@ function hideColorPicker() {
 }
 
 function changeColor(key: string) {
-  emit('colourChange', key, selectedColor.value );
+  const color = typeof selectedColor.value.hex === 'string' ? selectedColor.value.hex : '#FFFFFF';
+  console.log(selectedColor.value.hex)
+  emit('colourChange', key, color);
   hideColorPicker();
 }
 </script>
@@ -68,17 +77,19 @@ function changeColor(key: string) {
       class="dashboard-area"
       :style="{ backgroundColor: data.box?.colour ?? '#FFFFFF', color: getTextColor(data.box?.colour) }"
     >
-      <button class="btn btn-success add-button" @click="emit('newBox', key)" v-if="!data.box">+</button>
-      <button class="btn btn-danger add-button" @click="emit('removeBox', key)" v-else-if="data.box && !data.tracker">-</button>
-      <button
-        title="Change box colour"
-        class="btn add-button d-flex align-items-center justify-content-center"
-        style="max-width: 2.5rem; background-color: #568ea6;"
-        @click="showColorPicker(key)"
-        v-else
-      >
-        <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
-      </button>
+      <template v-if="editMode">
+        <button class="btn btn-success add-button" @click="emit('newBox', key)" v-if="!data.box">+</button>
+        <button class="btn btn-danger add-button" @click="emit('removeBox', key)" v-else-if="data.box && !data.tracker">-</button>
+        <button
+          title="Change box colour"
+          class="btn add-button d-flex align-items-center justify-content-center"
+          style="max-width: 2.5rem; background-color: #568ea6;"
+          @click="showColorPicker(key)"
+          v-else
+        >
+          <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
+        </button>
+      </template>
 
       <!-- Color Picker Popover -->
       <div v-if="colorPickerVisible === key" class="color-picker-popover">
