@@ -3,7 +3,7 @@ import OverlayArea from './OverlayArea.vue';
 import NewPreset from './Maps/NewPreset.vue';
 import ImageUpload from './Maps/ImageUpload.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
-import type { boxAndData, dataObject, presetListType } from '@/utils/mapTypes';
+import type { boxAndData, dataObject, presetListType, preset } from '@/utils/mapTypes';
 import { Modal } from 'bootstrap';
 import axios from 'axios';
 import terminalMap from '@/assets/terminal-map.png';
@@ -171,22 +171,15 @@ watch(zoomLevel, () => {
 });
 
 // Function to show the modal
-const showModal = (mode: 'create' | 'update', presetId?: number, initialName?: string, initialUsers?: Array<{ uid: number; email: string; name: string }>) => {
+const showModal = () => {
   const modalElement = document.getElementById('newPresetModal');
   if (modalElement) {
     const modal = new Modal(modalElement);
     modal.show();
-    newPresetMode.value = mode;
-    newPresetId.value = presetId || null;
-    newPresetName.value = initialName || '';
-    newPresetUsers.value = initialUsers || [];
   }
 };
 
-const newPresetMode = ref<'create' | 'update'>('create');
-const newPresetId = ref<number | null>(null);
-const newPresetName = ref<string>('');
-const newPresetUsers = ref<Array<{ uid: number; email: string; name: string }>>([]);
+const updateMode = ref<boolean>(false);
 </script>
 
 <template>
@@ -209,8 +202,8 @@ const newPresetUsers = ref<Array<{ uid: number; email: string; name: string }>>(
         <button class="mb-1" @click="zoomOut(true)" title="Zoom out">-</button>
         <hr class="text-dark my-1" style="width: 100%; height: 3px;" v-if="canEdit || canCreate">
         <div v-if="canEdit">
-          <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center" title="Edit preset" v-if="canDelete" @click="showModal('update', props.currentPreset, props.presetData.name, props.presetData.trusted)">
-            <img src="@/assets/pencil.svg" alt="" style="max-width: 1.5rem;">
+          <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center" title="Edit preset" v-if="canDelete" @click="updateMode = true; showModal()">
+            <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
           </button>
           <button class="p-0 py-1 d-flex align-items-center justify-content-center mb-1" data-bs-toggle="modal" data-bs-target="#imageUploadModal" title="Upload image">
             <img src="@/assets/image.svg" alt="" style="max-width: 1.5rem;">
@@ -220,7 +213,7 @@ const newPresetUsers = ref<Array<{ uid: number; email: string; name: string }>>(
           class="bg-success rounded-end text-light mb-1"
           style="font-weight: 600;"
           title="Create new preset"
-          @click="showModal('create')"
+          @click="updateMode = false; showModal()"
         >+</button>
         <div v-if="canDelete">
           <hr class="text-dark my-1" style="width: 100%; height: 3px;">
@@ -261,7 +254,7 @@ const newPresetUsers = ref<Array<{ uid: number; email: string; name: string }>>(
         />
       </div>
     </div>
-    <NewPreset :mode="newPresetMode" :presetId="newPresetId" :initialName="newPresetName" :initialUsers="newPresetUsers" @new-preset="emit('newPreset')"/>
+    <NewPreset :presetData="presetData" :updateMode="updateMode" @new-preset="emit('newPreset')"/>
     <ImageUpload :currentPresetId="props.currentPreset" @new-image="emit('newImage')"/>
   </div>
 </template>

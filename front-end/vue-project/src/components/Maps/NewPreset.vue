@@ -3,7 +3,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title text-dark" id="newPresetModalLabel">{{ props.mode === 'create' ? 'Create New Preset' : 'Update Preset' }}</h5>
+          <h5 class="modal-title text-dark" id="newPresetModalLabel">{{ updateMode ? 'Update Preset' : 'Create New Preset' }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body text-dark">
@@ -43,7 +43,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="loading">Close</button>
-          <button type="button" class="btn btn-success" @click="createPreset" :disabled="loading">{{ props.mode === 'create' ? 'Create' : 'Update' }}</button>
+          <button type="button" class="btn btn-success" @click="createPreset" :disabled="loading">{{ updateMode ? 'Update' : 'Create' }}</button>
         </div>
       </div>
     </div>
@@ -53,34 +53,39 @@
 <script lang="ts" setup>
 import { ref, onMounted, nextTick, watch, defineEmits, defineProps } from "vue";
 import axios from "axios";
+import type { preset } from "@/utils/mapTypes";
 
 const emit = defineEmits(["newPreset"]);
 
 const props = defineProps({
-  mode: {
-    type: String,
-    required: true,
-    validator: value => ['create', 'update'].includes(value)
+  presetData: {
+    type: Object as () => preset,
+    required: true
   },
-  presetId: {
-    type: Number,
-    required: false
-  },
-  initialName: {
-    type: String,
-    required: false
-  },
-  initialUsers: {
-    type: Array,
-    required: false,
-    default: () => []
+  updateMode: {
+    type: Boolean,
+    required: true
   }
 });
 
-const name = ref<string>(props.initialName || "");
+const updateMode = ref(props.updateMode);
+watch([() => props.updateMode, () => props.presetData], ([newUpdateMode, newPresetData]) => {
+  if (newUpdateMode === true) {
+    name.value = newPresetData.name;
+    selectedUsers.value = newPresetData.trusted.map(uid => {
+      return allUsers.value.find(user => user.uid === uid);
+    }).filter(user => user !== undefined) as Array<{ uid: number; email: string; name: string }>;
+  } else {
+    name.value = "";
+    selectedUsers.value = [];
+  }
+  updateMode.value = newUpdateMode;
+});
+
+const name = ref<string>("");
 const email = ref<string>("");
 const searchResults = ref<Array<{ uid: number; email: string; name: string }>>([]);
-const selectedUsers = ref<Array<{ uid: number; email: string; name: string }>>(props.initialUsers);
+const selectedUsers = ref<Array<{ uid: number; email: string; name: string }>>([]);
 const allUsers = ref<Array<{ uid: number; email: string; name: string }>>([]);
 const highlightedIndex = ref<number>(-1);
 const warningMessage = ref<string>("");
@@ -152,30 +157,25 @@ const createPreset = async () => {
   loading.value = true;
   try {
     const trusted = selectedUsers.value.map(user => user.uid);
-    const url = props.mode === 'create' ? 'http://localhost:5011/presets' : `http://localhost:5011/presets/${props.presetId}`;
-    const method = props.mode === 'create' ? 'post' : 'patch';
-    const response = await axios({
-      method: method,
-      url: url,
-      data: {
-        name: name.value,
-        trusted: trusted
-      },
+    const response = await axios.post('http://localhost:5011/presets', {
+      name: name.value,
+      trusted: trusted
+    }, {
       withCredentials: true
     });
-    if (response.status === (props.mode === 'create' ? 201 : 200)) {
+    if (response.status === 201) {
       warningMessage.value = "";
       name.value = "";
       email.value = "";
       selectedUsers.value = [];
       setTimeout(() => {
-        successMessage.value = `Preset ${props.mode === 'create' ? 'created' : 'updated'} successfully`;
+        successMessage.value = "Preset created successfully";
       }, 10);
     }
     emit("newPreset");
   } catch (error) {
-    console.error(`Error ${props.mode === 'create' ? 'creating' : 'updating'} preset:`, error);
-    alert(`Failed to ${props.mode === 'create' ? 'create' : 'update'} preset`);
+    console.error("Error creating preset:", error);
+    alert("Failed to create preset");
   } finally {
     loading.value = false;
   }
@@ -202,12 +202,6 @@ onMounted(async () => {
       withCredentials: true
     });
     currentUser.value = currentUserResponse.data;
-    if (props.mode === 'update') {
-      if (props.initialName) {
-        name.value = props.initialName;
-      }
-      selectedUsers.value = allUsers.value.filter(user => props.initialUsers.includes(user.uid));
-    }
   } catch (error) {
     console.error("Error fetching users or current user:", error);
   }
