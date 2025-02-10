@@ -45,7 +45,7 @@ function getTextColor(color: string | undefined): string {
 }
 
 const colorPickerVisible = ref<string | null>(null);
-const selectedColor = ref();
+const selectedColor = ref({});
 
 function showColorPicker(key: string) {
   colorPickerVisible.value = key;
