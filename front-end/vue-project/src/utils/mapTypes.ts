@@ -5,6 +5,7 @@ export interface preset {
   name: string,
   trusted: Array<number>,
   boxes: Array<boxType>,
+  owner_id: string | number,
   image: {
     name: string,
     data: string,

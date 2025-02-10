@@ -36,10 +36,14 @@ const props = defineProps({
   backgroundImage: {
     type: String,
     default: ''
+  },
+  canDelete: {
+    type: Boolean,
+    required: true,
   }
 });
 
-const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault", "newPreset", "newImage"]);
+const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault", "newPreset", "newImage", "delete"]);
 
 /** Update only the box data for a given key. */
 function updateBox(key: string, newPosition: any) {
@@ -195,12 +199,20 @@ const showModal = () => {
             <img src="@/assets/image.svg" alt="" style="max-width: 1.5rem;">
           </button>
           <button v-if="props.canCreate"
-            class="bg-success rounded-end text-light"
+            class="bg-success rounded-end text-light mb-1"
             style="font-weight: 600;"
             title="Create new preset"
             @click="showModal"
           >+</button>
         </div>
+        <hr class="text-dark my-1" style="width: 100%; height: 3px;">
+        <button
+          class="p-0 py-1 d-flex align-items-center justify-content-center mb-1 bg-danger"
+          @dblclick="emit('delete')"
+          title="Double click to delete this preset"
+        >
+          <img src="@/assets/bin.svg" alt="" style="max-width: 1.5rem;">
+        </button>
       </div>
     </div>
     <!-- Add scroll event listener -->

@@ -12,6 +12,7 @@ let summary = ref<summaryType>(<summaryType>{});
 let presetList = ref<presetListType>(<presetListType>{});
 let canEdit = ref<boolean>(false);
 let canCreate = ref<boolean>(false);
+let canDelete = ref<boolean>(false);
 let currentPreset = ref<number|string>(-1);
 let presetData = ref<preset>(<preset>{});
 const defaultPresetId = ref<number|string>(-1);
@@ -28,6 +29,7 @@ async function validateUser() {
     let uid = userValidationRequest.data.uid;
     canEdit.value = presetData.value?.trusted?.includes(uid);
     canCreate.value = userValidationRequest.data.authority == "Admin";
+    canDelete.value = presetData.value?.owner_id == uid;
   } catch (error) {
     console.error("Error validating user:", error);
     canEdit.value = false;
@@ -38,11 +40,8 @@ const processPresetImage = () => {
   if (presetData.value.image?.data && presetData.value.image?.name) {
     const imageType = presetData.value.image.name.split('.').pop();
     presetImage.value = `data:image/${imageType};base64,${presetData.value.image.data}`;
-    console.log("presetImage", presetImage.value);
   } else {
     presetImage.value = "";
-    console.log("presetImage", presetImage.value);
-
   }
 };
 
@@ -61,13 +60,17 @@ onMounted(async() => {
   // Make sure data is always being updated
   pollingInterval = setInterval(fetchSummary, 5000);
   // Grab the list of presets
-  try{
-      await fetchPresets();
+  try {
+    await fetchPresets();
     // Grab default preset and set it to the current one
-    currentPreset.value = presetList.value?.default;
+    if (presetList.value?.default) {
+      currentPreset.value = presetList.value.default;
+    } else if (presetList.value.presets.length > 0) {
+      currentPreset.value = presetList.value.presets[0].id;
+    }
     await fetchPreset();
-  }catch (error){
-    console.log("Error on mount fetching:", error)
+  } catch (error) {
+    console.error("Error on mount fetching:", error);
   }
   validateUser();
   create_data();
@@ -81,7 +84,6 @@ const fetchSummary = async() => {
   let request = await axios.get("http://localhost:5003/summary",
     { withCredentials: true});
   summary.value = request.data;
-  // console.log(summary.value)
 }
 
 const fetchPresets = async() => {
@@ -158,7 +160,6 @@ const update_data = () => {
 
 const handleSelectPreset = (id: number) => {
   currentPreset.value = id;
-  console.log("PRESET VALUE CHANGED");
 }
 
 const setDefaultPreset = async () => {
@@ -177,9 +178,35 @@ const setDefaultPreset = async () => {
 };
 
 const settable = computed(() => {
-  console.log(presetList.value.default, currentPreset.value)
   return canCreate.value && presetList.value.default + "" !== currentPreset.value + "";
 });
+
+const deletePreset = async () => {
+  try {
+    await axios.delete(`http://localhost:5011/presets/${currentPreset.value}`, {
+      withCredentials: true
+    });
+  } catch (error) {
+    console.error("Error deleting preset:", error);
+    alert("Failed to delete preset");
+  }
+
+  try {
+    await fetchPresets();
+    if (presetList.value.presets.length === 0) {
+      return;
+    }
+    if (presetList.value?.default) {
+      currentPreset.value = presetList.value.default;
+    } else {
+      currentPreset.value = presetList.value.presets[0].id;
+    }
+    await fetchPreset();
+  } catch (error) {
+    console.error("Error fetching presets:", error);
+    alert("Failed to fetch presets");
+  }
+};
 
 </script>
 
@@ -194,10 +221,12 @@ const settable = computed(() => {
       :defaultPresetId="defaultPresetId"
       :currentPreset="currentPreset"
       :backgroundImage="presetImage"
+      :canDelete="canDelete"
       @selectPreset="handleSelectPreset"
       @setDefault="setDefaultPreset"
       @newPreset="fetchPresets"
       @newImage="fetchPreset"
+      @delete="deletePreset"
     />
     <DashBoard
       v-model="boxes_and_data"
