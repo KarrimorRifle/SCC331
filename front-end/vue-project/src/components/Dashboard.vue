@@ -31,11 +31,11 @@ function updateLabel(key: string, newLabel: string) {
   emit("update:modelValue", updatedData);
 }
 
-function getTextColor(color: string | undefined): string {
-  if (typeof color !== 'string') {
+function getTextColour(colour: string | undefined): string {
+  if (typeof colour !== 'string') {
     return "black";
   }
-  const c = color ?? "#FFFFFF";
+  const c = colour ?? "#FFFFFF";
   const hex = c.replace("#", "");
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
@@ -44,22 +44,23 @@ function getTextColor(color: string | undefined): string {
   return brightness < 128 ? "white" : "black";
 }
 
-const colorPickerVisible = ref<string | null>(null);
-const selectedColor = ref({});
+const colourPickerVisible = ref<string | null>(null);
+const selectedColour = ref({});
 
-function showColorPicker(key: string) {
-  colorPickerVisible.value = key;
+function showColourPicker(key: string, colour: string) {
+  selectedColour.value = { hex: colour };
+  colourPickerVisible.value = key;
 }
 
-function hideColorPicker() {
-  colorPickerVisible.value = null;
+function hideColourPicker() {
+  colourPickerVisible.value = null;
 }
 
-function changeColor(key: string) {
-  const color = typeof selectedColor.value.hex === 'string' ? selectedColor.value.hex : '#FFFFFF';
-  console.log(selectedColor.value.hex)
-  emit('colourChange', key, color);
-  hideColorPicker();
+function changeColour(key: string) {
+  const colour = typeof selectedColour.value.hex === 'string' ? selectedColour.value.hex : '#FFFFFF';
+  console.log(selectedColour.value.hex)
+  emit('colourChange', key, colour);
+  hideColourPicker();
 }
 </script>
 
@@ -75,7 +76,7 @@ function changeColor(key: string) {
       v-for="([key, data]) in Object.entries(modelValue)"
       :key="key"
       class="dashboard-area"
-      :style="{ backgroundColor: data.box?.colour ?? '#FFFFFF', color: getTextColor(data.box?.colour) }"
+      :style="{ backgroundColor: data.box?.colour ?? '#FFFFFF', color: getTextColour(data.box?.colour) }"
     >
       <template v-if="editMode">
         <button class="btn btn-success add-button" @click="emit('newBox', key)" v-if="!data.box">+</button>
@@ -84,18 +85,18 @@ function changeColor(key: string) {
           title="Change box colour"
           class="btn add-button d-flex align-items-center justify-content-center"
           style="max-width: 2.5rem; background-color: #568ea6;"
-          @click="showColorPicker(key)"
+          @click="showColourPicker(key, data.box.colour)"
           v-else
         >
           <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
         </button>
       </template>
 
-      <!-- Color Picker Popover -->
-      <div v-if="colorPickerVisible === key" class="color-picker-popover">
-        <Sketch v-model="selectedColor" />
-        <button class="btn btn-success me-2 mt-2 btn-sm" @click="changeColor(key)">Done</button>
-        <button class="btn btn-secondary mt-2 btn-sm" @click="hideColorPicker">Cancel</button>
+      <!-- Colour Picker Popover -->
+      <div v-if="colourPickerVisible === key" class="colour-picker-popover">
+        <Sketch v-model="selectedColour" />
+        <button class="btn btn-success me-2 mt-2 btn-sm" @click="changeColour(key)">Done</button>
+        <button class="btn btn-secondary mt-2 btn-sm" @click="hideColourPicker">Cancel</button>
       </div>
 
       <!-- Update only the label -->
@@ -111,7 +112,7 @@ function changeColor(key: string) {
       <!-- Luggage Count -->
       <div class="count-container">
         <div class="marker-container">
-          <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
+          <LuggageMarker :colour="'#f44336'" :position="{ top: 0, left: 0 }" />
         </div>
         <p>Luggage: {{ data.tracker?.luggage?.count || 0 }}</p>
       </div>
@@ -119,7 +120,7 @@ function changeColor(key: string) {
       <!-- People Count -->
       <div class="count-container">
         <div class="marker-container">
-          <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
+          <PersonMarker :colour="'#4caf50'" :position="{ top: 0, left: 0 }" />
         </div>
         <p>People: {{ data.tracker?.users?.count || 0 }}</p>
       </div>
@@ -228,7 +229,7 @@ function changeColor(key: string) {
   top: 10px;
 }
 
-.color-picker-popover {
+.colour-picker-popover {
   position: absolute;
   top: 40px;
   right: 10px;

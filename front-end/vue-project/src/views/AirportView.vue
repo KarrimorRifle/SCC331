@@ -114,6 +114,7 @@ const props = defineProps({
 
 // I need to create a function to construct the object i want to v model on mount
 const create_data = () => {
+  boxes_and_data.value = {};
   // Add box data per room
   presetData.value.boxes?.forEach((box: boxType) => {
     if(boxes_and_data.value[box.roomID]){
@@ -234,6 +235,7 @@ const uploadBoxes = () => {
 
 const cancelBoxEdit = () => {
   fetchPreset();
+  create_data();
   editMode.value = false;
 }
 
