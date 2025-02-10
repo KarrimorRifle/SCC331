@@ -80,7 +80,7 @@ Format is as follows:
 }
 ```
 For PicoType 1 (rooms):
-  Data is CSV string where: "<Sound>,<Light>,<temp>"
+  Data is CSV string where: "<Sound>,<Light>,<temp>,<IAQ>,<Pressure>,<Humidity>"
 
 For PicoType 2 (luggage) & 3 (Users):
   Data variable is currently negligible
