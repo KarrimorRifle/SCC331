@@ -246,14 +246,15 @@ This service handles the creation, modification, and deletion of asset presets, 
   - `401`: Unauthorized.
   - `500`: Server error.
 
-#### Update Preset Name
+#### Update Preset
 - **PATCH:** `/presets/<preset_id>`
 - **Cookies:**
   - `session_id`: Valid admin session.
 - **Request Body (JSON):**
   ```json
   {
-    "name": "New Preset Name"
+    "name": "New Preset Name",
+    "trusted": [019, 380, 28]
   }
   ```
 - **Responses:**
