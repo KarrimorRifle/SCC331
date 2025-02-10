@@ -27,9 +27,9 @@ async function validateUser() {
     });
 
     let uid = userValidationRequest.data.uid;
-    canEdit.value = presetData.value?.trusted?.includes(uid);
-    canCreate.value = userValidationRequest.data.authority == "Admin";
     canDelete.value = presetData.value?.owner_id == uid;
+    canEdit.value = presetData.value?.trusted?.includes(uid) || canDelete.value;
+    canCreate.value = userValidationRequest.data.authority == "Admin";
   } catch (error) {
     console.error("Error validating user:", error);
     canEdit.value = false;
@@ -222,6 +222,7 @@ const deletePreset = async () => {
       :currentPreset="currentPreset"
       :backgroundImage="presetImage"
       :canDelete="canDelete"
+      :canEdit="canEdit"
       @selectPreset="handleSelectPreset"
       @setDefault="setDefaultPreset"
       @newPreset="fetchPresets"

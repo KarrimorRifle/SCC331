@@ -21,6 +21,10 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  canEdit: {
+    type: Boolean,
+    required: true,
+  },
   settable: {
     type: Boolean,
     required: true,
@@ -190,7 +194,7 @@ const showModal = () => {
       <div class="button-container d-flex flex-column align-items-end" style="pointer-events: all;">
         <button class="mb-1" @click="zoomIn(true)" title="Zoom in">+</button>
         <button class="mb-1" @click="zoomOut(true)" title="Zoom out">-</button>
-        <div> <!--will add v-if-->
+        <div v-if="canEdit"> <!--will add v-if-->
           <hr class="text-dark my-1" style="width: 100%; height: 3px;">
           <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center" title="Edit preset">
             <img src="@/assets/pencil.svg" alt="" style="max-width: 1.5rem;">
@@ -205,14 +209,16 @@ const showModal = () => {
             @click="showModal"
           >+</button>
         </div>
-        <hr class="text-dark my-1" style="width: 100%; height: 3px;">
-        <button
-          class="p-0 py-1 d-flex align-items-center justify-content-center mb-1 bg-danger"
-          @dblclick="emit('delete')"
-          title="Double click to delete this preset"
-        >
-          <img src="@/assets/bin.svg" alt="" style="max-width: 1.5rem;">
-        </button>
+        <div v-if="canDelete">
+          <hr class="text-dark my-1" style="width: 100%; height: 3px;">
+          <button
+            class="p-0 py-1 d-flex align-items-center justify-content-center mb-1 bg-danger"
+            @dblclick="emit('delete')"
+            title="Double click to delete this preset"
+          >
+            <img src="@/assets/bin.svg" alt="" style="max-width: 1.5rem;">
+          </button>
+        </div>
       </div>
     </div>
     <!-- Add scroll event listener -->
