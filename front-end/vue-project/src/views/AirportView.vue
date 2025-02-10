@@ -223,6 +223,7 @@ const deletePreset = async () => {
       :backgroundImage="presetImage"
       :canDelete="canDelete"
       :canEdit="canEdit"
+      :presetData="presetData"
       @selectPreset="handleSelectPreset"
       @setDefault="setDefaultPreset"
       @newPreset="fetchPresets"

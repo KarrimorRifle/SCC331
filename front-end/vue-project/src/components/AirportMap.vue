@@ -44,6 +44,10 @@ const props = defineProps({
   canDelete: {
     type: Boolean,
     required: true,
+  },
+  presetData: {
+    type: Object as () => preset,
+    required: true,
   }
 });
 
@@ -167,13 +171,22 @@ watch(zoomLevel, () => {
 });
 
 // Function to show the modal
-const showModal = () => {
+const showModal = (mode: 'create' | 'update', presetId?: number, initialName?: string, initialUsers?: Array<{ uid: number; email: string; name: string }>) => {
   const modalElement = document.getElementById('newPresetModal');
   if (modalElement) {
     const modal = new Modal(modalElement);
     modal.show();
+    newPresetMode.value = mode;
+    newPresetId.value = presetId || null;
+    newPresetName.value = initialName || '';
+    newPresetUsers.value = initialUsers || [];
   }
 };
+
+const newPresetMode = ref<'create' | 'update'>('create');
+const newPresetId = ref<number | null>(null);
+const newPresetName = ref<string>('');
+const newPresetUsers = ref<Array<{ uid: number; email: string; name: string }>>([]);
 </script>
 
 <template>
@@ -194,21 +207,21 @@ const showModal = () => {
       <div class="button-container d-flex flex-column align-items-end" style="pointer-events: all;">
         <button class="mb-1" @click="zoomIn(true)" title="Zoom in">+</button>
         <button class="mb-1" @click="zoomOut(true)" title="Zoom out">-</button>
-        <div v-if="canEdit"> <!--will add v-if-->
-          <hr class="text-dark my-1" style="width: 100%; height: 3px;">
-          <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center" title="Edit preset">
+        <hr class="text-dark my-1" style="width: 100%; height: 3px;" v-if="canEdit || canCreate">
+        <div v-if="canEdit">
+          <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center" title="Edit preset" v-if="canDelete" @click="showModal('update', props.currentPreset, props.presetData.name, props.presetData.trusted)">
             <img src="@/assets/pencil.svg" alt="" style="max-width: 1.5rem;">
           </button>
           <button class="p-0 py-1 d-flex align-items-center justify-content-center mb-1" data-bs-toggle="modal" data-bs-target="#imageUploadModal" title="Upload image">
             <img src="@/assets/image.svg" alt="" style="max-width: 1.5rem;">
           </button>
-          <button v-if="props.canCreate"
-            class="bg-success rounded-end text-light mb-1"
-            style="font-weight: 600;"
-            title="Create new preset"
-            @click="showModal"
-          >+</button>
         </div>
+        <button v-if="canCreate"
+          class="bg-success rounded-end text-light mb-1"
+          style="font-weight: 600;"
+          title="Create new preset"
+          @click="showModal('create')"
+        >+</button>
         <div v-if="canDelete">
           <hr class="text-dark my-1" style="width: 100%; height: 3px;">
           <button
@@ -248,7 +261,7 @@ const showModal = () => {
         />
       </div>
     </div>
-    <NewPreset @new-preset="emit('newPreset')"/>
+    <NewPreset :mode="newPresetMode" :presetId="newPresetId" :initialName="newPresetName" :initialUsers="newPresetUsers" @new-preset="emit('newPreset')"/>
     <ImageUpload :currentPresetId="props.currentPreset" @new-image="emit('newImage')"/>
   </div>
 </template>
