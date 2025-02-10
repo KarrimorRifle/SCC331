@@ -180,6 +180,7 @@ const settable = computed(() => {
       :currentPreset="currentPreset"
       @selectPreset="handleSelectPreset"
       @setDefault="setDefaultPreset"
+      @newPreset="fetchPresets"
     />
     <DashBoard
       v-model="boxes_and_data"

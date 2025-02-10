@@ -51,8 +51,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, nextTick, watch } from "vue";
+import { ref, onMounted, nextTick, watch, defineEmits } from "vue";
 import axios from "axios";
+
+const emit = defineEmits(["newPreset"]);
 
 const name = ref<string>("");
 const email = ref<string>("");
@@ -141,6 +143,7 @@ const createPreset = async () => {
         successMessage.value = "Preset created successfully";
       }, 10);
     }
+    emit("newPreset");
   } catch (error) {
     console.error("Error creating preset:", error);
     alert('Failed to create preset');

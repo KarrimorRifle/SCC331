@@ -34,7 +34,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault"]);
+const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault", "newPreset"]);
 
 /** Update only the box data for a given key. */
 function updateBox(key: string, newPosition: any) {
@@ -175,7 +175,6 @@ const showModal = () => {
             <option v-for="preset in presetList.presets" :value="preset.id" :key="preset.id">
               {{ preset.id === defaultPresetId ? `Default: ${preset.name}` : preset.name }}
             </option>
-            <option v-if="presetList.presets?.length == 0" style="font-weight: 600;">-------------</option>
           </select>
         </div>
       </div>
@@ -226,7 +225,7 @@ const showModal = () => {
         />
       </div>
     </div>
-    <NewPreset />
+    <NewPreset @new-preset="emit('newPreset')"/>
     <ImageUpload :defaultPresetId="props.defaultPresetId" />
   </div>
 </template>
