@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import OverlayArea from './OverlayArea.vue';
 import NewPreset from './Maps/NewPreset.vue';
+import ImageUpload from './Maps/ImageUpload.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import type { boxAndData, dataObject, presetListType } from '@/utils/mapTypes';
 import { Modal } from 'bootstrap';
+import axios from 'axios';
 
 const props = defineProps({
   modelValue: {
@@ -25,7 +27,11 @@ const props = defineProps({
   defaultPresetId: {
     type: [Number, String],
     required: true,
-  }
+  },
+  currentPreset: {
+    type: [Number, String],
+    required: true,
+  },
 });
 
 const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault"]);
@@ -159,30 +165,13 @@ const showModal = () => {
 
 <template>
   <div class="airport-map-container" id="">
-    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h1 class="modal-title fs-5" id="staticBackdropLabel">Modal title</h1>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            ...
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary">Understood</button>
-          </div>
-        </div>
-      </div>
-    </div>
     <div class="zoom-controls d-flex flex-column align-items-end" style="pointer-events: none;">
       <div class="preset-container card p-2">
         <div class="input-group" style="pointer-events: all;">
           <button v-if="props.settable" class="btn btn-success ms-2" @click="emit('setDefault')" for="inputGroupSelect01">Set Default</button>
           <label v-else class="input-group-text bg-dark text-light" for="inputGroupSelect01">Preset</label>
           <!-- add v-model and make it a v-if to change the name -->
-          <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem" @change="emit('selectPreset', $event.target.value)">
+          <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem" @change="emit('selectPreset', $event.target.value)" :value="props.currentPreset">
             <option v-for="preset in presetList.presets" :value="preset.id" :key="preset.id">
               {{ preset.id === defaultPresetId ? `Default: ${preset.name}` : preset.name }}
             </option>
@@ -198,9 +187,8 @@ const showModal = () => {
           <button class="mb-1 p-0 py-1 d-flex align-items-center justify-content-center" title="Edit preset">
             <img src="@/assets/pencil.svg" alt="" style="max-width: 1.5rem;">
           </button>
-          <button class="p-0 py-1 d-flex align-items-center justify-content-center mb-1" data-bs-toggle="modal" data-bs-target="#staticBackdrop" title="Change preset image">
+          <button class="p-0 py-1 d-flex align-items-center justify-content-center mb-1" data-bs-toggle="modal" data-bs-target="#imageUploadModal" title="Upload image">
             <img src="@/assets/image.svg" alt="" style="max-width: 1.5rem;">
-            <!-- Add a modal popout for this -->
           </button>
           <button v-if="props.canCreate"
             class="bg-success rounded-end text-light"
@@ -238,8 +226,8 @@ const showModal = () => {
         />
       </div>
     </div>
-    <!-- New Preset Modal -->
     <NewPreset />
+    <ImageUpload :defaultPresetId="props.defaultPresetId" />
   </div>
 </template>
 

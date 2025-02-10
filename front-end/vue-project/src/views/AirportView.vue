@@ -12,9 +12,9 @@ let summary = ref<summaryType>(<summaryType>{});
 let presetList = ref<presetListType>(<presetListType>{});
 let canEdit = ref<boolean>(false);
 let canCreate = ref<boolean>(false);
-let currentPreset = ref<number|string>();
+let currentPreset = ref<number|string>(-1);
 let presetData = ref<preset>(<preset>{});
-const defaultPresetId = ref<number|string>();
+const defaultPresetId = ref<number|string>(-1);
   //Data used by the App
 let boxes_and_data = ref<boxAndData>(<boxAndData>{});
 
@@ -163,7 +163,7 @@ const setDefaultPreset = async () => {
 
 const settable = computed(() => {
   console.log(presetList.value.default, currentPreset.value)
-  return canCreate.value && presetList.value.default + "" !== currentPreset.value;
+  return canCreate.value && presetList.value.default + "" !== currentPreset.value + "";
 });
 
 </script>
@@ -177,6 +177,7 @@ const settable = computed(() => {
       :canCreate="canCreate"
       :settable="settable"
       :defaultPresetId="defaultPresetId"
+      :currentPreset="currentPreset"
       @selectPreset="handleSelectPreset"
       @setDefault="setDefaultPreset"
     />
