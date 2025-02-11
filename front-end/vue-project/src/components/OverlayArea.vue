@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import PersonMarker from "./ObjectMarker/PersonMarker.vue"
 import LuggageMarker from "./ObjectMarker/LuggageMarker.vue";
-import { ref, computed } from 'vue';
+import { ref, computed, shallowReactive } from 'vue';
 
 // Define props and emits
 const props = defineProps({
@@ -17,11 +17,18 @@ const props = defineProps({
   },
   data: {
     type: Object, 
-    default: () => ({})
-  }
+    default: () => ({}),
+  },
+  editMode: {
+    type: Boolean,
+    required: true,
+  },
 });
 
 const getAreaKey = (label: string): string | null => {
+  if (!label || !label.match) {
+    return null;
+  }
   const match = label.match(/\d+/);
   return match ? match[0] : null;
 };
@@ -56,62 +63,80 @@ const dragOffset = ref({ x: 0, y: 0 });
 const resizeStart = ref({ x: 0, y: 0 });
 
 // Start Dragging
-const startDrag = (event: MouseEvent) => {
+const startDrag = (event: MouseEvent | TouchEvent) => {
+  if(!props.editMode) return;
   dragging.value = true;
+  const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+  const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
   // Calculate drag offset, accounting for the zoom level
   dragOffset.value = {
-    x: (event.clientX - props.position.left * props.zoomLevel),
-    y: (event.clientY - props.position.top * props.zoomLevel),
+    x: (clientX - props.position.left * props.zoomLevel),
+    y: (clientY - props.position.top * props.zoomLevel),
   };
 };
 
 // Perform Dragging
-const drag = (event: MouseEvent) => {
+const drag = (event: MouseEvent | TouchEvent) => {
+  if(!props.editMode) return;
   if (dragging.value) {
+    const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+    const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
     emit('update:position', {
       ...props.position,
       // Normalize the position changes by the zoom level
-      top: (event.clientY - dragOffset.value.y) / props.zoomLevel,
-      left: (event.clientX - dragOffset.value.x) / props.zoomLevel,
+      top: (clientY - dragOffset.value.y) / props.zoomLevel,
+      left: (clientX - dragOffset.value.x) / props.zoomLevel,
     });
   }
 };
 
 // End Dragging
 const endDrag = () => {
+  if(!props.editMode) return;
   dragging.value = false;
 };
 
 // Start Resizing
-const startResize = (event: MouseEvent) => {
+const startResize = (event: MouseEvent | TouchEvent) => {
+  if(!props.editMode) return;
   resizing.value = true;
-  resizeStart.value = { x: event.clientX, y: event.clientY };
+  const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+  const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
+  resizeStart.value = { x: clientX, y: clientY };
 
   // Add global event listeners
   window.addEventListener('mousemove', resize);
   window.addEventListener('mouseup', endResize);
+  window.addEventListener('touchmove', resize);
+  window.addEventListener('touchend', endResize);
 };
 
 // Perform Resizing
-const resize = (event: MouseEvent) => {
+const resize = (event: MouseEvent | TouchEvent) => {
+  if(!props.editMode) return;
   if (resizing.value) {
+    const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+    const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
     emit('update:position', {
       ...props.position,
       // Adjust resizing for zoom level
-      width: props.position.width + (event.clientX - resizeStart.value.x) / props.zoomLevel,
-      height: props.position.height + (event.clientY - resizeStart.value.y) / props.zoomLevel,
+      width: props.position.width + (clientX - resizeStart.value.x) / props.zoomLevel,
+      height: props.position.height + (clientY - resizeStart.value.y) / props.zoomLevel,
     });
-    resizeStart.value = { x: event.clientX, y: event.clientY };
+    resizeStart.value = { x: clientX, y: clientY };
   }
 };
 
 // End Resizing
 const endResize = () => {
+  if(!props.editMode) return;
   resizing.value = false;
 
   // Remove global event listeners
   window.removeEventListener('mousemove', resize);
   window.removeEventListener('mouseup', endResize);
+  window.removeEventListener('touchmove', resize);
+  window.removeEventListener('touchend', endResize);
 };
 </script>
 
@@ -123,12 +148,17 @@ const endResize = () => {
       left: props.position.left + 'px',
       width: props.position.width + 'px',
       height: props.position.height + 'px',
-      backgroundColor: color,
+      backgroundColor: color + '7D',
+      overflow: 'visible',
+      pointerEvents: props.editMode ? 'auto' : 'none',
     }"
     @mousedown="startDrag"
     @mousemove="drag"
     @mouseup="endDrag"
     @mouseleave="endDrag"
+    @touchstart="startDrag"
+    @touchmove="drag"
+    @touchend="endDrag"
   >
     <span class="overlay-area-label">{{ label }}</span>
 
@@ -150,7 +180,9 @@ const endResize = () => {
     <!-- Resize Handle -->
     <div
       class="resize-handle"
+      v-if="props.editMode"
       @mousedown.stop="startResize"
+      @touchstart.stop="startResize"
     ></div>
   </div>
 </template>
@@ -158,7 +190,6 @@ const endResize = () => {
 <style scoped>
 .overlay-area {
   position: absolute;
-  opacity: 0.5;
   border: 1px solid #000;
   display: flex;
   align-items: center;
@@ -182,7 +213,12 @@ const endResize = () => {
   height: 10px;
   bottom: 0;
   right: 0;
-  background: #000;
+  background: #FFF;
+  border: #000 2px solid;
   cursor: se-resize;
+  position: absolute;
+  bottom: -0.3em;
+  right: -0.3rem;
+  z-index: 100;
 }
 </style>
