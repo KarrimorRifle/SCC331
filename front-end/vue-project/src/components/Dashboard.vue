@@ -101,6 +101,7 @@ function changeColour(key: string) {
 
       <!-- Update only the label -->
       <input
+        v-if="editMode"
         type="text"
         :value="data.label"
         :placeholder="data.label || key"
@@ -108,6 +109,13 @@ function changeColour(key: string) {
         style="width: 80%;"
         @input="(evt) => updateLabel(key, evt.target.value)"
       />
+      <div
+        v-else
+        class="input-group-text text-start border-0"
+        style="width: 80%;"
+      >
+        {{ data.label || key }}
+      </div>
 
       <!-- Luggage Count -->
       <div class="count-container">

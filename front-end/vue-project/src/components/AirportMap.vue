@@ -295,6 +295,7 @@ const updateMode = ref<boolean>(false);
           :color="data.box.colour"
           :zoomLevel="zoomLevel"
           :data="data.tracker"
+          :edit-mode="editMode"
           @update:position="(pos) => updateBox(key, pos)"
         />
       </div>

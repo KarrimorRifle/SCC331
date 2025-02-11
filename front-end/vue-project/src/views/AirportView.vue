@@ -98,6 +98,7 @@ const fetchPreset = async() => {
   let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}`,
     {withCredentials: true});
   presetData.value = request.data;
+  console.log(presetData.value);
   processPresetImage();
 }
 
@@ -127,6 +128,13 @@ const create_data = () => {
       }
     }else {
       boxes_and_data.value[box.roomID] = <dataObject>{};
+      boxes_and_data.value[box.roomID].box = {
+        top: box.top,
+        left: box.left,
+        width: box.width,
+        height: box.height,
+        colour: box.colour
+      }
     }
   })
 
@@ -138,6 +146,8 @@ const create_data = () => {
       boxes_and_data.value[roomID].tracker = environment;
     }
   });
+
+  console.log("boxes and data", boxes_and_data.value)
 }
 
 // Create function to update data
@@ -229,9 +239,31 @@ const removeBox = (roomID: number | string) => {
   boxes_and_data.value[roomID].box = null;
 }
 
-const uploadBoxes = () => {
-  console.log("uploading");
-}
+const uploadBoxes = async () => {
+  const boxesToUpload = Object.entries(boxes_and_data.value)
+    .filter(([_, data]) => data.box) // Filter out entries where data.box does not exist
+    .map(([roomID, data]) => ({
+      roomID: roomID,
+      ...data.box,
+      label: data.label || ""
+    }));
+
+  console.log("Uploading boxes:", boxesToUpload); // Log the boxes being uploaded
+
+  try {
+    await axios.patch(`http://localhost:5011/presets/${currentPreset.value}/boxes`, {
+      boxes: boxesToUpload
+    }, {
+      withCredentials: true
+    });
+    alert("Boxes uploaded successfully");
+    editMode.value = false;
+  } catch (error) {
+    console.error("Error uploading boxes:", error);
+    alert("Failed to upload boxes");
+  }
+  editMode.value = false;
+};
 
 const cancelBoxEdit = () => {
   fetchPreset();
