@@ -22,6 +22,8 @@ const isLoggedIn = ref<boolean>(!!cookies.get("session_id"));
       :picoIds="picoIds"
       :updates="updates"
       :environmentHistory="environmentHistory"
+      :overlayAreasConstant="overlayAreasConstant"
+      :overlayAreasData="overlayAreasData"
       @login="isLoggedIn = true"
     />
   </div>
