@@ -8,7 +8,7 @@ import requests
 import time
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 # Establish a persistent connection to the database
 db_connection = None
@@ -95,7 +95,7 @@ def get_preset_details(preset_id):
     try:
         # Fetch preset details including image columns from presets
         cursor.execute("""
-            SELECT preset_id AS id, preset_name AS name, image_name, image_data
+            SELECT preset_id AS id, preset_name AS name, image_name, image_data, owner_id
             FROM presets
             WHERE preset_id = %s
         """, (preset_id,))
@@ -144,6 +144,7 @@ def get_preset_details(preset_id):
         return jsonify({
             "id": preset_row["id"],
             "name": preset_row["name"],
+            "owner_id": preset_row["owner_id"],
             "trusted": trusted,
             "boxes": boxes,
             "image": image,

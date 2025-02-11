@@ -20,7 +20,11 @@ const props = defineProps({
   },
   data: {
     type: Object, 
-    default: () => ({})
+    default: () => ({}),
+  },
+  editMode: {
+    type: Boolean,
+    required: true,
   },
   warnings: {
     type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
@@ -29,6 +33,9 @@ const props = defineProps({
 });
 
 const getAreaKey = (label: string): string | null => {
+  if (!label || !label.match) {
+    return null;
+  }
   const match = label.match(/\d+/);
   return match ? match[0] : null;
 };
@@ -69,6 +76,7 @@ const resizeStart = ref({ x: 0, y: 0 });
 
 // Start Dragging
 const startDrag = (event: MouseEvent | TouchEvent) => {
+  if(!props.editMode) return;
   dragging.value = true;
   const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
   const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
@@ -81,6 +89,7 @@ const startDrag = (event: MouseEvent | TouchEvent) => {
 
 // Perform Dragging
 const drag = (event: MouseEvent | TouchEvent) => {
+  if(!props.editMode) return;
   if (dragging.value) {
     const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
     const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
@@ -95,11 +104,13 @@ const drag = (event: MouseEvent | TouchEvent) => {
 
 // End Dragging
 const endDrag = () => {
+  if(!props.editMode) return;
   dragging.value = false;
 };
 
 // Start Resizing
 const startResize = (event: MouseEvent | TouchEvent) => {
+  if(!props.editMode) return;
   resizing.value = true;
   const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
   const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
@@ -114,6 +125,7 @@ const startResize = (event: MouseEvent | TouchEvent) => {
 
 // Perform Resizing
 const resize = (event: MouseEvent | TouchEvent) => {
+  if(!props.editMode) return;
   if (resizing.value) {
     const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
     const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
@@ -129,6 +141,7 @@ const resize = (event: MouseEvent | TouchEvent) => {
 
 // End Resizing
 const endResize = () => {
+  if(!props.editMode) return;
   resizing.value = false;
 
   // Remove global event listeners
@@ -149,6 +162,7 @@ const endResize = () => {
       height: props.position.height + 'px',
       backgroundColor: color + '7D',
       overflow: 'visible',
+      pointerEvents: props.editMode ? 'auto' : 'none',
     }"
     @mousedown="startDrag"
     @mousemove="drag"
@@ -185,6 +199,7 @@ const endResize = () => {
     <!-- Resize Handle -->
     <div
       class="resize-handle"
+      v-if="props.editMode"
       @mousedown.stop="startResize"
       @touchstart.stop="startResize"
     ></div>

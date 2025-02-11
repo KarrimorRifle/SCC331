@@ -16,10 +16,10 @@
           <label for="password" class="form-label mb-0 fw-bold text-light">Password</label>
           <input type="password" class="form-control" id="password" v-model="password">
         </div>
-        <!-- <div class="mb-3 form-check">
+        <div class="mb-3 form-check">
           <input type="checkbox" class="form-check-input" id="admin" v-model="isAdmin">
-          <label class="form-check-label" for="admin">Admin</label>
-        </div> -->
+          <label class="form-check-label text-white" for="admin">Admin (Dev only)</label>
+        </div>
         <button type="submit" class="btn btn-primary">Submit</button>
       </form>
     </div>
@@ -36,7 +36,7 @@ const router = useRouter();
 const name = ref('');
 const email = ref('');
 const password = ref('');
-// const isAdmin = ref(false);
+const isAdmin = ref(false);
 const errorMessage = ref<string | null>(null);
 
 const email_compliance = computed(() => email.value.toLowerCase().endsWith('@fakecompany.co.uk'));
@@ -57,7 +57,8 @@ const handleSubmit = async () => {
         headers: {
           "name": name.value,
           "email": email.value,
-          "password": password.value
+          "password": password.value,
+          "bypass": isAdmin.value ? "yes" : "no"
         }
       })
 

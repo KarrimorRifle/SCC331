@@ -113,6 +113,13 @@ class TestAssets(unittest.TestCase):
         self.assertEqual(response.status_code, 200, msg="Failed to upload image")  # Expect 200 instead of 201
         return response.json()
 
+    def get_users(self):
+        cookies = {"session_id": self.session_id}
+        url = f"{BASE_URL_LOGIN}/get_users"
+        response = requests.get(url, cookies=cookies)
+        self.assertEqual(response.status_code, 200, msg="Failed to get users")
+        return response.json().get("users", [])
+
     # Test cases
 
     def test_01_create_preset_and_verify(self):
@@ -139,12 +146,32 @@ class TestAssets(unittest.TestCase):
         self.assertNotIn(preset['preset_id'], preset_ids, msg="Preset was not deleted")
 
     def test_04_rename_preset(self):
-        preset = self.create_preset("Old Preset Name")
+        users = self.get_users()
+        self.assertGreaterEqual(len(users), 2, msg="Not enough users to test trusted list update")
+        
+        # Select two random UIDs for the trusted list
+        import random
+        random_users = random.sample(users, 2)
+        initial_trusted = [user['uid'] for user in random_users]
+        
+        preset = self.create_preset("Old Preset Name", trusted=initial_trusted)
         self.rename_preset(preset['preset_id'], "New Preset Name")
-        presets = self.list_presets()
-        renamed = next((p for p in presets.get("presets", []) if p['id'] == preset['preset_id']), None)
-        self.assertIsNotNone(renamed, msg="Renamed preset not found")
-        self.assertEqual(renamed['name'], "New Preset Name", msg="Preset name did not update correctly")
+        
+        # Select two different random UIDs for the new trusted list
+        remaining_users = [user for user in users if user['uid'] not in initial_trusted]
+        new_random_users = random.sample(remaining_users, 2)
+        new_trusted = [user['uid'] for user in new_random_users]
+        
+        cookies = {"session_id": self.session_id}
+        url = f"{BASE_URL_EDITOR}/presets/{preset['preset_id']}"
+        data = {"name": "New Preset Name", "trusted": new_trusted}
+        response = requests.patch(url, headers=self.headers, json=data, cookies=cookies)
+        self.assertEqual(response.status_code, 200, msg="Failed to update preset trusted list")
+        
+        # Verify the updated preset details
+        preset_details = self.get_preset(preset['preset_id'])
+        self.assertEqual(preset_details['name'], "New Preset Name", msg="Preset name did not update correctly")
+        self.assertEqual(set(preset_details['trusted']), set(new_trusted), msg=f"Trusted list did not update correctly. Expected: {set(new_trusted)}, Got: {set(preset_details['trusted'])}")
 
     def test_05_populate_preset_with_boxes(self):
         preset = self.create_preset("Preset With Boxes")

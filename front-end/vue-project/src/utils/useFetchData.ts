@@ -81,7 +81,7 @@ export function useFetchData(picoIds) {
       });
 
       if (JSON.stringify(summaryData) !== JSON.stringify(overlayAreasData.value)) {
-        console.log('Overlay areas updated:', summaryData);
+        //console.log('Overlay areas updated:', summaryData);
         overlayAreasData.value = summaryData;
       }
 
@@ -94,10 +94,10 @@ export function useFetchData(picoIds) {
         }
 
         const picoData = await picoResponse.data;
-        console.log(`Pico ${PICO_ID} data:`, picoData);
+        //console.log(`Pico ${PICO_ID} data:`, picoData);
 
         if (JSON.stringify(picoData) !== JSON.stringify(updates.value[PICO_ID])) {
-          console.log(`Updates updated for ${PICO_ID}:`, picoData);
+          //console.log(`Updates updated for ${PICO_ID}:`, picoData);
           updates.value = { ...updates.value, [PICO_ID]: picoData };
         }
       }

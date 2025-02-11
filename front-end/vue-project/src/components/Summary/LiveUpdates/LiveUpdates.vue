@@ -8,6 +8,10 @@ const props = defineProps({
     type: Array as PropType<number[]>,
     required: true,
   },
+  areaKey:{
+    type: Number, 
+    required: true,
+  },
   updates: {
     type: Object as PropType<Record<number, { logged_at: string; roomID: number }[]>>,
     required: true,
@@ -19,11 +23,7 @@ const props = defineProps({
     type: Array as PropType<{ label: string; color: string; position: object }[]>,
     required: true,
   },
-  areaShown: {
-    type: Array as PropType<{ label: string; color: string; position: object }[]>,
-  },
 });
-
 // Modal state
 const showModal = ref(false);
 const selectedUserId = ref<number | null>(null);
@@ -89,8 +89,12 @@ const groupedUsersByRoom = computed(() => {
   const end = endTime.value ? new Date(endTime.value).getTime() : null;
 
   // ✅ **Determine Which Area Filter to Use**
-  const areasToShow = props.areaShown?.length ? props.areaShown : props.overlayAreasConstant;
+  const areasToShow = 
+    props.areaKey ? 
+    props.overlayAreasConstant.filter(area => area.label === `Area ${props.areaKey}`) : 
+    props.overlayAreasConstant;
 
+  console.log("area to show: ", areasToShow);
   // Populate roomMap **only for the filtered users of the area**
   Object.entries(props.updates).forEach(([userId, userUpdates]) => {
     userUpdates.forEach(({ logged_at, roomID }) => {

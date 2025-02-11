@@ -38,7 +38,7 @@ const activeSection = ref("all");
 </script>
 
 <template>
-  <div class="summary-container">
+  <div class="summary-container" id="summary">
     <!-- Sidebar Navigation -->
     <nav class="sidebar">
       <button @click="activeSection = 'all'" :class="{ active: activeSection === 'all' }">📌 Show All</button>

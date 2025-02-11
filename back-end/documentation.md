@@ -32,6 +32,40 @@ port: 5002
   - `401`: Invalid cookie
   - `500`: Database connection failed or other server error
 
+### POST: `/logout`
+- **Headers or Cookies:**
+  - `session-id`: Session ID cookie (required)
+- **Responses:**
+  - `200`: Logout successful, removes `session_id` cookie
+  - `400`: No session cookie or header provided
+  - `500`: Database connection failed or other server error
+
+### GET: `/get_users`
+- **Headers or Cookies:**
+  - `session-id`: Session ID cookie (required)
+- **Responses:**
+  - `200`: Returns a list of users (requires admin authority)
+    - **Example:**
+      ```json
+      {
+        "users": [
+          {
+            "uid": 1,
+            "email": "user1@fakecompany.co.uk",
+            "name": "User One"
+          },
+          {
+            "uid": 2,
+            "email": "user2@fakecompany.co.uk",
+            "name": "User Two"
+          }
+        ]
+      }
+      ```
+  - `400`: No session cookie or header provided
+  - `401`: Unauthorized access or insufficient permission
+  - `500`: Database connection failed or other server error
+
 # Data
 ## processing
 All messages are to be sent through the MQTT server on topic: `feeds/hardware-data/#`
@@ -46,7 +80,7 @@ Format is as follows:
 }
 ```
 For PicoType 1 (rooms):
-  Data is CSV string where: "<Sound>,<Light>,<temp>"
+  Data is CSV string where: "<Sound>,<Light>,<temp>,<IAQ>,<Pressure>,<Humidity>"
 
 For PicoType 2 (luggage) & 3 (Users):
   Data variable is currently negligible
@@ -87,11 +121,11 @@ port: 5003
         "1": {
           "users": {
             "count": 2,
-            "id": [101, 102]
+            "id": ["101", "102"]
           },
           "luggage": {
             "count": 1,
-            "id": [201]
+            "id": ["201"]
           },
           "environment": {
             "temperature": 22.5,
@@ -105,11 +139,11 @@ port: 5003
         "2": {
           "users": {
             "count": 1,
-            "id": [103]
+            "id": ["103"]
           },
           "luggage": {
             "count": 2,
-            "id": [202, 203]
+            "id": ["202", "203"]
           },
           "environment": {
             "temperature": 23.0,
@@ -212,14 +246,15 @@ This service handles the creation, modification, and deletion of asset presets, 
   - `401`: Unauthorized.
   - `500`: Server error.
 
-#### Update Preset Name
+#### Update Preset
 - **PATCH:** `/presets/<preset_id>`
 - **Cookies:**
   - `session_id`: Valid admin session.
 - **Request Body (JSON):**
   ```json
   {
-    "name": "New Preset Name"
+    "name": "New Preset Name",
+    "trusted": [019, 380, 28]
   }
   ```
 - **Responses:**

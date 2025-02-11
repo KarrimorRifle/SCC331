@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { ref, PropType, onMounted, onUnmounted, computed } from 'vue';
+import { ref, PropType, onMounted, onUnmounted, computed, defineProps, defineEmits} from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faExpand, faCompress, faExclamationTriangle} from '@fortawesome/free-solid-svg-icons';
 import { handleWarningButtonPressed } from '@/utils/helper/warningUtils';
 import { updateTabHeight } from '@/utils/helper/domUtils';
+import { boxAndData } from '@/utils/mapTypes';
+import { Sketch } from '@ckpack/vue-color';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 import LiveUpdates from './Summary/LiveUpdates/LiveUpdates.vue';
 
 const props = defineProps({
+  modelValue: {
+    type: Object as () => boxAndData,
+    required: true,
+  },
   overlayAreasConstant: {
     type: Array,
     required: true,
@@ -29,9 +35,16 @@ const props = defineProps({
     type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
     required: true,
   },
+  editMode: {
+    type: Boolean,
+    required: true
+  },
+  
 });
+const emit = defineEmits(["update:modelValue", "newBox","colourChange", "removeBox"]);
 
-// Dashboard state
+const colourPickerVisible = ref<string | null>(null);
+const selectedColour = ref({});
 const isExpanded = ref(false);
 const bottomTabHeight = ref(0);
 
@@ -39,25 +52,34 @@ const toggleDashboard = () => {
   isExpanded.value = !isExpanded.value;
 };
 
-// Helper functions remain unchanged
-const getTextColor = (color: string): string => {
-  const hex = color.replace('#', '');
+
+function updateLabel(key: string, newLabel: string) {
+  const updatedData = { ...props.modelValue };
+
+  if (updatedData[key]) {
+    updatedData[key] = {
+      ...updatedData[key],
+      label: newLabel,
+    };
+  }
+
+  emit("update:modelValue", updatedData);
+}
+
+function getTextColour(colour: string | undefined): string {
+  if (typeof colour !== 'string') {
+    return "black";
+  }
+  const c = colour ?? "#FFFFFF";
+  const hex = c.replace("#", "");
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness < 128 ? 'white' : 'black';
-};
+  return brightness < 128 ? "white" : "black";
+}
 
-const getAreaKey = (label: string): string | null => {
-  const match = label.match(/\d+/);
-  return match ? match[0] : null;
-};
-
-const getUpdatesForArea = (area) => {
-  const areaKey = getAreaKey(area.label);
-  if (!areaKey) return {};
-
+const getUpdatesForArea = (areaKey) => {
   // Filter updates to only include users in this specific area
   const filteredUpdates: Record<number, { logged_at: string; roomID: number }[]> = {};
 
@@ -83,6 +105,21 @@ const onWarningButtonClick = (areaLabel: string) => {
   handleWarningButtonPressed(areaLabel, warningsForArea);
 };
 
+function showColourPicker(key: string, colour: string) {
+  selectedColour.value = { hex: colour };
+  colourPickerVisible.value = key;
+}
+
+function hideColourPicker() {
+  colourPickerVisible.value = null;
+}
+
+function changeColour(key: string) {
+  const colour = typeof selectedColour.value.hex === 'string' ? selectedColour.value.hex : '#FFFFFF';
+  console.log(selectedColour.value.hex)
+  emit('colourChange', key, colour);
+  hideColourPicker();
+}
 
 onMounted(() => {
   updateTabHeight('.tab-bar', bottomTabHeight);
@@ -97,14 +134,14 @@ onUnmounted(() => {
 
 <template>
   <div 
-    class="dashboard" 
+    class="dashboard"
     :class="{ expanded: isExpanded }"
     :style="{ 
       maxHeight: `calc(100vh - ${bottomTabHeight + 65}px)`,
       minHeight: `calc(100vh - ${bottomTabHeight + 65}px)`
     }"
   >
-    <!-- Dashboard Header -->
+      <!-- Dashboard Header -->
     <div class="dashboard-header">
       <h2 v-if="!isExpanded">Dashboard</h2>
       <h2 v-else>Detailed Dashboard</h2>
@@ -113,24 +150,68 @@ onUnmounted(() => {
         <font-awesome-icon :icon="isExpanded ? faCompress : faExpand" />
       </button>
     </div>
+    
+    <!-- Show "No data available" if empty -->
+    <div v-if="!modelValue || Object.keys(modelValue).length === 0">
+      No data available
+    </div>
 
-    <!-- Dashboard Areas -->
+    <!-- Render each item -->
     <div class="dashboard-areas">
-      <div 
-        v-for="(area, index) in overlayAreasConstant" 
-        :key="index" 
+      <div
+        v-for="([key, data]) in Object.entries(modelValue)"
+        :key="key"
         class="dashboard-area"
-        :style="{ backgroundColor: area.color, color: getTextColor(area.color) }"
+        :style="{ backgroundColor: data.box?.colour ?? '#FFFFFF', color: getTextColour(data.box?.colour) }"
       >
+        <button 
+          v-if="warningsByArea[`Area ${key}`]?.length"
+          class="warning-btn"
+          @click="onWarningButtonClick(`Area ${key}`)"
+        >
+          <font-awesome-icon :icon="faExclamationTriangle" />
+        </button>
+
+        <!-- Colour Picker Popover -->
+        <div v-if="colourPickerVisible === key" class="colour-picker-popover">
+          <Sketch v-model="selectedColour" />
+          <button class="btn btn-success me-2 mt-2 btn-sm" @click="changeColour(key)">Done</button>
+          <button class="btn btn-secondary mt-2 btn-sm" @click="hideColourPicker">Cancel</button>
+        </div>
+
+        <!-- Update only the label -->
         <div class="area-header">
-          <h3>{{ area.label }}</h3>
-          <button 
-            v-if="warningsByArea[area.label]?.length"
-            class="warning-btn"
-            @click="onWarningButtonClick(area.label)"
+          <input
+            v-if="editMode"
+            type="text"
+            :value="data.label"
+            :placeholder="data.label || key"
+            class="input-group-text text-start"
+            style="width: 80%;"
+            @input="(evt) => updateLabel(key, evt.target.value)"
+          />
+
+          <div
+            v-else
+            class="input-group-text text-start border-0"
+            style="width: 80%;"
           >
-            <font-awesome-icon :icon="faExclamationTriangle" />
-          </button>
+            {{ data.label || key }}
+          </div>
+
+          <template v-if="editMode">
+            <button class="btn btn-success add-button" @click="emit('newBox', key)" v-if="!data.box">+</button>
+            <button class="btn btn-danger add-button" @click="emit('removeBox', key)" v-else-if="data.box && !data.tracker">-</button>
+            <button
+              title="Change box colour"
+              class="btn add-button d-flex align-items-center justify-content-center"
+              style="max-width: 2.5rem; background-color: #568ea6;"
+              @click="showColourPicker(key, data.box.colour)"
+              v-else
+            >
+              <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
+            </button>
+          </template>
         </div>
 
         <!-- Luggage Count -->
@@ -138,7 +219,7 @@ onUnmounted(() => {
           <div class="marker-container">
             <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
           </div>
-          <p>Luggage Count: {{ overlayAreasData[getAreaKey(area.label)]?.luggage?.count || 0 }}</p>
+          <p>Luggage Count: {{  data.tracker?.luggage?.count|| 0 }}</p>
         </div>
 
         <!-- People Count -->
@@ -146,8 +227,9 @@ onUnmounted(() => {
           <div class="marker-container">
             <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
           </div>
-          <p>People Count: {{ overlayAreasData[getAreaKey(area.label)]?.users?.count || 0 }}</p>
+          <p>People Count: {{  data.tracker?.users?.count || 0 }}</p>
         </div>
+
 
         <!-- Environment Data (Expanded View Only) -->
         <div v-if="isExpanded" class="environment-container">
@@ -156,34 +238,34 @@ onUnmounted(() => {
             <tbody>
             <tr>
               <th class="emoji-column">🌡️</th>
-              <th class="data-column">{{ overlayAreasData[getAreaKey(area.label)]?.environment?.temperature || '--' }} °C</th>
+              <th class="data-column">{{ data.tracker?.environment?.temperature || '--' }} °C</th>
               <th class="emoji-column">🌬️</th>
-              <th class="data-column">{{ overlayAreasData[getAreaKey(area.label)]?.environment?.IAQ || '--' }} %</th>
+              <th class="data-column">{{ data.tracker?.environment?.IAQ || '--' }} %</th>
             </tr>
             <tr>
               <th class="emoji-column">🔊</th>
-              <th class="data-column">{{ overlayAreasData[getAreaKey(area.label)]?.environment?.sound || '--' }} dB</th>
+              <th class="data-column">{{ data.tracker?.environment?.sound || '--' }} dB</th>
               <th class="emoji-column">🌡️</th>
-              <th class="data-column">{{ overlayAreasData[getAreaKey(area.label)]?.environment?.pressure || '--' }} hPa</th>
+              <th class="data-column">{{ data.tracker?.environment?.pressure || '--' }} hPa</th>
             </tr>
             <tr>
               <th class="emoji-column">💡</th>
-              <th class="data-column">{{ overlayAreasData[getAreaKey(area.label)]?.environment?.light || '--' }} lux</th>
+              <th class="data-column">{{ data.tracker?.environment?.light || '--' }} lux</th>
               <th class="emoji-column">💧</th>
-              <th class="data-column">{{ overlayAreasData[getAreaKey(area.label)]?.environment?.humidity || '--' }} %</th>
+              <th class="data-column">{{ data.tracker?.environment?.humidity || '--' }} %</th>
             </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Live Updates for Each Area (Expanded View Only) -->
+
+        <!-- Live Updates for Each Area (Expanded View Only)-->
         <div v-if="isExpanded" class="live-updates-section">
           <LiveUpdates 
             :userIds="userIds" 
-            :updates="getUpdatesForArea(area)" 
-            :fullUpdates="updates"
+            :areaKey="key"
+            :updates="getUpdatesForArea(key)" 
             :overlayAreasConstant="overlayAreasConstant"
-            :areaShown="[area]" 
           />
         </div>
       </div>
@@ -323,5 +405,17 @@ onUnmounted(() => {
   100% {
     transform: translateY(-5px);
   }
+}
+
+.colour-picker-popover {
+  position: absolute;
+  top: 40px;
+  right: 10px;
+  z-index: 1000;
+  background: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 </style>

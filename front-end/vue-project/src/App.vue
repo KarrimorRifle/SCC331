@@ -5,10 +5,11 @@ import WarningAreaModal from "./components/Notifications/WarningNotification/War
 import NotificationIcon from "./components/Notifications/NotificationIcon.vue";
 import Navbar from '@/components/Navbar.vue';
 import { useFetchData } from '@/utils/useFetchData';
+import { useCookies } from 'vue3-cookies';
+
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
 const { overlayAreasConstant, overlayAreasData, updates, environmentHistory, warnings } = useFetchData(picoIds);
-
 const isMobile = ref(window.innerWidth < 768);
 const isWarningModalOpen = ref(false);
 const showSeverePopup = ref(false);
@@ -55,6 +56,10 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener("resize", updateIsMobile);
 });
+
+const { cookies } = useCookies();
+
+const isLoggedIn = ref<boolean>(!!cookies.get("session_id"));
 </script>
 
 <template>
@@ -65,18 +70,20 @@ onUnmounted(() => {
       :isWarningModalOpen="isWarningModalOpen" 
       :warnings="notificationQueue"
       :warningCount="warningCount"
+      :loggedIn="isLoggedIn"
       @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
+      @logout="isLoggedIn = false"
     />
-
     <router-view
       class="flex-grow-1 app"
       :picoIds="picoIds"
-      :overlayAreasConstant="overlayAreasConstant"
-      :overlayAreasData="overlayAreasData" 
       :updates="updates"
       :environmentHistory="environmentHistory"
       :warnings="notificationQueue"
       :isMobile="isMobile"
+      :overlayAreasConstant="overlayAreasConstant"
+      :overlayAreasData="overlayAreasData"
+      @login="isLoggedIn = true"
     />
     
     <!-- Notification Icon Component -->
