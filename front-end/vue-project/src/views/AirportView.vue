@@ -50,6 +50,7 @@ const defaultPresetId = ref<number|string>(-1);
 let presetImage = ref<string>("");
 let boxes_and_data = ref<boxAndData>(<boxAndData>{});
 let editMode = ref<boolean>(false);
+const isLoading = ref(true);
 const isDashboardOpen = ref(true);
 const settable = computed(() => {
   return canCreate.value && presetList.value.default + "" !== currentPreset.value + "";
@@ -87,19 +88,24 @@ const fetchSummary = async() => {
 }
 
 const fetchPresets = async() => {
+  isLoading.value = true;
+  
   let request = await axios.get("http://localhost:5010/presets",
     {withCredentials: true});
   presetList.value = request.data;
   // Set the default preset ID
   defaultPresetId.value = presetList.value.default;
+  isLoading.value = false;
 }
 
 const fetchPreset = async() => {
+  isLoading.value = true;
   let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}`,
     {withCredentials: true});
   presetData.value = request.data;
   console.log(presetData.value);
   processPresetImage();
+  isLoading.value = false;
 }
 
 const toggleDashboard = () => {
@@ -345,6 +351,7 @@ onUnmounted(() => {
     <template #map>
       <AirportMap
         class="flex-grow-1"
+        :isLoading="isLoading"
         :overlayAreasConstant="overlayAreasConstant" 
         :overlayAreasData="overlayAreasData" 
         :warnings="warnings"
@@ -374,6 +381,7 @@ onUnmounted(() => {
     <template #dashboard>
       <DashBoard
         v-model="boxes_and_data"
+        :isLoading="isLoading"
         :editMode="editMode"
         @newBox="createNewBox"
         @colourChange="handleColourChange"
@@ -390,6 +398,7 @@ onUnmounted(() => {
   <div v-else class="airport-view-container d-flex flex-row">
     <AirportMap
       class="flex-grow-1"
+      :isLoading="isLoading"
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
       :warnings="warnings"
@@ -415,6 +424,7 @@ onUnmounted(() => {
     />
     <DashBoard
       v-model="boxes_and_data"
+      :isLoading="isLoading"
       :editMode="editMode"
       @newBox="createNewBox"
       @colourChange="handleColourChange"

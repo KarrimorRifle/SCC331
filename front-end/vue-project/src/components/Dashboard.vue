@@ -9,6 +9,7 @@ import { Sketch } from '@ckpack/vue-color';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 import LiveUpdates from './Summary/LiveUpdates/LiveUpdates.vue';
+import LoadingSpinner from "@/components/LoadingSpinner/LoadingSpinner.vue";
 
 const props = defineProps({
   modelValue: {
@@ -39,6 +40,7 @@ const props = defineProps({
     type: Boolean,
     required: true
   },
+  isLoading: Boolean,
   
 });
 const emit = defineEmits(["update:modelValue", "newBox","colourChange", "removeBox"]);
@@ -141,6 +143,8 @@ onUnmounted(() => {
       minHeight: `calc(100vh - ${bottomTabHeight + 65}px)`
     }"
   >
+    <LoadingSpinner v-if="isLoading" message="Loading dashboard..." />
+    <div v-else>
       <!-- Dashboard Header -->
     <div class="dashboard-header">
       <h2 v-if="!isExpanded">Dashboard</h2>
@@ -269,6 +273,7 @@ onUnmounted(() => {
           />
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>

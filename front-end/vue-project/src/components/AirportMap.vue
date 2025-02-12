@@ -2,6 +2,7 @@
 import OverlayArea from './OverlayArea.vue';
 import NewPreset from './Maps/NewPreset.vue';
 import ImageUpload from './Maps/ImageUpload.vue';
+import LoadingSpinner from "@/components/LoadingSpinner/LoadingSpinner.vue";
 import { ref, onMounted, onUnmounted, watch, PropType} from 'vue';
 import type { boxAndData, dataObject, presetListType, preset } from '@/utils/mapTypes';
 import { Modal } from 'bootstrap';
@@ -9,6 +10,8 @@ import axios from 'axios';
 import terminalMap from '@/assets/terminal-map.png';
 
 const props = defineProps({
+  isLoading: Boolean,
+
   modelValue: {
     type: Object as () => boxAndData,
     required: true,
@@ -275,6 +278,10 @@ const updateMode = ref<boolean>(false);
         </div>
       </div>
     </div>
+
+    <LoadingSpinner v-if="isLoading" message="Loading airport map..." />
+
+    <div v-else>
     <!-- Add scroll event listener -->
     <div
       class="airport-map-wrapper"
@@ -306,6 +313,7 @@ const updateMode = ref<boolean>(false);
     </div>
     <NewPreset :presetData="presetData" :updateMode="updateMode" @new-preset="emit('newPreset')"/>
     <ImageUpload :currentPresetId="props.currentPreset" @new-image="emit('newImage')"/>
+    </div>
   </div>
 </template>
 
