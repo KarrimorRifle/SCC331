@@ -2,7 +2,7 @@
 import AirportMap from "@/components/AirportMap.vue";
 import DashBoard from "@/components/Dashboard.vue";
 import BottomTabNavigator from "@/components/BottomTabNavigator.vue";
-import {onMounted, onUnmounted, ref, watch, computed, PropType}from "vue"
+import {onMounted, onUnmounted, ref, watch, computed, PropType, defineEmits}from "vue"
 import axios from "axios";
 import OverlayArea from '@/components/OverlayArea.vue';
 import type { Timeout } from "node:timers";
@@ -35,6 +35,8 @@ const props = defineProps({
     required: true,
   },
 });
+
+const emit = defineEmits(["updateOverlayAreaColor", "updateOverlayAreas"]);
 
 let pollingInterval: Timeout;
 let summary = ref<summaryType>(<summaryType>{});
@@ -173,6 +175,22 @@ const setDefaultPreset = async () => {
     });
     alert("Default preset set successfully");
     await fetchPresets();
+
+    if (presetData.value.boxes) {
+      console.log("Updating overlay areas with preset colors...");
+
+      // Update overlayAreasConstant with new colors from the preset
+      const updatedOverlayAreas = props.overlayAreasConstant.map(area => {
+        const matchingBox = presetData.value.boxes.find(box => box.roomID === area.label.replace("Area ", ""));
+        return matchingBox ? { ...area, color: matchingBox.colour } : area;
+      });
+
+      console.log("Updated overlayAreasConstant:", updatedOverlayAreas);
+
+      // Emit event to App.vue to update global state & localStorage
+      emit("updateOverlayAreas", updatedOverlayAreas);
+    }
+
   } catch (error) {
     console.error("Error setting default preset:", error);
     alert("Failed to set default preset");
@@ -215,6 +233,7 @@ const createNewBox = (roomID: number | string) => {
     height: 100,
     colour: randomColor,
   };
+  emit("updateOverlayAreaColor", { roomID, colour: randomColor });
 }
 
 const changeBoxColour =  (roomID: number | string, colour: string) => {
@@ -257,6 +276,32 @@ const cancelBoxEdit = () => {
   create_data();
   editMode.value = false;
 }
+
+const updateOverlayAreaColor = (roomID: string, newColor: string) => {
+  const area = props.overlayAreasConstant.find(area => area.label === `Area ${roomID}`);
+  if (area) {
+    area.color = newColor; 
+  }
+};
+
+const handleColourChange = (roomID: string, newColor: string) => {
+  console.log(`Colour change detected for Area ${roomID}: ${newColor}`);
+
+  // Update box color logic
+  changeBoxColour(roomID, newColor);
+
+  console.log("current preset: ", currentPreset.value);
+  console.log("default preset: ", defaultPresetId.value);
+
+  if (currentPreset.value == defaultPresetId.value) {
+    // Update overlay areas constant (this is to updates globally);
+    updateOverlayAreaColor(roomID, newColor);
+    emit("updateOverlayAreaColor", { roomID, colour: newColor });
+  }else{
+    console.log("doesn't match");
+
+  }
+};
 
 watch(currentPreset, async () => {
   await fetchPreset();
@@ -331,7 +376,7 @@ onUnmounted(() => {
         v-model="boxes_and_data"
         :editMode="editMode"
         @newBox="createNewBox"
-        @colourChange="changeBoxColour"
+        @colourChange="handleColourChange"
         @removeBox="removeBox"
         :overlayAreasData="overlayAreasData" 
         :overlayAreasConstant="overlayAreasConstant"
@@ -372,7 +417,7 @@ onUnmounted(() => {
       v-model="boxes_and_data"
       :editMode="editMode"
       @newBox="createNewBox"
-      @colourChange="changeBoxColour"
+      @colourChange="handleColourChange"
       @removeBox="removeBox"
       :overlayAreasData="overlayAreasData" 
       :overlayAreasConstant="overlayAreasConstant"

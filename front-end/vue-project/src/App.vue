@@ -9,7 +9,7 @@ import { useCookies } from 'vue3-cookies';
 
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
-const { overlayAreasConstant, overlayAreasData, updates, environmentHistory, warnings } = useFetchData(picoIds);
+const { overlayAreasConstant, overlayAreasData, updateOverlayAreaColor, updateAllOverlayAreas, updates, environmentHistory, warnings } = useFetchData(picoIds);
 const isMobile = ref(window.innerWidth < 768);
 const isWarningModalOpen = ref(false);
 const showSeverePopup = ref(false);
@@ -23,6 +23,13 @@ const dismissNotification = (index: number) => {
   notificationQueue.value.splice(index, 1);
 };
 
+const handleUpdateOverlayAreaColor = ({ roomID, colour }) => {
+  updateOverlayAreaColor(roomID, colour);
+};
+
+const handleUpdateAllOverlayAreas = (newOverlayAreas) => {
+  updateAllOverlayAreas(newOverlayAreas);
+};
 // Sync `notificationQueue` when `safeWarnings` updates
 watch(
   () => JSON.stringify(safeWarnings.value), // 🔄 Track JSON string to detect deep changes
@@ -84,6 +91,8 @@ const isLoggedIn = ref<boolean>(!!cookies.get("session_id"));
       :overlayAreasConstant="overlayAreasConstant"
       :overlayAreasData="overlayAreasData"
       @login="isLoggedIn = true"
+      @updateOverlayAreaColor="handleUpdateOverlayAreaColor"
+      @updateOverlayAreas="handleUpdateAllOverlayAreas"
     />
     
     <!-- Notification Icon Component -->
