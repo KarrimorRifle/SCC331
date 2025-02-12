@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { ref, computed, shallowReactive, PropType} from 'vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faExclamationTriangle} from '@fortawesome/free-solid-svg-icons';
+import { handleWarningButtonPressed } from '@/utils/helper/warningUtils';
 import PersonMarker from "./ObjectMarker/PersonMarker.vue"
 import LuggageMarker from "./ObjectMarker/LuggageMarker.vue";
-import { ref, computed, shallowReactive } from 'vue';
 
 // Define props and emits
 const props = defineProps({
@@ -22,6 +25,10 @@ const props = defineProps({
   editMode: {
     type: Boolean,
     required: true,
+  },
+  warnings: {
+    type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
+    default: () => [],
   },
 });
 
@@ -56,6 +63,11 @@ const luggageList = computed(() => {
 
 const emit = defineEmits(['update:position']);
 
+const hasWarnings = computed(() => props.warnings.length > 0);
+
+const onWarningButtonClick = () => {
+  handleWarningButtonPressed(props.label, props.warnings);
+};
 // Local states
 const dragging = ref(false);
 const resizing = ref(false);
@@ -160,6 +172,13 @@ const endResize = () => {
     @touchmove="drag"
     @touchend="endDrag"
   >
+    <button 
+      v-if="hasWarnings"
+      class="warning-btn"
+      @click="onWarningButtonClick"
+    >
+      <font-awesome-icon :icon="faExclamationTriangle" />
+    </button>
     <span class="overlay-area-label">{{ label }}</span>
 
     <PersonMarker
@@ -200,6 +219,24 @@ const endResize = () => {
 
 .overlay-area:active {
   cursor: grabbing;
+}
+
+.warning-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: red;
+  color: white;
+  border: none;
+  padding: 5px 0;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 100;
+}
+.warning-btn:hover {
+  background: darkred;
 }
 
 .overlay-area-label{

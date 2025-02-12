@@ -2,7 +2,7 @@
 import OverlayArea from './OverlayArea.vue';
 import NewPreset from './Maps/NewPreset.vue';
 import ImageUpload from './Maps/ImageUpload.vue';
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, PropType} from 'vue';
 import type { boxAndData, dataObject, presetListType, preset } from '@/utils/mapTypes';
 import { Modal } from 'bootstrap';
 import axios from 'axios';
@@ -15,6 +15,10 @@ const props = defineProps({
   },
   presetList: {
     type: Object as () => presetListType,
+    required: true,
+  },
+  warnings: {
+    type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
     required: true,
   },
   canCreate: {
@@ -54,19 +58,15 @@ const props = defineProps({
     required: true
   }
 });
-
-const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault", "newPreset", "newImage", "delete", "edit", "save", "cancel"]);
-
-/** Update only the box data for a given key. */
+// Zoom level and map position state
+const zoomLevel = ref(0.9);
+const mapPosition = ref({ x: 0, y: 0 });
+const isDragging = ref(false);
+const dragStart = ref({ x: 0, y: 0 });
+const isZooming = ref(false);
 const internalModelValue = ref<boxAndData>({ ...props.modelValue });
 
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    internalModelValue.value = { ...newValue };
-  },
-  { deep: true }
-);
+const emit = defineEmits(["update:modelValue", "selectPreset", "getNewPreset", "setDefault", "newPreset", "newImage", "delete", "edit", "save", "cancel"]);
 
 function updateBox(key: string, newPosition: any) {
   const updated = { ...internalModelValue.value };
@@ -82,13 +82,9 @@ function updateBox(key: string, newPosition: any) {
   emit("update:modelValue", updated);
 }
 
-// Zoom level and map position state
-const zoomLevel = ref(0.9);
-const mapPosition = ref({ x: 0, y: 0 });
-const isDragging = ref(false);
-const dragStart = ref({ x: 0, y: 0 });
-const isZooming = ref(false);
-
+const getWarningsByArea = (areaLabel: string) => {
+  return props.warnings?.filter((warning) => warning.Location === areaLabel);
+}
 // Zoom controls
 const zoomIn = (ease?: boolean) => {
   if (zoomLevel.value < 2) {
@@ -104,7 +100,6 @@ const zoomOut = (ease?: boolean) => {
   }
 };
 
-// Handle scrolling for zooming
 const handleScroll = (event: WheelEvent) => {
   event.preventDefault(); // Prevent the default scrolling behavior
   if (event.deltaY < 0) {
@@ -166,6 +161,15 @@ const handleTouchEnd = () => {
   isDragging.value = false;
 };
 
+// Function to show the modal
+const showModal = () => {
+  const modalElement = document.getElementById('newPresetModal');
+  if (modalElement) {
+    const modal = new Modal(modalElement);
+    modal.show();
+  }
+};
+
 // Add event listeners for dragging
 onMounted(() => {
   window.addEventListener('mousemove', handleMouseMove);
@@ -188,14 +192,13 @@ watch(zoomLevel, () => {
   }, 120); // Match the transition duration
 });
 
-// Function to show the modal
-const showModal = () => {
-  const modalElement = document.getElementById('newPresetModal');
-  if (modalElement) {
-    const modal = new Modal(modalElement);
-    modal.show();
-  }
-};
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    internalModelValue.value = { ...newValue };
+  },
+  { deep: true }
+);
 
 const updateMode = ref<boolean>(false);
 </script>
@@ -294,6 +297,7 @@ const updateMode = ref<boolean>(false);
           :label="data.label?.length > 0 ? data.label : key"
           :color="data.box.colour"
           :zoomLevel="zoomLevel"
+          :warnings="getWarningsByArea(data.label)" 
           :data="data.tracker"
           :edit-mode="editMode"
           @update:position="(pos) => updateBox(key, pos)"
@@ -307,6 +311,8 @@ const updateMode = ref<boolean>(false);
 
 <style scoped>
 .airport-map-container {
+  display: flex;
+  flex: 1;
   position: relative;
   height: 100%;
   overflow: hidden;
@@ -317,7 +323,7 @@ const updateMode = ref<boolean>(false);
   position: absolute;
   top: 10px;
   right: 10px;
-  z-index: 1000;
+  z-index: 10;
   display: flex;
   gap: 10px;
 }

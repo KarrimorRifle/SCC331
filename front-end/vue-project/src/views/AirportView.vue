@@ -1,11 +1,40 @@
 <script setup lang="ts">
-import AirportMap from '@/components/AirportMap.vue';
+import AirportMap from "@/components/AirportMap.vue";
 import DashBoard from "@/components/Dashboard.vue";
-import {onMounted, onUnmounted, ref, watch, computed }from "vue"
+import BottomTabNavigator from "@/components/BottomTabNavigator.vue";
+import {onMounted, onUnmounted, ref, watch, computed, PropType}from "vue"
 import axios from "axios";
 import OverlayArea from '@/components/OverlayArea.vue';
 import type { Timeout } from "node:timers";
 import type {preset, presetListType, boxAndData, boxType, summaryType, environmentData, dataObject} from "../utils/mapTypes";
+
+// Receive isMobile from App.vue
+const props = defineProps({
+  overlayAreasConstant: {
+    type: Array,
+    required: true,
+  },
+  overlayAreasData: {
+    type: Object,
+    required: true,
+  },
+  isMobile: {
+    type: Boolean,
+    required: true,
+  }, 
+  picoIds: {
+    type: Array,
+    required: true,
+  },
+  updates: {
+    type: Object,
+    required: true,
+  },
+  warnings: {
+    type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
+    required: true,
+  },
+});
 
 let pollingInterval: Timeout;
 let summary = ref<summaryType>(<summaryType>{});
@@ -19,6 +48,10 @@ const defaultPresetId = ref<number|string>(-1);
 let presetImage = ref<string>("");
 let boxes_and_data = ref<boxAndData>(<boxAndData>{});
 let editMode = ref<boolean>(false);
+const isDashboardOpen = ref(true);
+const settable = computed(() => {
+  return canCreate.value && presetList.value.default + "" !== currentPreset.value + "";
+});
 
 async function validateUser() {
   try {
@@ -45,41 +78,6 @@ const processPresetImage = () => {
   }
 };
 
-watch(currentPreset, async () => {
-  await fetchPreset();
-  create_data();
-  validateUser();
-});
-
-
-watch(summary, () => {
-  update_data();
-});
-
-onMounted(async() => {
-  // Make sure data is always being updated
-  pollingInterval = setInterval(fetchSummary, 5000);
-  // Grab the list of presets
-  try {
-    await fetchPresets();
-    // Grab default preset and set it to the current one
-    if (presetList.value?.default) {
-      currentPreset.value = presetList.value.default;
-    } else if (presetList.value.presets.length > 0) {
-      currentPreset.value = presetList.value.presets[0].id;
-    }
-    await fetchPreset();
-  } catch (error) {
-    console.error("Error on mount fetching:", error);
-  }
-  validateUser();
-  create_data();
-});
-
-onUnmounted(() => {
-  if (pollingInterval) clearInterval(pollingInterval);
-});
-
 const fetchSummary = async() => {
   let request = await axios.get("http://localhost:5003/summary",
     { withCredentials: true});
@@ -102,16 +100,9 @@ const fetchPreset = async() => {
   processPresetImage();
 }
 
-const props = defineProps({
-  overlayAreasConstant: {
-    type: Array,
-    required: true,
-  },
-  overlayAreasData: {
-    type: Object,
-    required: true,
-  },
-});
+const toggleDashboard = () => {
+  isDashboardOpen.value = !isDashboardOpen.value;
+};
 
 // I need to create a function to construct the object i want to v model on mount
 const create_data = () => {
@@ -187,10 +178,6 @@ const setDefaultPreset = async () => {
     alert("Failed to set default preset");
   }
 };
-
-const settable = computed(() => {
-  return canCreate.value && presetList.value.default + "" !== currentPreset.value + "";
-});
 
 const deletePreset = async () => {
   try {
@@ -271,12 +258,96 @@ const cancelBoxEdit = () => {
   editMode.value = false;
 }
 
+watch(currentPreset, async () => {
+  await fetchPreset();
+  create_data();
+  validateUser();
+});
+
+watch(summary, () => {
+  update_data();
+});
+
+onMounted(async() => {
+  // Make sure data is always being updated
+  pollingInterval = setInterval(fetchSummary, 5000);
+  // Grab the list of presets
+  try {
+    await fetchPresets();
+    // Grab default preset and set it to the current one
+    if (presetList.value?.default) {
+      currentPreset.value = presetList.value.default;
+    } else if (presetList.value.presets.length > 0) {
+      currentPreset.value = presetList.value.presets[0].id;
+    }
+    await fetchPreset();
+  } catch (error) {
+    console.error("Error on mount fetching:", error);
+  }
+  validateUser();
+  create_data();
+});
+
+onUnmounted(() => {
+  if (pollingInterval) clearInterval(pollingInterval);
+});
+
 </script>
 
 <template>
-  <div class="airport-view-container d-flex flex-row" id="map">
+  <BottomTabNavigator v-if="isMobile">
+    <!-- Slot for Map -->
+    <template #map>
+      <AirportMap
+        class="flex-grow-1"
+        :overlayAreasConstant="overlayAreasConstant" 
+        :overlayAreasData="overlayAreasData" 
+        :warnings="warnings"
+        v-model="boxes_and_data"
+        :presetList="presetList"
+        :canCreate="canCreate"
+        :settable="settable"
+        :defaultPresetId="defaultPresetId"
+        :currentPreset="currentPreset"
+        :backgroundImage="presetImage"
+        :canDelete="canDelete"
+        :canEdit="canEdit"
+        :presetData="presetData"
+        :editMode="editMode"
+        @selectPreset="handleSelectPreset"
+        @setDefault="setDefaultPreset"
+        @newPreset="fetchPresets"
+        @newImage="fetchPreset"
+        @delete="deletePreset"
+        @edit="editMode = true"
+        @save="uploadBoxes"
+        @cancel="cancelBoxEdit"
+      />
+    </template>
+
+    <!-- Slot for Dashboard -->
+    <template #dashboard>
+      <DashBoard
+        v-model="boxes_and_data"
+        :editMode="editMode"
+        @newBox="createNewBox"
+        @colourChange="changeBoxColour"
+        @removeBox="removeBox"
+        :overlayAreasData="overlayAreasData" 
+        :overlayAreasConstant="overlayAreasConstant"
+        :userIds="picoIds"
+        :updates="updates"
+        :warnings="warnings"
+      />
+    </template>
+  </BottomTabNavigator>
+
+  <div v-else class="airport-view-container d-flex flex-row">
     <AirportMap
       class="flex-grow-1"
+      :overlayAreasConstant="overlayAreasConstant" 
+      :overlayAreasData="overlayAreasData" 
+      :warnings="warnings"
       v-model="boxes_and_data"
       :presetList="presetList"
       :canCreate="canCreate"
@@ -303,6 +374,11 @@ const cancelBoxEdit = () => {
       @newBox="createNewBox"
       @colourChange="changeBoxColour"
       @removeBox="removeBox"
+      :overlayAreasData="overlayAreasData" 
+      :overlayAreasConstant="overlayAreasConstant"
+      :userIds="picoIds"
+      :updates="updates"
+      :warnings="warnings"
     />
   </div>
 </template>
@@ -316,6 +392,16 @@ const cancelBoxEdit = () => {
   @media (max-width: 600px) {
   .airport-view-container{
     flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .airport-map, .dashboard {
+    width: 100%;
+  }
+
+  .dashboard-toggle {
+    display: block;
   }
 }
 </style> -->
