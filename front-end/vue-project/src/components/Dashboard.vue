@@ -418,4 +418,16 @@ onUnmounted(() => {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+.colour-picker-popover {
+  position: absolute;
+  top: 40px;
+  right: 10px;
+  z-index: 1000;
+  background: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 </style>
