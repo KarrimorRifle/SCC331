@@ -11,14 +11,8 @@
 #include "bsec.h"
 #include <Adafruit_NeoPixel.h>
 #include "MqttConnection.hpp"
+#include "RoomSensor.hpp"
 
-// Pico Configurables:
-#define SERVER_PICO 0
-#define ROOM_PICO 1
-#define LUGGAGE_PICO 2
-#define PASSENGER_PICO 3
-#define STAFF_PICO 4
-#define SECURITY_PICO 5
 
 int minorID;          // The Pico's unique ID
 int majorID = -1;     // The RoomID, defaulted to -1 for People Sensors
@@ -62,79 +56,16 @@ bool isScanning = false;
 int oldMajorID = -1; // The room the user / luggage is currently in, according to the majorID picked up
 
 
-// Environment Sensor Stuff: 
-Bsec iaqSensor; // Climate
-short sampleBuffer[512]; // Sound
-volatile int samplesRead;
-#define BH1745NUC_DEVICE_ADDRESS_38 0x38 // Light
-BH1745NUC bh1745nuc = BH1745NUC();
-#define ENVIRONMENT_WAIT_DURATION 10000
+// Pico Configurables:
+#define SERVER_PICO 0
+#define ROOM_PICO 1
+#define LUGGAGE_PICO 2
+#define PASSENGER_PICO 3
+#define STAFF_PICO 4
+#define SECURITY_PICO 5
 
-
-
-// Room Sensor Methods:
-void sendToServer(String data);
-float readSoundSamples();
-float calculateDecibels();
-
-
-// Big function to get all of the Environment Data and then send it to the server:
-void environmentalData(){
-  // Update display:
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.println("Status: Getting Environment Data!");
-  display.display(); 
-
-  // Get the data:
-  iaqSensor.run();
-  bh1745nuc.read();  
-
-  // Process the data:
-  float sound = readSoundSamples();
-  String temperature =  String(iaqSensor.temperature - 4.49);
-  String light = String(bh1745nuc.clear);
-  String airQuality = String(iaqSensor.iaq);
-  String pressure = String(iaqSensor.pressure / 100);
-  String humidity = String(iaqSensor.humidity);
-
-
-  // Send data to server via helpermethod:
-  String dataLine = String(light) + "," + String(sound) + "," + String(temperature) + "," + String(airQuality) + "," + String(pressure) + "," + String(humidity);
-  sendToServer(dataLine);    
-   
-}
-
-
-// Helper
-float readSoundSamples(){
-  if (samplesRead > 0) {
-	float decibels = calculateDecibels();
-	samplesRead = 0; // Reset the sample count after processing
-	return decibels;
-  }
-  return -1; 
-}
-
-
-// Helper
-float calculateDecibels(){
-  float sum = 0;
-  for (int i = 0; i < samplesRead; i++) {
-	sum += abs(sampleBuffer[i]);
-  }
-  float average = sum / samplesRead;
-  return -20.0f * log10(average / 32767.0f); // Convert average value to decibels
-}
-
-
-// Helper
-void onPDMdata() {
-  int bytesAvailable = PDM.available();
-  PDM.read(sampleBuffer, bytesAvailable);
-  // 16-bit, 2 bytes per sample
-  samplesRead = bytesAvailable / 2;
-}
+SensorType *currentSensorConfig;
+RoomSensor roomSensorConfig = RoomSensor(&display, &mqtt);
 
 
 // Bluetooth Receiver Methods:
@@ -188,52 +119,6 @@ void sendToServer(String data)
 
 
 // Setup Methods:
-void roomSensorSetup()
-{
-  // Initialise Climate Sensors:
-  iaqSensor.begin(BME68X_I2C_ADDR_LOW, Wire);
-
-  bsec_virtual_sensor_t sensorList[13] = {
-	BSEC_OUTPUT_IAQ,
-	BSEC_OUTPUT_STATIC_IAQ,
-	BSEC_OUTPUT_CO2_EQUIVALENT,
-	BSEC_OUTPUT_BREATH_VOC_EQUIVALENT,
-	BSEC_OUTPUT_RAW_TEMPERATURE,
-	BSEC_OUTPUT_RAW_PRESSURE,
-	BSEC_OUTPUT_RAW_HUMIDITY,
-	BSEC_OUTPUT_RAW_GAS,
-	BSEC_OUTPUT_STABILIZATION_STATUS,
-	BSEC_OUTPUT_RUN_IN_STATUS,
-	BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE,
-	BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY,
-	BSEC_OUTPUT_GAS_PERCENTAGE
-  };
-
-  iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
-
-  // Light: 
-  bh1745nuc.begin(BH1745NUC_DEVICE_ADDRESS_38);
-  bh1745nuc.startMeasurement();
-
-  // Noise:
-  PDM.onReceive(onPDMdata);
-  PDM.setCLK(3);
-  PDM.setDIN(2);
-  if(!PDM.begin(1, 16000)){
-	display.clearDisplay();
-	display.setCursor(0,0);
-	display.println("Failed to start PDM");
-	display.display();
-	while(1);
-  }
-  
-  // Initialise Bluetooth Stuff:
-  BTstack.iBeaconConfigure(&ROOM_UUID, majorID, minorID);
-  BTstack.startAdvertising();
-}
-
-
-
 void passengerAndLuggageSetup()
 {
   // Colour System:
@@ -305,8 +190,9 @@ void setup(void)
 	case 0: // Server
 		break;
 	
-	case 1: // Room
-		roomSensorSetup();
+	case ROOM_PICO: // Room
+		currentSensorConfig = &roomSensorConfig;
+		currentSensorConfig->setup();
 		break;
 		
 	case 2: // Luggage
@@ -330,6 +216,7 @@ void setup(void)
 		break;
 	
 	default:
+		return;
 		break;
 	}
 }
@@ -337,26 +224,6 @@ void setup(void)
 
 
 // Looping Methods:
-void roomSensorLoop()
-{
-  unsigned long currentTime = millis();
-
-  if (currentTime - lastActionTime >= ENVIRONMENT_WAIT_DURATION) {
-	lastActionTime = currentTime;
-	environmentalData();
-
-	// Update display:
-	display.clearDisplay();
-	display.setCursor(0, 0);
-	display.println("Broadcasting...");
-	display.display(); 
-  }
-
-  BTstack.loop();
-}
-
-
-
 void bluetoothReceiverLoop() {
   unsigned long currentTime = millis();
 
@@ -425,8 +292,8 @@ switch (picoType)
 	case 0: // Server
 		break;
 	
-	case 1: // Room
-		roomSensorLoop();
+	case ROOM_PICO: // Room
+		currentSensorConfig->loop();
 		break;
 		
 	case 2: // Luggage
