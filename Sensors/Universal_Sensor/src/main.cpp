@@ -3,42 +3,41 @@
 #include <WiFi.h> 
 #include <Adafruit_GFX.h>
 #include "BH1745NUC.h"
-#include "AsyncMqtt_Generic.h"
 #include <Adafruit_SSD1306.h>
 #include <ArduinoJson.h>
 #include <BTstackLib.h>
 #include <stdio.h>
 #include <SPI.h>
 #include "bsec.h"
-#include "./env.cpp"
+#include <Adafruit_NeoPixel.h>
+#include "MqttConnection.hpp"
 
 // Pico Configurables:
+#define SERVER_PICO 0
+#define ROOM_PICO 1
+#define LUGGAGE_PICO 2
+#define PASSENGER_PICO 3
+#define STAFF_PICO 4
+#define SECURITY_PICO 5
+
 int minorID;          // The Pico's unique ID
 int majorID = -1;     // The RoomID, defaulted to -1 for People Sensors
-int picoType;         // The Type of methods this Pico will be utilising 
+int picoType = ROOM_PICO;         // The Type of methods this Pico will be utilising 
+
 uint32_t LEDColour;   // The colour of the LEDs for Passenger / Luggage pairing
 UUID ROOM_UUID;		  // The unique Room UUID, for Room Sensors only
 
-
-// MQTT Stuff:
-#define MQTT_SERVER "mqtt.flespi.io"
-#define MQTT_PORT 1883
-
-#ifndef MQTT_TOKEN
-#define MQTT_TOKEN ""
-#endif
-
-AsyncMqttClient mqttClient;
-bool connectedToMQTT = false;
 
 
 // WiFi Stuff:
 const char* ssid = "grp3"; // CHANGE THIS FOR DIFFERENT NETWORKS (FIND ON ROUTERS) 
 const char* password = "eqdf2376"; // THIS TOO!
 WiFiClient client;
+MqttConnection mqtt = MqttConnection();
 
 
-// Universal Hardware Stuff:
+
+// Display Stuff:
 Adafruit_NeoPixel WS2812B(3, 6, NEO_GRB + NEO_KHZ800); // LEDs
 
 #define SCREEN_WIDTH 128 // Screen
@@ -46,6 +45,9 @@ Adafruit_NeoPixel WS2812B(3, 6, NEO_GRB + NEO_KHZ800); // LEDs
 #define OLED_RESET    -1
 #define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+bool warningActive = false; 
+String warningMessage = "";
+
 
 
 // Variables to be used by different picoTypes:
@@ -59,6 +61,7 @@ unsigned long lastActionTime = 0;
 bool isScanning = false;
 int oldMajorID = -1; // The room the user / luggage is currently in, according to the majorID picked up
 
+
 // Environment Sensor Stuff: 
 Bsec iaqSensor; // Climate
 short sampleBuffer[512]; // Sound
@@ -68,64 +71,12 @@ BH1745NUC bh1745nuc = BH1745NUC();
 #define ENVIRONMENT_WAIT_DURATION 10000
 
 
-// MQTT Methods:
-
-void onMQTTDisconnect(AsyncMqttClientDisconnectReason reason)
-{
-  (void) reason;
-
-  connectedToMQTT = false;
-
-  Serial.println("Disconnected from MQTT.");
-}
-
-void onMQTTConnect(bool sessionPresent) {
-  connectedToMQTT = true;
-  
-  Serial.println("Connected to MQTT.");
-}
-
-void onMQTTMessage(char* topic, char* payload, const AsyncMqttClientMessageProperties& properties, const size_t& len, const size_t& index, const size_t& total) {
-  return;
-}
-
-void onMQTTPublish(const uint16_t& packetId)
-{
-  Serial.println("Publish acknowledged.");
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
-}
-
-bool publishToMQTT(String data, String topic) {
-	String macAddress = WiFi.macAddress();
-    macAddress.replace(":", "");
-    String topic = "feeds/hardware-data/" + macAddress;
-    //WiFi.macAddress();
-    Serial.printf("Publishing message in topic '%s': %s\n", topic.c_str(), data.c_str());
-
-    if (!connectedToMQTT) {
-      mqttClient.connect();
-    }
-    if (connectedToMQTT) {
-      mqttClient.publish(topic.c_str(), 2, true, data.c_str());
-    }
-}
-
-bool publishDataWithIdentifier(String data, String topic) {
-	String macAddress = WiFi.macAddress();
-    macAddress.replace(":", "");
-	topic.concat(macAddress);
-	publishToMQTT(data, topic);
-}
-
-bool publishHardwareData(String data) {
-	String macAddress = WiFi.macAddress();
-    macAddress.replace(":", "");
-    String topic = "feeds/hardware-data/" + macAddress;
-	publishDataWithIdentifier(data, topic);
-}
 
 // Room Sensor Methods:
+void sendToServer(String data);
+float readSoundSamples();
+float calculateDecibels();
+
 
 // Big function to get all of the Environment Data and then send it to the server:
 void environmentalData(){
@@ -154,6 +105,7 @@ void environmentalData(){
    
 }
 
+
 // Helper
 float readSoundSamples(){
   if (samplesRead > 0) {
@@ -164,6 +116,7 @@ float readSoundSamples(){
   return -1; 
 }
 
+
 // Helper
 float calculateDecibels(){
   float sum = 0;
@@ -173,6 +126,7 @@ float calculateDecibels(){
   float average = sum / samplesRead;
   return -20.0f * log10(average / 32767.0f); // Convert average value to decibels
 }
+
 
 // Helper
 void onPDMdata() {
@@ -186,21 +140,21 @@ void onPDMdata() {
 // Bluetooth Receiver Methods:
 void advertisementCallback(BLEAdvertisement *adv) {
   if (adv->isIBeacon()) {
-	int _majorID = adv->getIBeaconMajorID();
-	int _rssi = adv->getRssi();
+	int majorID = adv->getIBeaconMajorID();
+	int rssi = adv->getRssi();
 
 	display.clearDisplay();
 	display.setTextSize(1);     
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
 	display.println("Received BLE Signal.");
-	display.println("RSSI: " + String(_rssi));
-	display.println("Room ID: " + String(_majorID));
+	display.println("RSSI: " + String(rssi));
+	display.println("Room ID: " + String(majorID));
 	display.display(); 
 
 	if (rssi > strongestRSSI) {
-	  strongestRSSI = _rssi;
-	  majorID = _majorID;
+	  strongestRSSI = rssi;
+	  majorID = majorID;
 	}
   }
 }
@@ -214,7 +168,7 @@ void sendToServer(String data)
     display.setCursor(0, 0);
     display.println("Status: Communicating.");
     display.println("Sending to Server...");
-    display.println("Room ID: " + String(ROOM_MAJOR_ID));
+    display.println("Room ID: " + String(majorID));
     display.display(); 
 
     // Create JSON document to send to server:
@@ -228,11 +182,12 @@ void sendToServer(String data)
     String jsonString;
     serializeJson(json, jsonString);
 
-	publishDataWithIdentifier(jsonString, "feeds/hardware-data/");
+	mqtt.publishDataWithIdentifier(jsonString, "feeds/hardware-data/");
 }
 
-// Setup Methods:
 
+
+// Setup Methods:
 void roomSensorSetup()
 {
   // Initialise Climate Sensors:
@@ -277,13 +232,16 @@ void roomSensorSetup()
   BTstack.startAdvertising();
 }
 
+
+
 void passengerAndLuggageSetup()
 {
   // Colour System:
   WS2812B.begin(); // initializes WS2812B strip object (REQUIRED)
-  WS2812B.setPixelColor(1, colour);
+  WS2812B.setPixelColor(1, 4294967295);
   WS2812B.show();
 }
+
 
 
 void setup(void) 
@@ -294,9 +252,17 @@ void setup(void)
 
 	// Initialise the OLED display:
 	if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-	Serial.println("SSD1306 allocation failed");
-	for (;;);
+		Serial.println("SSD1306 allocation failed");
 	}
+
+	// Update display:
+	display.clearDisplay();
+	display.setTextSize(1);     
+	display.setTextColor(WHITE);
+	display.setCursor(0, 0);
+	display.println("Setting up...");
+	display.printf("Connecting to router %s", ssid);
+	display.display(); 
 
 	// Connect to Wi-Fi:
 	WiFi.begin(ssid, password);
@@ -305,22 +271,18 @@ void setup(void)
 	}
 
 	// MQTT Setup:	
-  	mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
-  	mqttClient.setCredentials(MQTT_TOKEN);
-
-  	mqttClient.onConnect(onMQTTConnect);
-  	mqttClient.onDisconnect(onMQTTDisconnect);
-  	mqttClient.onPublish(onMQTTPublish);
-
-  	mqttClient.connect();
+	display.clearDisplay();
+	display.setCursor(0, 0);
+	display.println("Connected.");
+	display.println("Connecting to mqtt broker...");
+	display.display(); 
+  	mqtt.connectToBroker();
 	
 	// Bluetooth Setup:
   	BTstack.setup();
 	
 	// Update display:
 	display.clearDisplay();
-	display.setTextSize(1);     
-	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
 	display.println("Initial Setup complete.");
 	display.println("Waiting for PicoType from Server");
@@ -373,8 +335,8 @@ void setup(void)
 }
 
 
-// Looping Methods:
 
+// Looping Methods:
 void roomSensorLoop()
 {
   unsigned long currentTime = millis();
@@ -392,6 +354,8 @@ void roomSensorLoop()
 
   BTstack.loop();
 }
+
+
 
 void bluetoothReceiverLoop() {
   unsigned long currentTime = millis();
@@ -442,6 +406,7 @@ void bluetoothReceiverLoop() {
   }
   BTstack.loop();
 }
+
 
 
 void loop(void)
