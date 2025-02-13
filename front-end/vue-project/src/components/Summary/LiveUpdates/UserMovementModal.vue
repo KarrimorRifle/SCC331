@@ -2,6 +2,7 @@
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { defineProps, defineEmits, ref, watch, computed, PropType } from 'vue';
+import { getTextColour } from '../../../utils/helper/colorUtils';
 
 const props = defineProps({
   showModal: { type: Boolean, required: true },
@@ -214,7 +215,7 @@ watch(() => props.showModal, (newValue) => {
             v-for="area in ['Area 1', 'Area 2', 'Area 3', 'Area 4']"
             :key="area"
             :class="['grid-item', { active: currentRoom === area }]"
-            :style="{ backgroundColor: getRoomColor(area), color: currentRoom === area ? 'white' : 'black' }"
+            :style="{ backgroundColor: getRoomColor(area), color: getTextColour(getRoomColor(area)) }"
           >
             {{ area }}
           </div>
