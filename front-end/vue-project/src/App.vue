@@ -90,6 +90,7 @@ const isLoggedIn = ref<boolean>(!!cookies.get("session_id"));
       :isMobile="isMobile"
       :overlayAreasConstant="overlayAreasConstant"
       :overlayAreasData="overlayAreasData"
+      :loggedIn="isLoggedIn"
       @login="isLoggedIn = true"
       @updateOverlayAreaColor="handleUpdateOverlayAreaColor"
       @updateOverlayAreas="handleUpdateAllOverlayAreas"
@@ -97,13 +98,14 @@ const isLoggedIn = ref<boolean>(!!cookies.get("session_id"));
     
     <!-- Notification Icon Component -->
     <NotificationIcon 
-      v-if="!isMobile" 
+      v-if="!isMobile && isLoggedIn" 
       :warnings="notificationQueue" 
       :warningCount="warningCount"
       :isWarningModalOpen="isWarningModalOpen"
       @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
     />
 
+    <!-- Warning Area Modal that pops up when the user clicks on the warning button -->
     <WarningAreaModal 
       :overlayAreasConstant="overlayAreasConstant"
     />

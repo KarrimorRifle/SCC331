@@ -52,7 +52,7 @@ const toggleMenu = () => {
       </button>
 
       <NotificationIcon 
-        v-if="props.isMobile" 
+        v-if="props.isMobile && isLoggedIn" 
         :warnings="props.warnings" 
         :warningCount="props.warningCount"
         :isWarningModalOpen="props.isWarningModalOpen" 
