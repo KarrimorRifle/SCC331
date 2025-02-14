@@ -50,7 +50,7 @@ watch(
 </script>
 
 <template>
-  <div class="notification-wrapper" :class="{ 'mobile-notification': isMobile }">
+  <div v-if="!isWarningModalOpen" class="notification-wrapper" :class="{ 'mobile-notification': isMobile }">
     <button
       class="notification-icon"
       :class="{ 'new-warning': hasNewWarning }"

@@ -55,7 +55,7 @@ const emit = defineEmits(["close", "dismiss"]);
 /* Notification Modal */
 .notification-modal {
   position: fixed;
-  bottom: 80px;
+  bottom: 8px;
   right: 20px;
   width: 340px;
   z-index: 888;
@@ -72,7 +72,7 @@ const emit = defineEmits(["close", "dismiss"]);
   width: 100%;
   border-radius: 10px;
   border-left: 6px solid #305f72;
-  max-height: 40vh;
+  max-height: 60vh;
   overflow-y: auto;
 }
 @media (max-width: 768px) {

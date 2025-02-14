@@ -41,6 +41,11 @@ const handleLogout = async() => {
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
 };
+
+const closeMenu = () =>{
+  isMenuOpen.value = false;
+}
+
 </script>
 
 <template>
@@ -52,7 +57,7 @@ const toggleMenu = () => {
       </button>
 
       <NotificationIcon 
-        v-if="props.isMobile && isLoggedIn" 
+        v-if="props.isMobile && loggedIn" 
         :warnings="props.warnings" 
         :warningCount="props.warningCount"
         :isWarningModalOpen="props.isWarningModalOpen" 
@@ -76,11 +81,11 @@ const toggleMenu = () => {
       <button class="close-btn" @click="toggleMenu">
         <font-awesome-icon :icon="faXmark" />
       </button>
-      <RouterLink to="/" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
-      <RouterLink to="/map" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
-      <RouterLink to="/summary" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
-      <RouterLink to="/login" class="mobile-link" exact-active-class="active" v-if="!props.loggedIn">Login</RouterLink>
-      <RouterLink to="#" class="mobile-link" v-if="props.loggedIn" @click.prevent="handleLogout">
+      <RouterLink to="/" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Home</RouterLink>
+      <RouterLink to="/map" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Map</RouterLink>
+      <RouterLink to="/summary" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Summary</RouterLink>
+      <RouterLink to="/login" class="mobile-link" exact-active-class="active" v-if="!props.loggedIn" @click="closeMenu">Login</RouterLink>
+      <RouterLink to="#" class="mobile-link" v-if="props.loggedIn" @click.prevent="handleLogout" @click="closeMenu">
         Log out
       </RouterLink>
     </div>
