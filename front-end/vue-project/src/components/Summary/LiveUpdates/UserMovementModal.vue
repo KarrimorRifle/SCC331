@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UserMovementArrow from "./UserMovementArrow.vue";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { defineProps, defineEmits, ref, watch, computed, PropType } from 'vue';
@@ -27,39 +28,6 @@ const getRoomColor = (roomLabel: string): string => {
   return currentRoom.value === roomLabel
     ? props.overlayAreasConstant.find(area => area.label === roomLabel)?.color || 'lightgray'
     : 'lightgray';
-};
-
-const getArrowPosition = (from: string, to: string) => {
-  const positions = areaPositions.value;
-  if (!positions[from] || !positions[to]) return null;
-
-  const start = positions[from];
-  const end = positions[to];
-  const offsetFactor = 0.3; // Adjust arrow length (0 = full length, 0.5 = half length)
-
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-
-  // Normalize the vector and apply offset
-  const normalizedDx = (dx / distance) * (distance * offsetFactor);
-  const normalizedDy = (dy / distance) * (distance * offsetFactor);
-
-  let x1 = start.x + normalizedDx;
-  let y1 = start.y + normalizedDy;
-  let x2 = end.x - normalizedDx;
-  let y2 = end.y - normalizedDy;
-
-  if (start.x === end.x) {
-    x1 += 20;
-    x2 += 20;
-  }
-  if (start.y === end.y) {
-    y1 += 20; 
-    y2 += 20;
-  }
-
-  return { x1, y1, x2, y2 };
 };
 
 /* COMPUTED PROPERTIES */
@@ -196,21 +164,7 @@ watch(() => props.showModal, (newValue) => {
       <div class="flex-container">
         <!-- 4 Grid Area Layout -->
         <div class="grid-container">
-          <svg class="movement-arrows" viewBox="0 0 300 300">
-            <line
-              v-for="arrow in movementArrows"
-              v-bind="getArrowPosition(arrow.from, arrow.to)"
-              :key="`${arrow.from}-${arrow.to}`"
-              stroke="black"
-              stroke-width="1"
-              marker-end="url(#arrowhead)"
-            />
-            <defs>
-              <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                <polygon points="0 0, 6 3, 0 6" fill="black" />
-              </marker>
-            </defs>
-          </svg>
+          <UserMovementArrow :movementArrows="movementArrows" :areaPositions="areaPositions" />
           <div
             v-for="area in ['Area 1', 'Area 2', 'Area 3', 'Area 4']"
             :key="area"
