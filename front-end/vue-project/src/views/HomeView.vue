@@ -1,285 +1,283 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import { ref, onMounted, onUnmounted } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faSignInAlt } from '@fortawesome/free-solid-svg-icons';
-import { guidanceItems } from '@/constants/index'; 
+import { faSignInAlt, faPlaneDeparture, faShieldAlt, faMapMarkedAlt, faBell, faClock, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
 defineProps({
-  loggedIn: Boolean, // Prop to check if user is logged in
+  loggedIn: Boolean,
 });
 
-const activeIndex = ref(0);
-const totalSlides = guidanceItems.length;
-const guidanceContainer = ref<HTMLElement | null>(null);
-
-const scrollToSlide = (index: number) => {
-  activeIndex.value = index;
-  if (guidanceContainer.value) {
-    guidanceContainer.value.scrollTo({
-      left: guidanceContainer.value.clientWidth * index,
-      behavior: "smooth"
-    });
+// Smooth scroll function
+const scrollToSection = (id: string) => {
+  const section = document.getElementById(id);
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth' });
   }
 };
-
-const updateActiveIndex = () => {
-  if (guidanceContainer.value) {
-    const scrollLeft = guidanceContainer.value.scrollLeft;
-    const slideWidth = guidanceContainer.value.clientWidth;
-    activeIndex.value = Math.round(scrollLeft / slideWidth);
-  }
-};
-
-const handleTouch = (() => {
-  let startX = 0;
-  return {
-    start: (event: TouchEvent) => {
-      startX = event.touches[0].clientX;
-    },
-    end: (event: TouchEvent) => {
-      const deltaX = event.changedTouches[0].clientX - startX;
-      if (guidanceContainer.value) {
-        if (deltaX > 50) {
-          guidanceContainer.value.scrollBy({ left: -guidanceContainer.value.clientWidth, behavior: "smooth" });
-        } else if (deltaX < -50) {
-          guidanceContainer.value.scrollBy({ left: guidanceContainer.value.clientWidth, behavior: "smooth" });
-        }
-      }
-    }
-  };
-})();
-
-onMounted(() => {
-  if (guidanceContainer.value) {
-    guidanceContainer.value.addEventListener("touchstart", handleTouch.start);
-    guidanceContainer.value.addEventListener("touchend", handleTouch.end);
-    guidanceContainer.value.addEventListener("scroll", updateActiveIndex);
-  }
-});
-
-onUnmounted(() => {
-  if (guidanceContainer.value) {
-    guidanceContainer.value.removeEventListener("touchstart", handleTouch.start);
-    guidanceContainer.value.removeEventListener("touchend", handleTouch.end);
-    guidanceContainer.value.removeEventListener("scroll", updateActiveIndex);
-  }
-});
 </script>
 
 <template>
-  <div class="welcome-container">
-    <div class="content">
-      <h1 class="fade-in">
-        <FontAwesomeIcon :icon="faMapMarkedAlt" class="icon" /> Welcome to the Airport Monitoring System
-      </h1>
-      <p class="fade-in delay-1">
-        Stay updated with real-time airport data, including occupancy, luggage tracking, environmental conditions, and safety alerts.
-      </p>
-    </div>
+  <div>
+    <!-- Hero Section -->
+    <header class="hero">
+      <div class="overlay"></div>
+      <div class="hero-content-container">
+        <div class="hero-content">
+          <h1>
+            <FontAwesomeIcon :icon="faPlaneDeparture" class="icon" /> Newcastle Airport Monitoring
+          </h1>
+          <p>Ensuring seamless airport operations with real-time monitoring of security, occupancy, and environmental conditions.</p>
+          <RouterLink v-if="!loggedIn" to="/login" class="cta-button">
+            <FontAwesomeIcon :icon="faSignInAlt" class="btn-icon" /> Login to Monitor
+          </RouterLink>
+        </div>
 
-    <div class="guidance-wrapper">
-      <div ref="guidanceContainer" class="guidance-container">
-        <div v-for="(item, index) in guidanceItems" :key="index" class="slide">
-          <FontAwesomeIcon :icon="item.icon" class="list-icon" />
-          <h2>{{ item.title }}</h2>
-          <p>{{ item.description }}</p>
+        <div class="hero-image">
+          <img src="@/assets/newcastle-airport-image.webp" alt="airport-image">
         </div>
       </div>
 
-      <div class="navigation">
-        <span 
-          v-for="(dot, index) in totalSlides" 
-          :key="index" 
-          :class="{ active: activeIndex === index }" 
-          @click="scrollToSlide(index)"
-        ></span>
+      <!-- Scroll Indicator -->
+      <div class="scroll-indicator" @click="scrollToSection('features')">
+        <FontAwesomeIcon :icon="faChevronDown" class="scroll-icon" />
       </div>
-    </div>
+    </header>
 
-    <div v-if="!loggedIn" class="button-container fade-in delay-2">
-      <RouterLink to="/login" class="login-button">
-        <FontAwesomeIcon :icon="faSignInAlt" class="btn-icon" /> Login to Monitor
-      </RouterLink>
-    </div>
+    <section id="features" class="features">
+      <h2>Key Features</h2>
+      <div class="feature-cards">
+        <div class="feature-card">
+          <FontAwesomeIcon :icon="faShieldAlt" class="feature-icon" />
+          <h3>Security Alerts</h3>
+          <p>Get notified of any security breaches in real-time.</p>
+        </div>
+        <div class="feature-card">
+          <FontAwesomeIcon :icon="faMapMarkedAlt" class="feature-icon" />
+          <h3>Live Airport Map</h3>
+          <p>Monitor passenger flow and track luggage locations.</p>
+        </div>
+        <div class="feature-card">
+          <FontAwesomeIcon :icon="faBell" class="feature-icon" />
+          <h3>Instant Notifications</h3>
+          <p>Receive alerts for emergency and unusual activities.</p>
+        </div>
+        <div class="feature-card">
+          <FontAwesomeIcon :icon="faClock" class="feature-icon" />
+          <h3>24/7 Monitoring</h3>
+          <p>Track airport conditions anytime, anywhere.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="how-it-works">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <span class="step-number">1</span>
+          <h3>Login</h3>
+          <p>Access the system securely.</p>
+        </div>
+        <div class="step">
+          <span class="step-number">2</span>
+          <h3>Monitor</h3>
+          <p>Track security, environmental data, and passenger flow in real-time.</p>
+        </div>
+        <div class="step">
+          <span class="step-number">3</span>
+          <h3>Receive Alerts</h3>
+          <p>Get instant updates on critical situations.</p>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
-/* General Styling */
-.welcome-container {
+/* Hero Section */
+.hero {
+  width: 100%;
+  height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  text-align: center;
-  background: linear-gradient(to bottom, #F8F9FA, #E3F2FD);
-  color: #305F72;
-  overflow-y: auto;
+  justify-content: center;
+  position: relative;
+  color: white;
   padding: 2rem;
 }
 
-/* Content Styling */
-.content {
-  z-index: 1;
-  max-width: 600px;
+.hero .overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 56, 101, 0.85);
 }
 
-/* Headings */
-h1 {
-  font-size: 2.5rem;
+.hero-content-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+}
+.hero-content{
+  position: relative;
+  z-index: 2;
+  max-width: 700px;
+}
+
+.hero-image {
+  position: relative;
+  z-index: 2;
+  max-width: 500px;
+}
+
+.hero-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+
+.hero h1 {
+  font-size: 3rem;
   font-weight: bold;
   margin-bottom: 1rem;
-  display: flex;
+  color: #FFD700; /* Gold */
+}
+
+.hero p {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.cta-button {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-}
-
-h2 {
-  font-size: 1.8rem;
-  margin: 1rem 0;
-}
-
-/* Icons */
-.icon {
-  color: #568EA6;
-  margin-right: 10px;
-}
-
-.list-icon {
-  color: #F18C8E;
-  margin-bottom: 10px;
-  font-size: 2rem;
-}
-
-/* Login Button */
-.button-container {
-  margin-top: 1.5rem;
-}
-
-.login-button {
-  padding: 0.8rem 2rem;
-  font-size: 1.2rem;
+  padding: 1rem 2.5rem;
+  font-size: 1.4rem;
   color: white;
-  background-color: #568EA6;
-  border-radius: 8px;
+  background-color: #FFD700; /* Gold */
+  border-radius: 10px;
   text-decoration: none;
   transition: all 0.3s ease-in-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 10px;
+  font-weight: bold;
 }
 
-.login-button:hover {
-  background-color: #305F72;
+.cta-button:hover {
+  background-color: #E6C200; /* Darker Gold */
   transform: scale(1.05);
 }
 
-/* Guidance Container */
-.guidance-wrapper {
-  position: relative;
-  width: 50%;
+/* Scroll Indicator */
+.scroll-indicator {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  cursor: pointer;
+  animation: bounce 2s infinite;
 }
 
-.guidance-container {
+.scroll-icon {
+  font-size: 2rem;
+  color: white;
+  opacity: 0.8;
+  transition: opacity 0.3s;
+}
+
+.scroll-indicator:hover .scroll-icon {
+  opacity: 1;
+}
+
+/* Bouncing Animation */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
+
+/* Features Section */
+.features {
+  text-align: center;
+  padding: 5rem 2rem;
+  color: #003865; /* Dark Blue */
+  background: #E3E3E3; /* Light Gray */
+}
+
+.features h2 {
+  font-size: 2.5rem;
+  margin-bottom: 3rem;
+}
+
+.feature-cards {
   display: flex;
-  width: 100%;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
 }
 
-.guidance-container::-webkit-scrollbar {
-  display: none;
-}
-
-.slide {
-  flex: 0 0 100%;
-  scroll-snap-align: center;
+.feature-card {
   background: white;
   padding: 2rem;
   border-radius: 10px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.2);
+  width: 280px;
+  text-align: center;
 }
 
-/* Navigation Dots */
-.navigation {
+.feature-icon {
+  font-size: 2.8rem;
+  color: #003865;
+  margin-bottom: 10px;
+}
+
+/* How It Works */
+.how-it-works {
+  text-align: center;
+  padding: 5rem 2rem;
+  background: #003865; /* Dark Blue */
+  color: white;
+}
+
+.how-it-works h2 {
+  font-size: 2.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.steps {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-top: 1rem;
-  align-items: center;
+  gap: 2.5rem;
+  flex-wrap: wrap;
 }
 
-.navigation span {
-  width: 10px;
-  height: 10px;
-  background: #ccc;
+.step {
+  background: #FFD700; /* Gold */
+  color: #003865;
+  padding: 2rem;
+  border-radius: 10px;
+  width: 250px;
+  text-align: center;
+  position: relative;
+  font-weight: bold;
+}
+
+.step-number {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  color: #003865;
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
   border-radius: 50%;
-  transition: 0.3s;
-  cursor: pointer;
+  font-size: 1.2rem;
 }
 
-.navigation span:hover {
-  background: #305F72;
-}
-
-.navigation .active {
-  background: #305F72;
-  transform: scale(1.2);
-}
-
-/* Mobile View - Max Width 768px */
 @media (max-width: 768px) {
-  .welcome-container {
-    padding: 1.5rem;
-  }
-
-  .content {
-    max-width: 100%;
-  }
-
-  h1 {
-    font-size: 2rem;
-    text-align: center;
-  }
-
-  h2 {
-    font-size: 1.5rem;
-  }
-
-  p {
-    font-size: 1rem;
-    padding: 0 1rem;
-  }
-
-  .guidance-wrapper {
-    width: 90%;
-  }
-
-  .slide {
-    padding: 1.5rem;
-    border-radius: 8px;
-  }
-
-  .navigation {
-    gap: 5px;
-  }
-
-  .navigation span {
-    width: 8px;
-    height: 8px;
-  }
-
-  .login-button {
-    font-size: 1rem;
-    padding: 0.6rem 1.5rem;
+  .hero-image{
+    display: none;
   }
 }
-
 </style>
