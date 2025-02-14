@@ -1,3 +1,5 @@
+#pragma once
+
 // Pico Configurables:
 #define SERVER_PICO 0
 #define ROOM_PICO 1

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Arduino.h"
 #include <BTstackLib.h>
 #include <SensorType.hpp>
@@ -28,7 +30,7 @@ class RoomSensor : public SensorType {
         BH1745NUC bh1745nuc = BH1745NUC();
         UUID ROOM_UUID;		  // The unique Room UUID, for Room Sensors only
         unsigned long lastActionTime;
-        int minorID;          // The Pico's unique ID
+        uint8_t minorID;          // The Pico's unique ID
         int majorID;     // The RoomID, defaulted to -1 for People Sensors
 
         void environmentalData();

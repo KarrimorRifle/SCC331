@@ -1,3 +1,5 @@
+#pragma once
+
 #include <AsyncMqttClient_Generic.hpp>
 #include "MqttSubscription.hpp"
 

@@ -13,5 +13,5 @@ void SensorType::setup() {
 }
 
 void SensorType::unsetup() {
-
+    
 }
