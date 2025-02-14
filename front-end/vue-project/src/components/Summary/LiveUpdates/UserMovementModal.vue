@@ -164,7 +164,12 @@ watch(() => props.showModal, (newValue) => {
       <div class="flex-container">
         <!-- 4 Grid Area Layout -->
         <div class="grid-container">
-          <UserMovementArrow :movementArrows="movementArrows" :areaPositions="areaPositions" />
+          <UserMovementArrow 
+            :movementArrows="movementArrows" 
+            :areaPositions="areaPositions" 
+            :moveXPositionBy=20
+            :moveYPositionBy=20
+          />
           <div
             v-for="area in ['Area 1', 'Area 2', 'Area 3', 'Area 4']"
             :key="area"

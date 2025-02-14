@@ -10,6 +10,12 @@ const props = defineProps({
     type: Object as () => Record<string, { x: number; y: number }>,
     required: true,
   },
+  moveXPositionBy: {
+    type: Number
+  },
+  moveYPositionBy: {
+    type: Number
+  }
 });
 
 const getArrowPosition = (from: string, to: string) => {
@@ -34,12 +40,12 @@ const getArrowPosition = (from: string, to: string) => {
   let y2 = end.y - normalizedDy;
 
   if (start.x === end.x) {
-    x1 += 20;
-    x2 += 20;
+    x1 += props.moveXPositionBy;
+    x2 += props.moveXPositionBy;
   }
   if (start.y === end.y) {
-    y1 += 20;
-    y2 += 20;
+    y1 += props.moveYPositionBy;
+    y2 += props.moveYPositionBy;
   }
 
   return { x1, y1, x2, y2 };
