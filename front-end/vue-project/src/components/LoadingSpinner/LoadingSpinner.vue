@@ -27,7 +27,7 @@ defineProps({
   width: 100%;
   height: 100%;
   background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white */
-  z-index: 9999; /* Ensure it's on top */
+  z-index: 999; /* Ensure it's on top */
 }
 
 .spinner {

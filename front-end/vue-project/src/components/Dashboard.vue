@@ -168,14 +168,6 @@ onUnmounted(() => {
         class="dashboard-area"
         :style="{ backgroundColor: data.box?.colour ?? '#FFFFFF', color: getTextColour(data.box?.colour) }"
       >
-        <button 
-          v-if="warningsByArea[`Area ${key}`]?.length"
-          class="warning-btn"
-          @click="onWarningButtonClick(`Area ${key}`)"
-        >
-          <font-awesome-icon :icon="faExclamationTriangle" />
-        </button>
-
         <!-- Colour Picker Popover -->
         <div v-if="colourPickerVisible === key" class="colour-picker-popover">
           <Sketch v-model="selectedColour" />
@@ -216,6 +208,14 @@ onUnmounted(() => {
               <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
             </button>
           </template>
+
+          <button 
+            v-if="warningsByArea[`Area ${key}`]?.length && !editMode"
+            class="warning-btn"
+            @click="onWarningButtonClick(`Area ${key}`)"
+          >
+            <font-awesome-icon :icon="faExclamationTriangle" />
+          </button>
         </div>
 
         <!-- Luggage Count -->
@@ -284,8 +284,8 @@ onUnmounted(() => {
 .dashboard {
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  background-color: #f8f8ff;
+  padding: 0 20px;
+  background-color: white;
   border-left: 1px solid #ccc;
   overflow-y: auto;
   transition: all 0.8s ease-in-out;
@@ -297,7 +297,11 @@ onUnmounted(() => {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  margin: 20px 0;
+  padding: 20px 0;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 888;
 }
 
 .expand-btn {
@@ -323,7 +327,6 @@ onUnmounted(() => {
   flex: 5;
   background-color: white;
   z-index: 888;
-  padding: 20px;
 }
 
 /* Compact Dashboard Layout */
@@ -331,6 +334,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 20px;
 }
 
 /* Expanded Layout - Two Areas Per Row */
@@ -374,6 +378,7 @@ onUnmounted(() => {
   color: white;
   border: none;
   padding: 5px 8px;
+  margin: 0 5px;
   border-radius: 5px;
   cursor: pointer;
   animation: bounce 0.5s infinite alternate ease-in-out;
