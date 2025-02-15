@@ -1,7 +1,32 @@
-{
-  "1":{
-    "environment":{"light":48,"sound":10,"temperature":-4},
-    "luggage":{"count":1,"id":[2]},
-    "users":{"count":1,"id":[1]}
+[
+  {
+    "Title": "Fire Detected",
+    "Location": "Area 1",
+    "Severity": "doomed",
+    "Summary": "A fire has been detected in Room 101. Immediate evacuation is required."
+  },
+  {
+    "Title": "High CO2 Levels",
+    "Location": "Area 2",
+    "Severity": "danger",
+    "Summary": "CO2 levels have reached a dangerous level in Room 202. Ventilation required."
+  },
+  {
+    "Title": "Unauthorized Entry",
+    "Location": "Area 3",
+    "Severity": "warning",
+    "Summary": "An unauthorized individual has been detected in Room 305."
+  },
+  {
+    "Title": "Temperature Alert",
+    "Location": "Area 4",
+    "Severity": "notification",
+    "Summary": "The temperature in Room 410 has exceeded the normal threshold."
+  },
+  {
+    "Title": "Humidity Warning",
+    "Location": "Area 2",
+    "Severity": "notification",
+    "Summary": "Humidity levels in Room 208 have risen above normal levels."
   }
-}
+]

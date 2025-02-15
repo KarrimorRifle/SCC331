@@ -1,6 +1,7 @@
 -- Database creation
 CREATE DATABASE IF NOT EXISTS accounts;
 CREATE DATABASE IF NOT EXISTS pico;
+CREATE DATABASE IF NOT EXISTS assets;
 
 -- =============================================
 -- Table Structure
@@ -64,63 +65,98 @@ CREATE TABLE IF NOT EXISTS environment (
   humidity FLOAT NOT NULL
 );
 
--- -- =============================================
--- -- Dummy Data
--- -- =============================================
+-- Use the assets database
+USE assets;
 
--- -- Insert dummy data into users table
--- INSERT INTO users (picoID, roomID, logged_at) VALUES
--- (1, 101, '2025-01-28 10:00:00'),
--- (2, 102, '2025-01-28 10:05:00'),
--- (3, 103, '2025-01-28 10:10:00');
+CREATE TABLE IF NOT EXISTS presets (
+  preset_id INT AUTO_INCREMENT PRIMARY KEY,
+  preset_name VARCHAR(255) NOT NULL,
+  owner_id INT DEFAULT NULL,
+  image_name VARCHAR(255) DEFAULT NULL,
+  image_data LONGBLOB DEFAULT NULL,
+  FOREIGN KEY (owner_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL
+);
 
--- -- Insert dummy data into luggage table
--- INSERT INTO luggage (picoID, roomID, logged_at) VALUES
--- (4, 101, '2025-01-28 10:00:00'),
--- (5, 102, '2025-01-28 10:05:00'),
--- (6, 103, '2025-01-28 10:10:00');
+CREATE TABLE IF NOT EXISTS map_blocks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  preset_id INT NOT NULL,
+  roomID VARCHAR(50) NOT NULL,
+  label VARCHAR(255) DEFAULT NULL,
+  `top` INT NOT NULL,
+  `left` INT NOT NULL,
+  `width` INT NOT NULL,
+  `height` INT NOT NULL,
+  colour VARCHAR(10) NOT NULL,
+  FOREIGN KEY (preset_id) REFERENCES presets(preset_id) ON DELETE CASCADE
+);
 
--- -- Insert dummy data into environment table
--- INSERT INTO environment (picoID, roomID, logged_at, sound, light, temperature) VALUES
--- (1, 101, '2025-01-28 10:00:00', 50, 300, 22),
--- (2, 102, '2025-01-28 10:05:00', 55, 320, 23),
--- (3, 103, '2025-01-28 10:10:00', 60, 340, 24);
+CREATE TABLE IF NOT EXISTS preset_trusted (
+  preset_id INT NOT NULL,
+  user_id INT NOT NULL,
+  PRIMARY KEY (preset_id, user_id),
+  FOREIGN KEY (preset_id) REFERENCES presets(preset_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES accounts.users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS default_preset (
+  id INT PRIMARY KEY DEFAULT 1,
+  preset_id INT,
+  FOREIGN KEY (preset_id) REFERENCES presets(preset_id) ON DELETE SET NULL
+);
+
+-- Ensure there is always an entry with id 1
+INSERT INTO default_preset (id, preset_id) VALUES (1, NULL)
+ON DUPLICATE KEY UPDATE id = 1;
 
 -- =============================================
 -- Microservice-specific Accounts
 -- =============================================
 
 -- Account Registration Service (Insert only)
-CREATE USER IF NOT EXISTS 'account_registration'@'%' IDENTIFIED WITH 'caching_sha2_password' by 'reg_password';
+CREATE USER IF NOT EXISTS 'account_registration'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'reg_password';
 GRANT INSERT ON accounts.users TO 'account_registration'@'%';
 ALTER USER 'account_registration'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 
 -- Account Cookie Management Service (Update cookie + Read)
-CREATE USER IF NOT EXISTS 'cookie_manager'@'%' IDENTIFIED WITH 'caching_sha2_password' by 'cookie_password';
+CREATE USER IF NOT EXISTS 'cookie_manager'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'cookie_password';
 GRANT SELECT, UPDATE(cookie, last_login) ON accounts.users TO 'cookie_manager'@'%';
 ALTER USER 'cookie_manager'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 -- Data Processing Service (pico Insert)
-CREATE USER IF NOT EXISTS 'data_processor'@'%' IDENTIFIED WITH 'caching_sha2_password' by 'process_password';
+CREATE USER IF NOT EXISTS 'data_processor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'process_password';
 GRANT INSERT ON pico.* TO 'data_processor'@'%';
 ALTER USER 'data_processor'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 -- Data Reading Service (pico Read)
-CREATE USER IF NOT EXISTS 'data_reader'@'%' IDENTIFIED WITH 'caching_sha2_password' by 'read_password';
+CREATE USER IF NOT EXISTS 'data_reader'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'read_password';
 GRANT SELECT ON pico.* TO 'data_reader'@'%';
 ALTER USER 'data_reader'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 -- Data Deletion Service (pico Delete + Read)
-CREATE USER IF NOT EXISTS 'data_admin'@'%' IDENTIFIED WITH 'caching_sha2_password' by 'admin_password';
+CREATE USER IF NOT EXISTS 'data_admin'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'admin_password';
 GRANT SELECT, DELETE ON pico.* TO 'data_admin'@'%';
 ALTER USER 'data_admin'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
+-- Assets Reading Service (Read only)
+CREATE USER IF NOT EXISTS 'assets_reader'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'read_password';
+GRANT SELECT ON assets.* TO 'assets_reader'@'%';
+ALTER USER 'assets_reader'@'%' WITH MAX_USER_CONNECTIONS 1;
+FLUSH PRIVILEGES;
+
+-- Assets Editing Service (Full permissions)
+CREATE USER IF NOT EXISTS 'assets_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'edit_password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.presets        TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.map_blocks     TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.preset_trusted TO 'assets_editor'@'%';
+GRANT SELECT, UPDATE ON assets.default_preset TO 'assets_editor'@'%';
+ALTER USER 'assets_editor'@'%' WITH MAX_USER_CONNECTIONS 1;
+FLUSH PRIVILEGES;
 
 -- =============================================
 -- Security Hardening

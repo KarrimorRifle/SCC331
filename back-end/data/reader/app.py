@@ -7,7 +7,7 @@ import os
 import requests
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 # Establish a persistent connection to the database
 db_connection = None
