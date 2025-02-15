@@ -18,14 +18,14 @@ def get_db_connection(retries=5, delay=1):
     global db_connection
     for _ in range(retries):
         try:
+            if db_connection != None and db_connection.is_connected():
+                return db_connection
             db_connection = mysql.connector.connect(
                 host=os.getenv('DB_HOST'),
                 user=os.getenv('DB_USER'),
                 password=os.getenv('DB_PASSWORD'),
                 database=os.getenv('DB_NAME')
             )
-            if db_connection.is_connected():
-                return db_connection
         except Error as e:
             print(f"Error connecting to MySQL: {e}")
             db_connection = None

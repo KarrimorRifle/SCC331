@@ -90,6 +90,8 @@ const fetchPresets = async() => {
   presetList.value = request.data;
   // Set the default preset ID
   defaultPresetId.value = presetList.value.default;
+  if(currentPreset.value == -1 && presetList.value.presets.length > 0)
+    currentPreset.value = presetList.value.presets[0].id;
 }
 
 const fetchPreset = async() => {
@@ -190,6 +192,7 @@ const deletePreset = async () => {
   }
 
   try {
+    currentPreset.value = -1;
     await fetchPresets();
     if (presetList.value.presets.length === 0) {
       return;
