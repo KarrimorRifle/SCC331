@@ -61,52 +61,54 @@ def pico(PICO):
     
     cursor = connection.cursor(dictionary=True)
     try:
-        # Query to get the most recent session for the specified PicoID
+        # Query to get the most recent session for the specified PicoID across all tables
         query = """
         SELECT roomID, logged_at
         FROM (
             SELECT roomID, logged_at,
-                    LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
+                   LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
             FROM (
-                SELECT roomID, logged_at
-                FROM (
-                    SELECT roomID, logged_at FROM users WHERE PicoID = %s
-                    UNION ALL
-                    SELECT roomID, logged_at FROM luggage WHERE PicoID = %s
-                ) AS combined
-                ORDER BY logged_at DESC
-            ) AS ordered_logs
-        ) AS session_logs
+                SELECT roomID, logged_at FROM users WHERE PicoID = %s
+                UNION ALL
+                SELECT roomID, logged_at FROM luggage WHERE PicoID = %s
+                UNION ALL
+                SELECT roomID, logged_at FROM staff WHERE PicoID = %s
+                UNION ALL
+                SELECT roomID, logged_at FROM guard WHERE PicoID = %s
+            ) AS combined
+            ORDER BY logged_at DESC
+        ) AS ordered_logs
         WHERE TIMESTAMPDIFF(MINUTE, prev_log, logged_at) >= 2 OR prev_log IS NULL
         ORDER BY logged_at DESC
         LIMIT 1;
         """
-        cursor.execute(query, (PICO, PICO))
+        cursor.execute(query, (PICO, PICO, PICO, PICO))
         session_start = cursor.fetchone()
 
         if not session_start:
             return jsonify({"error": "No session found for the specified PicoID"}), 404
 
-        # Query to get all logs for the most recent session
+        # Query to get all logs for the most recent session from the same table logs
         query = """
         SELECT roomID, logged_at
         FROM (
             SELECT roomID, logged_at,
-                    LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
+                   LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
             FROM (
-                SELECT roomID, logged_at
-                FROM (
-                    SELECT roomID, logged_at FROM users WHERE PicoID = %s
-                    UNION ALL
-                    SELECT roomID, logged_at FROM luggage WHERE PicoID = %s
-                ) AS combined
-                ORDER BY logged_at DESC
-            ) AS ordered_logs
-        ) AS session_logs
+                SELECT roomID, logged_at FROM users WHERE PicoID = %s
+                UNION ALL
+                SELECT roomID, logged_at FROM luggage WHERE PicoID = %s
+                UNION ALL
+                SELECT roomID, logged_at FROM staff WHERE PicoID = %s
+                UNION ALL
+                SELECT roomID, logged_at FROM guard WHERE PicoID = %s
+            ) AS combined
+            ORDER BY logged_at DESC
+        ) AS ordered_logs
         WHERE logged_at >= %s
         ORDER BY logged_at;
         """
-        cursor.execute(query, (PICO, PICO, session_start['logged_at']))
+        cursor.execute(query, (PICO, PICO, PICO, PICO, session_start['logged_at']))
         session_logs = cursor.fetchall()
 
         return jsonify(session_logs)
@@ -159,6 +161,34 @@ def summary():
         cursor.execute(query_luggage)
         luggage_results = cursor.fetchall()
 
+        # Query for staff
+        query_staff = """
+        SELECT roomID, PicoID, logged_at as latest_log
+        FROM staff
+        WHERE (PicoID, logged_at) IN (
+            SELECT PicoID, MAX(logged_at)
+            FROM staff
+            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
+            GROUP BY PicoID
+        );
+        """
+        cursor.execute(query_staff)
+        staff_results = cursor.fetchall()
+
+        # Query for guard
+        query_guard = """
+        SELECT roomID, PicoID, logged_at as latest_log
+        FROM guard
+        WHERE (PicoID, logged_at) IN (
+            SELECT PicoID, MAX(logged_at)
+            FROM guard
+            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
+            GROUP BY PicoID
+        );
+        """
+        cursor.execute(query_guard)
+        guard_results = cursor.fetchall()
+
         # Query for environment
         query_environment = """
         SELECT e.roomID, e.logged_at, e.temperature, e.sound, e.light, e.IAQ, e.pressure, e.humidity
@@ -179,7 +209,13 @@ def summary():
             room_id = row['roomID']
             pico_id = row['PicoID']
             if room_id not in summary:
-                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}, "environment": {}}
+                summary[room_id] = {
+                    "users": {"count": 0, "id": []},
+                    "luggage": {"count": 0, "id": []},
+                    "staff": {"count": 0, "id": []},
+                    "guard": {"count": 0, "id": []},
+                    "environment": {}
+                }
             summary[room_id]['users']['count'] += 1
             summary[room_id]['users']['id'].append(pico_id)
 
@@ -187,21 +223,61 @@ def summary():
             room_id = row['roomID']
             pico_id = row['PicoID']
             if room_id not in summary:
-                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}, "environment": {}}
+                summary[room_id] = {
+                    "users": {"count": 0, "id": []},
+                    "luggage": {"count": 0, "id": []},
+                    "staff": {"count": 0, "id": []},
+                    "guard": {"count": 0, "id": []},
+                    "environment": {}
+                }
             summary[room_id]['luggage']['count'] += 1
             summary[room_id]['luggage']['id'].append(pico_id)
+
+        for row in staff_results:
+            room_id = row['roomID']
+            pico_id = row['PicoID']
+            if room_id not in summary:
+                summary[room_id] = {
+                    "users": {"count": 0, "id": []},
+                    "luggage": {"count": 0, "id": []},
+                    "staff": {"count": 0, "id": []},
+                    "guard": {"count": 0, "id": []},
+                    "environment": {}
+                }
+            summary[room_id]['staff']['count'] += 1
+            summary[room_id]['staff']['id'].append(pico_id)
+
+        for row in guard_results:
+            room_id = row['roomID']
+            pico_id = row['PicoID']
+            if room_id not in summary:
+                summary[room_id] = {
+                    "users": {"count": 0, "id": []},
+                    "luggage": {"count": 0, "id": []},
+                    "staff": {"count": 0, "id": []},
+                    "guard": {"count": 0, "id": []},
+                    "environment": {}
+                }
+            summary[room_id]['guard']['count'] += 1
+            summary[room_id]['guard']['id'].append(pico_id)
 
         for row in environment_results:
             room_id = row['roomID']
             if room_id not in summary:
-                summary[room_id] = {"users": {"count": 0, "id": []}, "luggage": {"count": 0, "id": []}, "environment": {}}
+                summary[room_id] = {
+                    "users": {"count": 0, "id": []},
+                    "luggage": {"count": 0, "id": []},
+                    "staff": {"count": 0, "id": []},
+                    "guard": {"count": 0, "id": []},
+                    "environment": {}
+                }
             summary[room_id]['environment'] = {
                 "temperature": row['temperature'],
                 "sound": row['sound'],
                 "light": row['light'],
-                "IAQ": row['IAQ'],  # Include IAQ data
-                "pressure": row['pressure'],  # Include pressure data
-                "humidity": row['humidity']  # Include humidity data
+                "IAQ": row['IAQ'],
+                "pressure": row['pressure'],
+                "humidity": row['humidity']
             }
 
         return jsonify(summary)
