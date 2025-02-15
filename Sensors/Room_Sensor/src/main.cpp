@@ -5,6 +5,7 @@
 #include "BH1745NUC.h"
 #include "AsyncMqtt_Generic.h"
 #include <Adafruit_SSD1306.h>
+#include <Adafruit_NeoPixel.h>
 #include <ArduinoJson.h>
 #include <BTstackLib.h>
 #include <stdio.h>
@@ -27,6 +28,16 @@
 
 // Creates OLED display object "display"
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// LED Strip stuff (warning system)
+#define PIN_WS2812B 6         // pin number that connects to the LEDs
+#define NUM_PIXELS 3         
+#define DELAY_INTERVAL 500    
+Adafruit_NeoPixel WS2812B(NUM_PIXELS, PIN_WS2812B, NEO_GRB + NEO_KHZ800);
+int LEDPattern = 1;           //<---- If we want different patterns in future
+
+// Buzzer (warning system)
+#define Buzzer 7        // pin number buzzer is connected to
 
 // Environment Sensor Stuff: 
 Bsec iaqSensor; // Climate
@@ -132,6 +143,8 @@ void setup(void) {
     while(1);
   }
 
+  pinMode(Buzzer, OUTPUT);
+
   display.clearDisplay();
   display.setCursor(0,0);
   display.println("Setting Up");
@@ -223,6 +236,43 @@ void onPDMdata() {
   PDM.read(sampleBuffer, bytesAvailable);
   // 16-bit, 2 bytes per sample
   samplesRead = bytesAvailable / 2;
+}
+
+//Add buzzer:
+  // double frequencyToPlay = maxFrequency - 5200 * cupContents/cupCapacity;
+  //     tone(BUZZER, frequencyToPlay);
+  //     delay(50);
+  //     tone(BUZZER, frequencyToPlay * 4/3);
+  //     delay(50);
+  //     noTone(BUZZER);
+
+//Add display message..?
+
+void warningLEDs(){
+  //loop for...
+  
+  if(LEDPattern == 1){
+  //Solid all three 'red' 
+    for(int i = 0; i < NUM_PIXELS; i ++){
+      WS2812B.setPixelColor(i, WS2812B.Color(255 ,15, 15));
+    }
+    WS2812B.show();
+  }
+  else if (LEDPattern == 2)
+  {
+    //one by one 'blue off white' then one by one off
+    for(int i = 0; i < NUM_PIXELS; i ++){
+      WS2812B.setPixelColor(i, WS2812B.Color(255 ,15, 15));
+      delay(DELAY_INTERVAL * 3);
+      WS2812B.show();
+    }
+    delay(1000);
+    for(int i = 0; i < NUM_PIXELS; i ++){
+      WS2812B.setPixelColor(i, WS2812B.Color(0 ,0, 0));
+      delay(DELAY_INTERVAL * 3);
+      WS2812B.show();
+    }
+  }
 }
 
 
