@@ -157,20 +157,35 @@ const createPreset = async () => {
   loading.value = true;
   try {
     const trusted = selectedUsers.value.map(user => user.uid);
-    const response = await axios.post('http://localhost:5011/presets', {
-      name: name.value,
-      trusted: trusted
-    }, {
-      withCredentials: true
-    });
-    if (response.status === 201) {
+    let response;
+    if(updateMode.value){
+      response = await axios.patch(`http://localhost:5011/presets/${props.presetData.id}`, {
+        name: name.value,
+        trusted: trusted
+      }, {
+        withCredentials: true
+      });
+    } else {
+      response = await axios.post('http://localhost:5011/presets', {
+        name: name.value,
+        trusted: trusted
+      }, {
+        withCredentials: true
+      });
+    }
+    if (response.status === 201){
       warningMessage.value = "";
       name.value = "";
       email.value = "";
       selectedUsers.value = [];
+    }
+
+    if (response.status === 201 || response.status === 200) {
       setTimeout(() => {
-        successMessage.value = "Preset created successfully";
+        successMessage.value = `Preset ${response.status == 201 ? 'created' : 'updated'} successfully`;
       }, 10);
+    } else {
+      warningMessage.value = `ERR ${response.status}: something went wrong please try again later`
     }
     emit("newPreset");
   } catch (error) {
