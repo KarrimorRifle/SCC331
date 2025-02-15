@@ -51,7 +51,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, nextTick, watch, defineEmits, defineProps } from "vue";
+import { ref, onMounted, nextTick, watch, defineEmits, defineProps, warn } from "vue";
 import axios from "axios";
 import type { preset } from "@/utils/mapTypes";
 
@@ -92,6 +92,20 @@ const warningMessage = ref<string>("");
 const loading = ref<boolean>(false);
 const successMessage = ref<string>("");
 const currentUser = ref<{ uid: number; email: string; name: string } | null>(null);
+
+const setWarning = (input: string) => {
+  successMessage.value = "";
+  setTimeout(() => {
+    warningMessage.value = input;
+  }, 10)
+}
+
+const setSuccess = (input: string) => {
+  warningMessage.value = "";
+  setTimeout(() => {
+    successMessage.value = input;
+  }, 10)
+}
 
 const searchUsers = () => {
   if (email.value.length > 1) {
@@ -151,9 +165,15 @@ const scrollToHighlighted = () => {
 
 const createPreset = async () => {
   if (!name.value.trim()) {
-    warningMessage.value = "Preset name cannot be empty.";
+    setWarning("Preset name cannot be empty.");
     return;
   }
+
+  if (name.value.trim() == "\"No presets found!\"") {
+    setWarning("Invalid preset name.");
+    return;
+  }
+
   loading.value = true;
   try {
     const trusted = selectedUsers.value.map(user => user.uid);
@@ -174,18 +194,15 @@ const createPreset = async () => {
       });
     }
     if (response.status === 201){
-      warningMessage.value = "";
       name.value = "";
       email.value = "";
       selectedUsers.value = [];
     }
 
     if (response.status === 201 || response.status === 200) {
-      setTimeout(() => {
-        successMessage.value = `Preset ${response.status == 201 ? 'created' : 'updated'} successfully`;
-      }, 10);
+      setSuccess(`Preset ${response.status == 201 ? 'created' : 'updated'} successfully`);
     } else {
-      warningMessage.value = `ERR ${response.status}: something went wrong please try again later`
+      setWarning(`ERR ${response.status}: something went wrong please try again later`);
     }
     emit("newPreset");
   } catch (error) {
