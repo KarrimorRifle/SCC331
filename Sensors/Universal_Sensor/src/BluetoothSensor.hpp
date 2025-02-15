@@ -12,6 +12,7 @@
 #define ENVIRONMENT_WAIT_DURATION 10000
 #define SCAN_DURATION 9500
 #define WAIT_DURATION 500
+#define BUZZER 7
 
 class BluetoothSensor : public SensorType {
     public:
@@ -25,6 +26,7 @@ class BluetoothSensor : public SensorType {
         // Bluetooth Receiver Methods:
         static void advertisementCallback(BLEAdvertisement *adv);
         void ledSetup();
+        void warningRecieved(String message);
 
     private:
         Adafruit_SSD1306* display;

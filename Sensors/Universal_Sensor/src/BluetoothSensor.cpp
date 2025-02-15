@@ -33,6 +33,7 @@ void BluetoothSensor::ledSetup() {
 
 void BluetoothSensor::setup() {
     BTstack.setBLEAdvertisementCallback(this->advertisementCallback);
+    pinMode(BUZZER, OUTPUT);
     this->ledSetup();
 }
 
@@ -118,7 +119,19 @@ void BluetoothSensor::advertisementCallback(BLEAdvertisement *adv) {
 }
 
 
+void BluetoothSensor::warningRecieved(String message) {
+  leds->setPixelColor(2, leds->Color(255, 15, 15));
+  leds->setPixelColor(3, leds->Color(255, 15, 15));
+  leds->show();
 
+  tone(BUZZER, 7500, 1500);
+
+  display->clearDisplay();
+  display->setCursor(0, 0);
+  display->println("WARNING:");
+  display->println(message);
+  display->display(); 
+}
 
 
 void BluetoothSensor::sendToServer(String data) {
