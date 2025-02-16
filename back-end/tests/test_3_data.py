@@ -236,8 +236,8 @@ class TestData(unittest.TestCase):
         ]
 
         actual_logs = response.json()
-        self.assert_logs_contain(expected_logs, actual_logs, "The logs doesn't contain the new entries")
-        self.assertEqual(len(expected_logs), len(actual_logs), "The logs contain more than the old entries")
+        self.assert_logs_contain(expected_logs, actual_logs)
+        self.assertEqual(len(expected_logs), len(actual_logs))
 
     def fetch_summary_from_server(self):
         import time
