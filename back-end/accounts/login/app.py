@@ -97,10 +97,14 @@ def refresh_cookie():
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
+    cursor.execute("SELECT user_id, cookie_expiry FROM users WHERE cookie = %s", (session_id,))
     user = cursor.fetchone()
 
     if user:
+        time_left = user['cookie_expiry'] - datetime.now()
+        if time_left.total_seconds() > 10 * 60:
+            return jsonify({"message": "Cookie still valid", "expires": user['cookie_expiry'].isoformat()}), 200
+
         new_cookie = str(uuid.uuid4())
         expiry_time = datetime.now() + timedelta(hours=1)
         cursor.execute("UPDATE users SET cookie = %s, cookie_expiry = %s WHERE user_id = %s", 
