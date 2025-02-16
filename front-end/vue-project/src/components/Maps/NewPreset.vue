@@ -53,7 +53,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, nextTick, watch, defineEmits, defineProps, warn } from "vue";
 import axios from "axios";
-import type { preset } from "@/utils/mapTypes";
+import type { preset, presetListType } from "@/utils/mapTypes";
 
 const emit = defineEmits(["newPreset"]);
 
@@ -65,7 +65,11 @@ const props = defineProps({
   updateMode: {
     type: Boolean,
     required: true
-  }
+  },
+  presetList: {
+    type: Object as () => presetListType,
+    required: true,
+  },
 });
 
 const updateMode = ref(props.updateMode);
@@ -171,6 +175,13 @@ const createPreset = async () => {
 
   if (name.value.trim() == "\"No presets found!\"") {
     setWarning("Invalid preset name.");
+    return;
+  }
+
+  if (props.presetList.presets.some(object =>
+    object.name == name.value 
+  )) {
+    setWarning("Name already in use.");
     return;
   }
 

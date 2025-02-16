@@ -56,7 +56,7 @@ USE assets;
 
 CREATE TABLE IF NOT EXISTS presets (
   preset_id INT AUTO_INCREMENT PRIMARY KEY,
-  preset_name VARCHAR(255) NOT NULL,
+  preset_name VARCHAR(255) NOT NULL UNIQUE,
   owner_id INT DEFAULT NULL,
   image_name VARCHAR(255) DEFAULT NULL,
   image_data LONGBLOB DEFAULT NULL,
