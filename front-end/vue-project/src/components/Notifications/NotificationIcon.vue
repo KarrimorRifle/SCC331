@@ -6,7 +6,7 @@ import { getCardBackgroundColor } from "@/utils/helper/warningUtils";
 
 const props = defineProps({
   warnings: {
-    type: Array as () => { Title: string; Location: string; Severity: string; Summary: string }[],
+    type: Array as () => { Title: string; Location?: string; Severity: string; Summary: string }[],
     required: true,
   },
   warningCount: Number,

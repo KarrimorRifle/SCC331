@@ -158,7 +158,8 @@ const create_data = () => {
         width: box.width,
         height: box.height,
         colour: box.colour
-      }
+      };
+      boxes_and_data.value[box.roomID].label = box.label;
     }else {
       boxes_and_data.value[box.roomID] = <dataObject>{};
       boxes_and_data.value[box.roomID].box = {
@@ -168,6 +169,7 @@ const create_data = () => {
         height: box.height,
         colour: box.colour
       }
+      boxes_and_data.value[box.roomID].label = box.label;
     }
   })
 
@@ -297,6 +299,15 @@ const uploadBoxes = async () => {
       ...data.box,
       label: data.label || ""
     }));
+
+  // Validation check
+  for (const box of boxesToUpload) {
+    console.log(box.label.trim().length);
+    if (!box.label || box.label.trim().length === 0) {
+      alert('Cannot save. All boxes must have a label.');
+      return;
+    }
+  }
 
   console.log("Uploading boxes:", boxesToUpload); // Log the boxes being uploaded
 

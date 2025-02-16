@@ -178,7 +178,7 @@ const createPreset = async () => {
     return;
   }
 
-  if (props.presetList.presets.some(object =>
+  if (props.presetList?.presets?.some(object =>
     object.name == name.value 
   )) {
     setWarning("Name already in use.");

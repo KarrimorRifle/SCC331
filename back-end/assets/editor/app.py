@@ -254,6 +254,8 @@ def update_preset_boxes(preset_id):
         cursor.execute("DELETE FROM map_blocks WHERE preset_id = %s", (preset_id,))
         # Insert new boxes into map_blocks
         for box in data["boxes"]:
+            if box["label"] == "":
+                return jsonify({"error": "Box label cannot be empty"}), 400
             cursor.execute("""
                 INSERT INTO map_blocks 
                 (preset_id, roomID, label, `top`, `left`, `width`, `height`, colour)
