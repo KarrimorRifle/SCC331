@@ -51,9 +51,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, nextTick, watch, defineEmits, defineProps } from "vue";
+import { ref, onMounted, nextTick, watch, defineEmits, defineProps, warn } from "vue";
 import axios from "axios";
-import type { preset } from "@/utils/mapTypes";
+import type { preset, presetListType } from "@/utils/mapTypes";
 
 const emit = defineEmits(["newPreset"]);
 
@@ -65,7 +65,11 @@ const props = defineProps({
   updateMode: {
     type: Boolean,
     required: true
-  }
+  },
+  presetList: {
+    type: Object as () => presetListType,
+    required: true,
+  },
 });
 
 const updateMode = ref(props.updateMode);
@@ -92,6 +96,20 @@ const warningMessage = ref<string>("");
 const loading = ref<boolean>(false);
 const successMessage = ref<string>("");
 const currentUser = ref<{ uid: number; email: string; name: string } | null>(null);
+
+const setWarning = (input: string) => {
+  successMessage.value = "";
+  setTimeout(() => {
+    warningMessage.value = input;
+  }, 10)
+}
+
+const setSuccess = (input: string) => {
+  warningMessage.value = "";
+  setTimeout(() => {
+    successMessage.value = input;
+  }, 10)
+}
 
 const searchUsers = () => {
   if (email.value.length > 1) {
@@ -151,26 +169,51 @@ const scrollToHighlighted = () => {
 
 const createPreset = async () => {
   if (!name.value.trim()) {
-    warningMessage.value = "Preset name cannot be empty.";
+    setWarning("Preset name cannot be empty.");
     return;
   }
+
+  if (name.value.trim() == "\"No presets found!\"") {
+    setWarning("Invalid preset name.");
+    return;
+  }
+
+  if (props.presetList?.presets?.some(object =>
+    object.name == name.value 
+  )) {
+    setWarning("Name already in use.");
+    return;
+  }
+
   loading.value = true;
   try {
     const trusted = selectedUsers.value.map(user => user.uid);
-    const response = await axios.post('http://localhost:5011/presets', {
-      name: name.value,
-      trusted: trusted
-    }, {
-      withCredentials: true
-    });
-    if (response.status === 201) {
-      warningMessage.value = "";
+    let response;
+    if(updateMode.value){
+      response = await axios.patch(`http://localhost:5011/presets/${props.presetData.id}`, {
+        name: name.value,
+        trusted: trusted
+      }, {
+        withCredentials: true
+      });
+    } else {
+      response = await axios.post('http://localhost:5011/presets', {
+        name: name.value,
+        trusted: trusted
+      }, {
+        withCredentials: true
+      });
+    }
+    if (response.status === 201){
       name.value = "";
       email.value = "";
       selectedUsers.value = [];
-      setTimeout(() => {
-        successMessage.value = "Preset created successfully";
-      }, 10);
+    }
+
+    if (response.status === 201 || response.status === 200) {
+      setSuccess(`Preset ${response.status == 201 ? 'created' : 'updated'} successfully`);
+    } else {
+      setWarning(`ERR ${response.status}: something went wrong please try again later`);
     }
     emit("newPreset");
   } catch (error) {

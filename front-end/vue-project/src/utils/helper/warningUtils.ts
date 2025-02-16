@@ -15,6 +15,7 @@ export const getCardBackgroundColor = (severity: string): string => {
     danger: "#FF4500",
     warning: "#FFA500",
     notification: "#4682B4",
+    system: "#787878"
   };
   return severityColors[severity] || "#ccc";
 };

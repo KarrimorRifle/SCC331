@@ -1,5 +1,3 @@
-import { faAslInterpreting } from "@fortawesome/free-solid-svg-icons"
-
 export interface preset {
   id: string | number,
   name: string,
