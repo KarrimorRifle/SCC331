@@ -4,7 +4,7 @@ import mysql.connector
 from mysql.connector import Error
 import bcrypt
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import time
 
@@ -49,14 +49,15 @@ def login():
     if user and bcrypt.checkpw(password.encode('utf-8'), user['pass_hash'].encode('utf-8')):
         # Generate a new cookie
         new_cookie = str(uuid.uuid4())
-        # Update last_login and cookie in the database
-        cursor.execute("UPDATE users SET last_login = %s, cookie = %s WHERE user_id = %s", 
-                       (datetime.now(), new_cookie, user['user_id']))
+        expiry_time = datetime.now() + timedelta(hours=1)
+        # Update last_login, cookie, and cookie_expiry in the database
+        cursor.execute("UPDATE users SET last_login = %s, cookie = %s, cookie_expiry = %s WHERE user_id = %s", 
+                       (datetime.now(), new_cookie, expiry_time, user['user_id']))
         connection.commit()
         cursor.close()
 
         # Create response with the new cookie
-        response = make_response(jsonify({"message": "Login successful"}), 200)
+        response = make_response(jsonify({"message": "Login successful", "expires": expiry_time.isoformat()}), 200)
         response.set_cookie("session_id", new_cookie, max_age=1*60*60)
         return response
     else:
@@ -74,14 +75,45 @@ def validate_cookie():
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT user_id, email, authority FROM users WHERE cookie = %s", (session_id,))
+    cursor.execute("SELECT user_id, email, authority, cookie_expiry FROM users WHERE cookie = %s", (session_id,))
     user = cursor.fetchone()
     cursor.close()
 
     if user:
+        if datetime.now() > user['cookie_expiry']:
+            return jsonify({"error": "Session expired", "valid": False}), 401
         return jsonify({"message": "Cookie is valid", "valid": True, "email": user['email'], "uid": user['user_id'], "authority": user["authority"]}), 200
     else:
         return jsonify({"error": "Invalid cookie", "valid": False}), 401
+
+@app.route('/refresh_cookie', methods=['POST'])
+def refresh_cookie():
+    session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+    if not session_id:
+        return jsonify({"error": "No session cookie or header provided"}), 400
+
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
+    user = cursor.fetchone()
+
+    if user:
+        new_cookie = str(uuid.uuid4())
+        expiry_time = datetime.now() + timedelta(hours=1)
+        cursor.execute("UPDATE users SET cookie = %s, cookie_expiry = %s WHERE user_id = %s", 
+                       (new_cookie, expiry_time, user['user_id']))
+        connection.commit()
+        cursor.close()
+
+        response = make_response(jsonify({"message": "Cookie refreshed", "expires": expiry_time.isoformat()}), 200)
+        response.set_cookie("session_id", new_cookie, max_age=1*60*60)
+        return response
+    else:
+        cursor.close()
+        return jsonify({"error": "Invalid session"}), 401
 
 @app.route('/logout', methods=['POST'])
 def logout():

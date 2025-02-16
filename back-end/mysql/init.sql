@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
   pass_hash CHAR(60) NOT NULL COMMENT 'BCrypt hashed',
   email VARCHAR(100) NOT NULL UNIQUE,
   cookie CHAR(64) COMMENT 'Secure session token',
+  cookie_expiry TIMESTAMP COMMENT 'Cookie expiry time',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   last_login TIMESTAMP,
   INDEX idx_email (email),
@@ -107,7 +108,7 @@ FLUSH PRIVILEGES;
 
 -- Account Cookie Management Service (Update cookie + Read)
 CREATE USER IF NOT EXISTS 'cookie_manager'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'cookie_password';
-GRANT SELECT, UPDATE(cookie, last_login) ON accounts.users TO 'cookie_manager'@'%';
+GRANT SELECT, UPDATE(cookie, cookie_expiry, last_login) ON accounts.users TO 'cookie_manager'@'%';
 ALTER USER 'cookie_manager'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 

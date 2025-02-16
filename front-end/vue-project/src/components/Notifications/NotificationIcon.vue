@@ -20,7 +20,7 @@ const hasNewWarning = ref(false);
 
 // Get the highest severity for notification color (affects bell icon)
 const getHighestSeverity = computed(() => {
-  const severityPriority = ["doomed", "danger", "warning", "notification"]; // Ordered by priority
+  const severityPriority = ["doomed", "danger", "warning", "notification", "system"]; // Ordered by priority
 
   const highestSeverity = severityPriority.find(severity =>
     props.warnings.some(w => w.Severity === severity)
@@ -31,7 +31,7 @@ const getHighestSeverity = computed(() => {
 
 // Determine if there are active warnings for bell icon interaction
 const hasActiveWarnings = computed(() => {
-  return props.warnings.some(w => ["warning", "notification", "danger", "doomed"].includes(w.Severity));
+  return props.warnings.some(w => ["warning", "notification", "danger", "doomed", "system"].includes(w.Severity));
 });
 
 // Watch for new warnings and trigger bell animation

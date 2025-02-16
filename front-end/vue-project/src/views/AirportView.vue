@@ -89,23 +89,19 @@ const fetchSummary = async() => {
   if (fetchSummaryRetry == 0){
     if (pollingInterval) clearInterval(pollingInterval);
     addNotification({
-      Title: "Fetch Stopping",
+      Title: "Fetch Error",
       Severity: "system",
-      Summary: "Unable to fetch summary data, server may be down. We will stop trying to fetch data for now. \nTry again later."
+      Summary: "Unable to fetch summary data, server may be down, try again later."
     });
     return;
   }
   try {
     let request = await axios.get("http://localhost:5003/summary", { withCredentials: true });
     summary.value = request.data;
+    fetchSummaryRetry = 3;
   } catch (error) {
     fetchSummaryRetry--;
     console.error("Error fetching summary:", error);
-    addNotification({
-      Title: "Fetch Error",
-      Severity: "system",
-      Summary: "Unable to fetch summary data, server may be down, try again later."
-    });
   }
 }
 
@@ -136,7 +132,7 @@ const fetchPreset = async() => {
     console.error("Error fetching preset:", error);
     addNotification({
       Title: "Fetch Error",
-      Severity: "danger",
+      Severity: "system",
       Summary: "Unable to fetch preset data, server may be down, try again later."
     });
   }
