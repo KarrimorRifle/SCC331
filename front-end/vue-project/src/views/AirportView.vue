@@ -7,6 +7,7 @@ import axios from "axios";
 import OverlayArea from '@/components/OverlayArea.vue';
 import type { Timeout } from "node:timers";
 import type {preset, presetListType, boxAndData, boxType, summaryType, environmentData, dataObject} from "../utils/mapTypes";
+import { addNotification } from '@/stores/notificationStore';
 
 // Receive isMobile from App.vue
 const props = defineProps({
@@ -52,6 +53,7 @@ const isDashboardOpen = ref(true);
 const settable = computed(() => {
   return canCreate.value && presetList.value.default + "" !== currentPreset.value + "";
 });
+let fetchSummaryRetry:number = 3;
 
 async function validateUser() {
   try {
@@ -66,6 +68,11 @@ async function validateUser() {
   } catch (error) {
     console.error("Error validating user:", error);
     canEdit.value = false;
+    addNotification({
+      Title: "Validation Error",
+      Severity: "system",
+      Summary: "Unable to validate user, server may be down, try again later."
+    });
   }
 }
 
@@ -79,27 +86,60 @@ const processPresetImage = () => {
 };
 
 const fetchSummary = async() => {
-  let request = await axios.get("http://localhost:5003/summary",
-    { withCredentials: true});
-  summary.value = request.data;
+  if (fetchSummaryRetry == 0){
+    if (pollingInterval) clearInterval(pollingInterval);
+    addNotification({
+      Title: "Fetch Stopping",
+      Severity: "system",
+      Summary: "Unable to fetch summary data, server may be down. We will stop trying to fetch data for now. \nTry again later."
+    });
+    return;
+  }
+  try {
+    let request = await axios.get("http://localhost:5003/summary", { withCredentials: true });
+    summary.value = request.data;
+  } catch (error) {
+    fetchSummaryRetry--;
+    console.error("Error fetching summary:", error);
+    addNotification({
+      Title: "Fetch Error",
+      Severity: "system",
+      Summary: "Unable to fetch summary data, server may be down, try again later."
+    });
+  }
 }
 
 const fetchPresets = async() => {
-  let request = await axios.get("http://localhost:5010/presets",
-    {withCredentials: true});
-  presetList.value = request.data;
-  // Set the default preset ID
-  defaultPresetId.value = presetList.value.default;
-  if(currentPreset.value == -1 && presetList.value.presets.length > 0)
-    currentPreset.value = presetList.value.presets[0].id;
+  try {
+    let request = await axios.get("http://localhost:5010/presets", { withCredentials: true });
+    presetList.value = request.data;
+    // Set the default preset ID
+    defaultPresetId.value = presetList.value.default;
+    if(currentPreset.value == -1 && presetList.value.presets.length > 0)
+      currentPreset.value = presetList.value.presets[0].id;
+  } catch (error) {
+    console.error("Error fetching presets:", error);
+    addNotification({
+      Title: "Fetch Error",
+      Severity: "system",
+      Summary: "Unable to fetch presets, server may be down, try again later."
+    });
+  }
 }
 
 const fetchPreset = async() => {
-  let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}`,
-    {withCredentials: true});
-  presetData.value = request.data;
-  console.log(presetData.value);
-  processPresetImage();
+  try {
+    let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}`, { withCredentials: true });
+    presetData.value = request.data;
+    processPresetImage();
+  } catch (error) {
+    console.error("Error fetching preset:", error);
+    addNotification({
+      Title: "Fetch Error",
+      Severity: "danger",
+      Summary: "Unable to fetch preset data, server may be down, try again later."
+    });
+  }
 }
 
 const toggleDashboard = () => {
@@ -178,6 +218,11 @@ const setDefaultPreset = async () => {
   } catch (error) {
     console.error("Error setting default preset:", error);
     alert("Failed to set default preset");
+    addNotification({
+      Title: "Set Default Error",
+      Severity: "system",
+      Summary: "Unable to set default preset, server may be down, try again later."
+    });
   }
 };
 
@@ -194,6 +239,11 @@ const deletePreset = async () => {
   } catch (error) {
     console.error("Error deleting preset:", error);
     alert("Failed to delete preset");
+    addNotification({
+      Title: "Delete Error",
+      Severity: "system",
+      Summary: "Unable to delete preset, server may be down, try again later."
+    });
   }
 
   try {
@@ -211,6 +261,11 @@ const deletePreset = async () => {
   } catch (error) {
     console.error("Error fetching presets:", error);
     alert("Failed to fetch presets");
+    addNotification({
+      Title: "Fetch Error",
+      Severity: "system",
+      Summary: "Unable to fetch presets, server may be down, try again later."
+    });
   }
 };
 
@@ -256,6 +311,11 @@ const uploadBoxes = async () => {
   } catch (error) {
     console.error("Error uploading boxes:", error);
     alert("Failed to upload boxes");
+    addNotification({
+      Title: "Upload Error",
+      Severity: "system",
+      Summary: "Unable to upload boxes, server may be down, try again later."
+    });
   }
   editMode.value = false;
 };

@@ -56,9 +56,11 @@ watch(
       :class="{ 'new-warning': hasNewWarning }"
       :style="{ backgroundColor: getHighestSeverity }"
       @click="emit('toggleWarningModal')"
+      @touchstart="emit('toggleWarningModal')"
       :disabled="!hasActiveWarnings"
     >
       <font-awesome-icon :icon="isWarningModalOpen ? faXmark : faBell" class="bell-icon" />
+      <span v-if="!isWarningModalOpen && warningCount > 0" class="notification-count">{{ props.warningCount }}</span>
     </button>
 
     <!-- Tooltip for "No Active Warnings" -->
@@ -95,6 +97,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .notification-icon:disabled {
@@ -125,5 +128,17 @@ watch(
   font-size: 12px;
   border-radius: 5px;
   box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.notification-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ff4d4d;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  min-width: 1.5rem;
 }
 </style>

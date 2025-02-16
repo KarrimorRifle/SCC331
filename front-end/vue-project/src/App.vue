@@ -6,7 +6,7 @@ import NotificationIcon from "./components/Notifications/NotificationIcon.vue";
 import Navbar from '@/components/Navbar.vue';
 import { useFetchData } from '@/utils/useFetchData';
 import { useCookies } from 'vue3-cookies';
-
+import { notificationQueue, addNotification, dismissNotification } from '@/stores/notificationStore';
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
 const { overlayAreasConstant, overlayAreasData, updates, environmentHistory, warnings } = useFetchData(picoIds);
@@ -16,12 +16,8 @@ const showSeverePopup = ref(false);
 const safeWarnings = computed(() => Array.isArray(warnings.value) ? warnings.value : []);
 const warningCount = computed(() => notificationQueue.value.length);
 
-// ** Move notification storage to parent **
-const notificationQueue = ref<{ Title: string; Location: string; Severity: string; Summary: string }[]>([]);
-
-const dismissNotification = (index: number) => {
-  notificationQueue.value.splice(index, 1);
-};
+// first time loading for the warnings
+let firstTime = true;
 
 // Sync `notificationQueue` when `safeWarnings` updates
 watch(
@@ -31,10 +27,12 @@ watch(
 
     const parsedWarnings = JSON.parse(newWarnings);
 
-    // ✅ Clear and re-add warnings to force reactivity
-    notificationQueue.value = [];
+    // // ✅ Clear and re-add warnings to force reactivity
+    // notificationQueue.value = [];
+    if(firstTime) firstTime = false;
+    else return;
     parsedWarnings.forEach((warning) => {
-      notificationQueue.value.push(warning);
+      addNotification(warning);
     });
 
     // Show severe pop-up if applicable
