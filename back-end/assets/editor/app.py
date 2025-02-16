@@ -142,11 +142,6 @@ def presets():
                 print(f"Error adding trusted user {user_id}: {e}")
                 return jsonify({"error": "Failed to add trusted user"}), 400
 
-        cursor.execute("""
-                INSERT INTO preset_trusted (preset_id, user_id)
-                VALUES (%s, %s)
-            """, (preset_id, cookie_res[0]))
-
         connection.commit()
         return jsonify({"message": "Preset created", "preset_id": preset_id}), 201
     except Error as e:
