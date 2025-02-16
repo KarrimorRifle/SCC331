@@ -27,6 +27,7 @@ void BluetoothSensor::ledSetup() {
     // Colour System:
     leds->begin(); // initializes WS2812B strip object (REQUIRED)
     leds->setPixelColor(1, 4294967295);
+    leds->setBrightness(200);     //just to make the brightness more bearable, feel free to adjust
     leds->show();
 }
 
@@ -86,6 +87,10 @@ void BluetoothSensor::loop() {
 	}
   }
   BTstack.loop();
+
+  if(warningLive){
+    warningRecieved(warningMessage);
+  }
 }
 
 
@@ -120,17 +125,91 @@ void BluetoothSensor::advertisementCallback(BLEAdvertisement *adv) {
 
 
 void BluetoothSensor::warningRecieved(String message) {
+  warningLive = true;
+  warningMessage = message;
+  //standard
   leds->setPixelColor(2, leds->Color(255, 15, 15));
   leds->setPixelColor(3, leds->Color(255, 15, 15));
   leds->show();
 
-  tone(BUZZER, 7500, 1500);
+  tone(BUZZER, 5000, 1500);
 
   display->clearDisplay();
   display->setCursor(0, 0);
   display->println("WARNING:");
   display->println(message);
   display->display(); 
+
+  delay(2500);
+
+  /*
+  //Danger
+  leds->setPixelColor(2, leds->Color(255, 15, 15));
+  leds->setPixelColor(3, leds->Color(255, 15, 15));
+  leds->show();
+
+  tone(BUZZER, 5500, 1500);
+
+  display->clearDisplay();
+  display->setCursor(0, 0);
+  display->println("DANGER:");
+  display->println(message);
+  display->display(); 
+
+  delay(2500);
+
+  //Doomed
+  leds->setPixelColor(2, leds->Color(255, 15, 15));
+  leds->setPixelColor(3, leds->Color(255, 15, 15));
+  leds->show();
+
+  tone(BUZZER, 6000, 1500);
+
+  display->clearDisplay();
+  display->setCursor(0, 0);
+  display->println("DOOMED:");
+  display->println(message);
+  display->display(); 
+
+  delay(2500);
+
+  //Notification
+  leds->setPixelColor(2, leds->Color(255, 15, 15));
+  leds->setPixelColor(3, leds->Color(255, 15, 15));
+  leds->show();
+
+  tone(BUZZER, 5000, 1500);
+
+  display->clearDisplay();
+  display->setCursor(0, 0);
+  display->println("NOTIFICATION:");
+  display->println(message);
+  display->display(); 
+
+  delay(2500);
+  */
+}
+
+//for reply - staff/security??
+void BluetoothSensor::warningAcknowledged() {
+
+}
+
+void BluetoothSensor::warningOver() {
+  warningLive = false;
+  warningMessage = "";
+  leds->clear();
+  leds->setPixelColor(1, 4294967295);
+  leds->show();
+  
+  noTone(BUZZER);
+
+  display->clearDisplay();
+  display->setCursor(0, 0);
+  display->println("Thank you for your attention, the situation has been resolved");
+  display->display(); 
+
+  delay(1500);
 }
 
 

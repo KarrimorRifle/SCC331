@@ -27,6 +27,8 @@ class BluetoothSensor : public SensorType {
         static void advertisementCallback(BLEAdvertisement *adv);
         void ledSetup();
         void warningRecieved(String message);
+        void warningAcknowledged();
+        void warningOver();
 
     private:
         Adafruit_SSD1306* display;
@@ -40,6 +42,8 @@ class BluetoothSensor : public SensorType {
         int picoType;
         int majorID; // The room the user / luggage is currently in, according to the majorID picked up
         uint8_t minorID;
+        bool warningLive;
+        String warningMessage;
         
         void sendToServer(String data);
 };
