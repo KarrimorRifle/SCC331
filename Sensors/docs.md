@@ -3,7 +3,7 @@
 ## User_Luggage_Sensor
 
 ### JSON Structure
-The `User_Luggage_Sensor` sends the following JSON structure to the server:
+The `Bluetooth_Sensor` config of `Universal_Sensor` sends the following JSON structure to the server:
 
 ```json
 {
@@ -27,7 +27,7 @@ The `User_Luggage_Sensor` sends the following JSON structure to the server:
 ## Room_Sensor
 
 ### JSON Structure
-The `Room_Sensor` sends the following JSON structure to the server:
+The `Room_Sensor` config of `Universal_Sensor` sends the following JSON structure to the server:
 
 ```json
 {
