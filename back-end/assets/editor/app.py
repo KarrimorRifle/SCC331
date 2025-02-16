@@ -325,6 +325,11 @@ def delete_preset(preset_id):
     owner_id = cursor.fetchone()["owner_id"]
     if owner_id != cookie_res[0]:
         return jsonify({"error": "Forbidden", "message": "Not the owner of this preset"}), 403
+    
+    cursor.execute("SELECT preset_id FROM default_preset WHERE is = 1")
+    default = cursor.fetchone()["preset_id"]
+    if preset_id == default:
+        return jsonify({"error": "Forbidden", "message": "Cannot delete default preset"}), 403
 
     try:
         cursor.execute("DELETE FROM presets WHERE preset_id = %s", (preset_id,))

@@ -182,6 +182,11 @@ const setDefaultPreset = async () => {
 };
 
 const deletePreset = async () => {
+  if(presetList.value.default == currentPreset.value){
+    alert("Cannot delete default preset");
+    return;
+  }
+
   try {
     await axios.delete(`http://localhost:5011/presets/${currentPreset.value}`, {
       withCredentials: true
