@@ -2,11 +2,11 @@
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { getCardBackgroundColor } from "@/utils/helper/warningUtils"; // Import the function
-import { ref, watch, PropType } from "vue";
+import { ref, PropType, computed } from "vue";
 
 const props = defineProps({
   warnings: {
-    type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
+    type: Array as PropType<{ Title: string; Location?: string; Severity: string; Summary: string }[]>,
     required: true,
   },
   warningCount: Number, 
@@ -14,6 +14,17 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close", "dismiss"]);
+
+const mode = ref<string>("warnings");
+
+const filteredWarnings = computed(() => props.warnings.filter(warning => {
+  if (mode.value !== 'system') return warning.Severity !== 'system';
+  return warning.Severity === 'system';
+}));
+
+const switchMode = (newMode: string) => {
+  mode.value = newMode;
+};
 
 </script>
 
@@ -28,10 +39,19 @@ const emit = defineEmits(["close", "dismiss"]);
           </button>
         </div>
 
+        <div class="modal-tabs">
+          <button :class="{ active: mode === 'warnings' }" @click="switchMode('warnings')">
+            Warnings <span class="count">{{ props.warnings.filter(w => w.Severity !== 'system').length }}</span>
+          </button>
+          <button :class="{ active: mode === 'system' }" @click="switchMode('system')">
+            System <span class="count">{{ props.warnings.filter(w => w.Severity === 'system').length }}</span>
+          </button>
+        </div>
+
         <div class="modal-body">
-          <div v-if="warnings.length > 0">
+          <div v-if="filteredWarnings.length > 0">
             <div
-              v-for="(notification, index) in warnings"
+              v-for="(notification, index) in filteredWarnings"
               :key="index"
               class="warning-card"
               :style="{ backgroundColor: getCardBackgroundColor(notification.Severity) }"
@@ -39,7 +59,7 @@ const emit = defineEmits(["close", "dismiss"]);
               <h4>
                 {{ notification.Title }} - <span class="severity-text">{{ notification.Severity.toUpperCase() }}</span>
               </h4>
-              <p><strong>📍 Location:</strong> {{ notification.Location }}</p>
+              <p v-if="notification.Location"><strong>📍 Location:</strong> {{ notification.Location }}</p>
               <p><strong>📢 {{ notification.Summary }}</strong></p>
               <button class="dismiss-btn" @click="emit('dismiss', index)">Dismiss</button>
             </div>
@@ -72,7 +92,7 @@ const emit = defineEmits(["close", "dismiss"]);
   width: 100%;
   border-radius: 10px;
   border-left: 6px solid #305f72;
-  max-height: 40vh;
+  height: 40vh;
   overflow-y: auto;
 }
 @media (max-width: 768px) {
@@ -118,6 +138,44 @@ const emit = defineEmits(["close", "dismiss"]);
 
 .close-btn:hover {
   color: #ff4d4d;
+}
+
+/* Modal Tabs */
+.modal-tabs {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+}
+
+.modal-tabs button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: #f1f1f1;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+  position: relative;
+}
+
+.modal-tabs button.active {
+  background: #305f72;
+  color: white;
+}
+
+.modal-tabs button:hover:not(.active) {
+  background: #e1e1e1;
+}
+
+.modal-tabs .count {
+  background: #ff4d4d;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  min-width: 1.5rem;
 }
 
 /* Warning Cards */

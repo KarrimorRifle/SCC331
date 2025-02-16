@@ -18,14 +18,14 @@ def get_db_connection(retries=5, delay=1):
     global db_connection
     for _ in range(retries):
         try:
+            if db_connection != None and db_connection.is_connected():
+                return db_connection
             db_connection = mysql.connector.connect(
                 host=os.getenv('DB_HOST'),
                 user=os.getenv('DB_USER'),
                 password=os.getenv('DB_PASSWORD'),
                 database=os.getenv('DB_NAME')
             )
-            if db_connection.is_connected():
-                return db_connection
         except Error as e:
             print(f"Error connecting to MySQL: {e}")
             db_connection = None
@@ -122,6 +122,10 @@ def presets():
     cursor = connection.cursor(dictionary=True)
     data = request.get_json()
 
+    cursor.execute("SELECT preset_name FROM presets WHERE preset_name = %s", (data["name"],))
+    if cursor.fetchone():
+        return jsonify({"error": "Preset name already exists"}), 400
+
     try:
         # Insert the new preset
         cursor.execute("""
@@ -141,11 +145,6 @@ def presets():
             except Error as e:
                 print(f"Error adding trusted user {user_id}: {e}")
                 return jsonify({"error": "Failed to add trusted user"}), 400
-
-        cursor.execute("""
-                INSERT INTO preset_trusted (preset_id, user_id)
-                VALUES (%s, %s)
-            """, (preset_id, cookie_res[0]))
 
         connection.commit()
         return jsonify({"message": "Preset created", "preset_id": preset_id}), 201
@@ -255,6 +254,8 @@ def update_preset_boxes(preset_id):
         cursor.execute("DELETE FROM map_blocks WHERE preset_id = %s", (preset_id,))
         # Insert new boxes into map_blocks
         for box in data["boxes"]:
+            if box["label"] == "":
+                return jsonify({"error": "Box label cannot be empty"}), 400
             cursor.execute("""
                 INSERT INTO map_blocks 
                 (preset_id, roomID, label, `top`, `left`, `width`, `height`, colour)
@@ -330,6 +331,11 @@ def delete_preset(preset_id):
     owner_id = cursor.fetchone()["owner_id"]
     if owner_id != cookie_res[0]:
         return jsonify({"error": "Forbidden", "message": "Not the owner of this preset"}), 403
+    
+    cursor.execute("SELECT preset_id FROM default_preset WHERE id = 1")
+    default = cursor.fetchone()["preset_id"]
+    if preset_id == default:
+        return jsonify({"error": "Forbidden", "message": "Cannot delete default preset"}), 403
 
     try:
         cursor.execute("DELETE FROM presets WHERE preset_id = %s", (preset_id,))

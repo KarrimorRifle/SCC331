@@ -200,6 +200,17 @@ watch(
   { deep: true }
 );
 
+let longPressTimer: NodeJS.Timeout;
+const startLongPress = () => {
+  longPressTimer = setTimeout(() => {
+    emit('delete');
+  }, 1000); // 1 second long press
+};
+
+const cancelLongPress = () => {
+  clearTimeout(longPressTimer);
+};
+
 const updateMode = ref<boolean>(false);
 </script>
 
@@ -215,6 +226,7 @@ const updateMode = ref<boolean>(false);
             <option v-for="preset in presetList.presets" :value="preset.id" :key="preset.id">
               {{ preset.id === defaultPresetId ? `Default: ${preset.name}` : preset.name }}
             </option>
+            <option v-if="presetList?.presets?.length == 0" value="-1">"No presets found!"</option>
           </select>
         </div>
       </div>
@@ -268,6 +280,9 @@ const updateMode = ref<boolean>(false);
           <button
             class="p-0 py-1 d-flex align-items-center justify-content-center mb-1 bg-danger"
             @dblclick="emit('delete')"
+            @contextmenu.prevent
+            @touchstart="startLongPress"
+            @touchend="cancelLongPress"
             title="Double click to delete this preset"
           >
             <img src="@/assets/bin.svg" alt="" style="max-width: 1.5rem;">
