@@ -110,6 +110,7 @@ const fetchSummary = async() => {
 
 const fetchPresets = async() => {
   try {
+    isLoading.value = true;
     let request = await axios.get("http://localhost:5010/presets", { withCredentials: true });
     presetList.value = request.data;
     // Set the default preset ID
@@ -123,12 +124,16 @@ const fetchPresets = async() => {
       Severity: "system",
       Summary: "Unable to fetch presets, server may be down, try again later."
     });
+  } finally {
+    isLoading.value = false;
   }
 }
 
 const fetchPreset = async() => {
   try {
+    isLoading.value = true;
     let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}`, { withCredentials: true });
+    console.log(request.data);
     presetData.value = request.data;
     processPresetImage();
   } catch (error) {
@@ -138,6 +143,8 @@ const fetchPreset = async() => {
       Severity: "system",
       Summary: "Unable to fetch preset data, server may be down, try again later."
     });
+  }finally{
+    isLoading.value = false;
   }
 }
 
@@ -400,6 +407,7 @@ onMounted(async() => {
       currentPreset.value = presetList.value.default;
     } else if (presetList.value.presets.length > 0) {
       currentPreset.value = presetList.value.presets[0].id;
+      await setDefaultPreset();
     }
     await fetchPreset();
   } catch (error) {

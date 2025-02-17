@@ -112,12 +112,19 @@ const setSuccess = (input: string) => {
 }
 
 const searchUsers = () => {
-  if (email.value.length > 1) {
-    searchResults.value = allUsers.value.filter(user => 
-      (user.email.includes(email.value) || user.name.includes(email.value)) && 
-      !selectedUsers.value.some(selected => selected.uid === user.uid) &&
-      user.uid !== currentUser.value?.uid
-    );
+  if (email.value.trim().length > 0) {
+    const query = email.value.trim().toLowerCase(); 
+    searchResults.value = allUsers.value.filter(user => {
+      const userEmail = user.email.toLowerCase();
+      const userName = user.name.toLowerCase();
+
+      const matchesQuery = userEmail.includes(query) || userName.includes(query);
+      const isNotSelected = !selectedUsers.value.some(selected => selected.uid === user.uid);
+      const isNotCurrentUser = currentUser.value?.uid == user.uid; 
+
+      return matchesQuery && isNotSelected && isNotCurrentUser;
+    });
+
     highlightedIndex.value = -1;
   } else {
     searchResults.value = [];
