@@ -21,8 +21,18 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 /* HELPERS */
-const convertToTimestamp = (date: string | Date | null): number =>
-  date ? new Date(date).getTime() : 0;
+const convertToTimestamp = (date: string | Date | null): number => {
+  if (!date) return 0;
+
+  if (typeof date === "string") {
+    // Convert "17/02/2025, 05:55:32" → "2025-02-17T05:55:32"
+    const [day, month, year, time] = date.split(/[/, ]+/);
+    const formattedDate = `${year}-${month}-${day}T${time}`;
+    return new Date(formattedDate).getTime();
+  }
+
+  return new Date(date).getTime();
+};
 
 const getRoomColor = (roomLabel: string): string => {
   return currentRoom.value === roomLabel
@@ -33,10 +43,10 @@ const getRoomColor = (roomLabel: string): string => {
 /* COMPUTED PROPERTIES */
 const timestamps = computed(() => props.userRoomHistory.map(entry => entry.loggedAt));
 const timelineStart = computed(() =>
-  props.userRoomHistory.length ? new Date(props.userRoomHistory[0].loggedAt) : new Date()
+  props.userRoomHistory.length ? new Date(convertToTimestamp(props.userRoomHistory[0].loggedAt)) : new Date()
 );
 const timelineEnd = computed(() =>
-  props.userRoomHistory.length ? new Date(props.userRoomHistory[props.userRoomHistory.length - 1].loggedAt) : new Date()
+  props.userRoomHistory.length ? new Date(convertToTimestamp(props.userRoomHistory[props.userRoomHistory.length - 1].loggedAt)) : new Date()
 );
 const totalSteps = computed(() => props.userRoomHistory.length * 10); // Smoother dragging
 
