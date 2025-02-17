@@ -5,6 +5,7 @@ import mysql.connector
 from mysql.connector import Error
 import threading
 import time
+import random
 
 # All rules are AND rules, so if one statement is false then we will be stopping
 rules = []
@@ -14,6 +15,11 @@ db_connection = None
 rules_lock = threading.Lock()
 
 firstTime = True
+node_id = os.getenv('NODE_ID', '1')  # Set the node ID from environment variable or default to '1'
+active = False
+last_heartbeat = 0
+last_message = 0
+leader_timer = None
 
 def get_db_connection():
     retry = 5
@@ -191,10 +197,39 @@ def check_pico_status():
 
         time.sleep(60)  # Check every minute
 
+def start_leader_timer(client):
+    global leader_timer
+
+    def become_leader():
+        global active
+        active = True
+        client.publish(f"checkingwarnings/{node_id}", str(time.time()))
+        print("Node is now active")
+
+    delay = random.uniform(1, 5)  # Random delay between 1 and 5 seconds
+    leader_timer = threading.Timer(delay, become_leader)
+    leader_timer.start()
+
 #whenever a message is recieved from a feed, print it and its details
 def on_message(client, user_data, message):
-    # Make sure to it is the latest rules
-    grabRules()
+    global active, last_heartbeat, leader_timer
+
+    # Ignore own heartbeat messages
+    if message.topic == f"checkingwarnings/{node_id}":
+        return
+    
+    if message.topic.startswith("checkingwarnings/"):
+        last_heartbeat = time.time()
+        if leader_timer:
+            leader_timer.cancel()
+            leader_timer = None
+        return
+    
+    last_message = time.time()
+
+    if active:
+        grabRules()
+        client.publish(f"checkingwarnings/{node_id}", str(time.time()))
 
     # Process the message
     print(f'message from "{message.topic}":')
@@ -248,15 +283,23 @@ def on_message(client, user_data, message):
             pico_locations[pico_id] = new_room_id
             pico_types[pico_id] = data.PicoType
 
+    # Check if the node should become active
+    if not active:
+        if last_heartbeat < last_message - 0.2:  # No heartbeat received for 60 seconds
+            start_leader_timer(client)
+
 def on_connect(client, user_data, connect_flags, result_code, properties):
     print(f"Connected with result code {result_code}")
 
     #subscribe to all hardware data feeds
     client.subscribe("feeds/hardware-data/#")
+    client.subscribe("checkingwarnings/#")
     print("Subscribed to hardware feeds")
 
 #set up the client to recieve messages
 def main():
+    global last_heartbeat
+
     # DB conection
     print("Connecting to DB")
     connection = get_db_connection()
