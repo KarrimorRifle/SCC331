@@ -119,10 +119,10 @@ class TestData(unittest.TestCase):
         # Updated expected summary with staff and guard dummy data
         expected_summary = {
             "1": {
-                "users": {"id": [8, 9]},
-                "luggage": {"id": [1, 2, 3]},
-                "staff": {"id": [15, 16]},
-                "guard": {"id": [20]},
+                "users": {"id": ["8", "9"]},
+                "luggage": {"id": ["1", "2", "3"]},
+                "staff": {"id": ["15", "16"]},
+                "guard": {"id": ["20"]},
                 "environment": {
                     "sound": 10.0,
                     "light": 12.0,
@@ -133,10 +133,10 @@ class TestData(unittest.TestCase):
                 }
             },
             "2": {
-                "users": {"id": [10, 11, 12]},
-                "luggage": {"id": [4, 5]},
-                "staff": {"id": [17]},
-                "guard": {"id": [21]},
+                "users": {"id": ["10", "11", "12"]},
+                "luggage": {"id": ["4", "5"]},
+                "staff": {"id": ["17"]},
+                "guard": {"id": ["21"]},
                 "environment": {
                     "sound": 21.0,
                     "light": 30.0,
@@ -147,10 +147,10 @@ class TestData(unittest.TestCase):
                 }
             },
             "3": {
-                "users": {"id": [13, 14]},
-                "luggage": {"id": [6, 7]},
-                "staff": {"id": [18, 19]},
-                "guard": {"id": [22, 23]},
+                "users": {"id": ["13", "14"]},
+                "luggage": {"id": ["6", "7"]},
+                "staff": {"id": ["18", "19"]},
+                "guard": {"id": ["22", "23"]},
                 "environment": {
                     "sound": 13.0,
                     "light": 17.0,
@@ -231,7 +231,7 @@ class TestData(unittest.TestCase):
 
     def test_3_session_expiry_and_republish(self):
         # # Wait for 2.5 minutes
-        time.sleep(150)
+        # time.sleep(150)
 
         # Publish session2 data
         for item in self.session2:

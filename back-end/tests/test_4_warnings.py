@@ -118,7 +118,7 @@ class TestWarnings(unittest.TestCase):
         return warning_id
 
     # 1. Create Warning Success
-    def test_1_create_warning_success(self):
+    def test_01_create_warning_success(self):
         unique_name = "TestWarning_" + self.random_string(5)
         payload = {"name": unique_name}
         response = requests.post(
@@ -133,7 +133,7 @@ class TestWarnings(unittest.TestCase):
         self.assertEqual(json_resp["message"], "Successfully created rule")
 
     # 2. Create Warning Unauthorized (missing session cookie)
-    def test_2_create_warning_unauthorized(self):
+    def test_02_create_warning_unauthorized(self):
         unique_name = "UnauthorizedWarning_" + self.random_string(5)
         payload = {"name": unique_name}
         response = requests.post(
@@ -143,7 +143,7 @@ class TestWarnings(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     # 3. Create Warning Invalid Data (missing required "name")
-    def test_3_create_warning_invalid_data(self):
+    def test_03_create_warning_invalid_data(self):
         payload = {}  # Missing "name"
         response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
@@ -153,7 +153,7 @@ class TestWarnings(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
 
     # 4. Get Warnings List
-    def test_4_get_warnings(self):
+    def test_04_get_warnings(self):
         # Create a warning to ensure one exists.
         unique_name = "ListWarning_" + self.random_string(5)
         create_response = requests.post(
@@ -173,7 +173,7 @@ class TestWarnings(unittest.TestCase):
         self.assertTrue(any(w.get("id") == warning_id for w in warnings_list))
 
     # 5. Get Warning Details
-    def test_5_get_warning_details(self):
+    def test_05_get_warning_details(self):
         unique_name = "DetailWarning_" + self.random_string(5)
         create_response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
@@ -193,7 +193,7 @@ class TestWarnings(unittest.TestCase):
         self.assertEqual(warning_details.get("id"), warning_id)
 
     # 6. Update Warning
-    def test_6_update_warning(self):
+    def test_06_update_warning(self):
         unique_name = "UpdateWarning_" + self.random_string(5)
         create_response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
@@ -240,7 +240,7 @@ class TestWarnings(unittest.TestCase):
         self.assertEqual(warning_details.get("name"), new_name)
 
     # 7. Delete Warning
-    def test_7_delete_warning(self):
+    def test_07_delete_warning(self):
         unique_name = "DeleteWarning_" + self.random_string(5)
         create_response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
@@ -263,7 +263,7 @@ class TestWarnings(unittest.TestCase):
         self.assertEqual(get_response.status_code, 404)
 
     # 8. Test Warning with Invalid ID
-    def test_8_test_warning_invalid_id(self):
+    def test_08_test_warning_invalid_id(self):
         payload = {"id": 999999, "mode": "full"}  # Likely an invalid id
         response = requests.post(
             f"{self.WARNINGS_URL}/warnings/test",
@@ -273,7 +273,7 @@ class TestWarnings(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
 
     # 9. Test Warning with Invalid Mode
-    def test_9_test_warning_invalid_mode(self):
+    def test_09_test_warning_invalid_mode(self):
         unique_name = "ModeWarning_" + self.random_string(5)
         create_response = requests.post(
             f"{self.WARNINGS_URL}/warnings",

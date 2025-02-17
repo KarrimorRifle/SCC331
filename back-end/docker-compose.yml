@@ -128,7 +128,7 @@ services:
       DB_HOST: mysql
       DB_USER: warning_editor
       DB_PASSWORD: warning_password
-      DB_NAME: warnings
+      DB_NAME: warning
       mqtt_token: ${mqtt_token}
     ports:
       - "5004:5004"
