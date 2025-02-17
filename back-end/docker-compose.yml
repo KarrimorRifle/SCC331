@@ -126,9 +126,10 @@ services:
     container_name: warning_editor
     environment:
       DB_HOST: mysql
-      DB_USER: data_reader
-      DB_PASSWORD: read_password
-      DB_NAME: pico
+      DB_USER: warning_editor
+      DB_PASSWORD: warning_password
+      DB_NAME: warnings
+      mqtt_token: ${mqtt_token}
     ports:
       - "5004:5004"
     depends_on:

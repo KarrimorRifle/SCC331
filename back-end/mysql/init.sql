@@ -219,21 +219,22 @@ FLUSH PRIVILEGES;
 
 -- Warnings Editing service
 CREATE USER IF NOT EXISTS 'warning_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'warning_password';
-GRANT SELECT, INSERT, UPDATE, DELETE ON warnings.* TO 'warning_editor'@'%';
-REVOKE INSERT, UPDATE, DELETE ON warnings.rule_logs_activation FROM 'warning_editor'@'%';
-REVOKE INSERT, UPDATE, DELETE ON warnings.rule_logs_variables FROM 'warning_editor'@'%';
-REVOKE INSERT, UPDATE, DELETE ON warnings.tests FROM 'warning_editor'@'%';
-GRANT SELECT ON warnings.rule_logs_activation TO 'warning_editor'@'%';
-GRANT SELECT ON warnings.rule_logs_variables TO 'warning_editor'@'%';
-GRANT SELECT ON warnings.tests TO 'warning_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON warnings.rule           TO 'warning_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON warnings.rule_conditions TO 'warning_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON warnings.rule_messages   TO 'warning_editor'@'%';
+GRANT SELECT ON warnings.rule_logs_activation     TO 'warning_editor'@'%';
+GRANT SELECT ON warnings.rule_logs_variables      TO 'warning_editor'@'%';
+GRANT SELECT ON warnings.tests                    TO 'warning_editor'@'%';
 FLUSH PRIVILEGES;
 
 CREATE USER IF NOT EXISTS 'warning_processor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'processor_password';
 GRANT SELECT ON pico.* TO 'warning_processor'@'%';
-GRANT SELECT ON warnings.* TO 'warning_processor'@'%';
+GRANT SELECT ON warnings.rule           TO 'warning_processor'@'%';
+GRANT SELECT ON warnings.rule_conditions TO 'warning_processor'@'%';
+GRANT SELECT ON warnings.rule_messages   TO 'warning_processor'@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE ON warnings.rule_logs_activation TO 'warning_processor'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON warnings.rule_logs_variables TO 'warning_processor'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON warnings.tests TO 'warning_processor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON warnings.rule_logs_variables  TO 'warning_processor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON warnings.tests                TO 'warning_processor'@'%';
 FLUSH PRIVILEGES;
 
 -- =============================================
