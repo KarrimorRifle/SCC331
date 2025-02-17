@@ -222,22 +222,23 @@ FLUSH PRIVILEGES;
 
 -- warning Editing service
 CREATE USER IF NOT EXISTS 'warning_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'warning_password';
-GRANT SELECT, INSERT, UPDATE, DELETE ON warning.rule           TO 'warning_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON warning.rule            TO 'warning_editor'@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE ON warning.rule_conditions TO 'warning_editor'@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE ON warning.rule_messages   TO 'warning_editor'@'%';
-GRANT SELECT ON warning.rule_logs_activation     TO 'warning_editor'@'%';
-GRANT SELECT ON warning.rule_logs_variables      TO 'warning_editor'@'%';
-GRANT SELECT ON warning.tests                    TO 'warning_editor'@'%';
+GRANT SELECT ON warning.rule_logs_activation      TO 'warning_editor'@'%';
+GRANT SELECT ON warning.rule_logs_variables       TO 'warning_editor'@'%';
+GRANT SELECT, INSERT ON warning.tests             TO 'warning_editor'@'%';
+GRANT SELECT ON accounts.users                    TO 'warning_editor'@'%';
 FLUSH PRIVILEGES;
 
 CREATE USER IF NOT EXISTS 'warning_processor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'processor_password';
-GRANT SELECT ON pico.* TO 'warning_processor'@'%';
 GRANT SELECT ON warning.rule           TO 'warning_processor'@'%';
 GRANT SELECT ON warning.rule_conditions TO 'warning_processor'@'%';
 GRANT SELECT ON warning.rule_messages   TO 'warning_processor'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON warning.rule_logs_activation TO 'warning_processor'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON warning.rule_logs_variables  TO 'warning_processor'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON warning.tests                TO 'warning_processor'@'%';
+GRANT SELECT, INSERT, UPDATE ON warning.rule_logs_activation TO 'warning_processor'@'%';
+GRANT SELECT, INSERT, UPDATE ON warning.rule_logs_variables  TO 'warning_processor'@'%';
+GRANT SELECT, UPDATE ON warning.tests                TO 'warning_processor'@'%';
+GRANT SELECT ON accounts.users                   TO 'warning_editor'@'%';
 FLUSH PRIVILEGES;
 
 -- =============================================

@@ -62,14 +62,16 @@ def validate_session_cookie_edit(request):
 def get_warnings():
     error, status_code = validate_session_cookie_edit(request)
     if error:
+        print(f"Validation error: {error}")
         return jsonify(error), status_code
 
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT id, name FROM warnings.rule")
+    cursor.execute("SELECT id, name FROM rule")
     warnings = cursor.fetchall()
     cursor.close()
 
@@ -80,25 +82,60 @@ def get_warnings():
 def get_warning(id):
     error, status_code = validate_session_cookie_edit(request)
     if error:
+        print(f"Validation error: {error}")
         return jsonify(error), status_code
 
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
     cursor.execute("""
         SELECT r.id, r.name, rc.roomID, rc.variable, rc.upper_bound, rc.lower_bound, rm.authority, rm.title, rm.location, rm.severity, rm.summary
-        FROM warnings.rule r
-        LEFT JOIN warnings.rule_conditions rc ON r.id = rc.rule_id
-        LEFT JOIN warnings.rule_messages rm ON r.id = rm.rule_id
+        FROM rule r
+        LEFT JOIN rule_conditions rc ON r.id = rc.rule_id
+        LEFT JOIN rule_messages rm ON r.id = rm.rule_id
         WHERE r.id = %s
     """, (id,))
-    warning = cursor.fetchall()
+    warning_data = cursor.fetchall()
     cursor.close()
 
-    if not warning:
+    if not warning_data:
+        print("Warning not found")
         return jsonify({"error": "Warning not found"}), 404
+
+    warning = {
+        "id": warning_data[0]["id"],
+        "name": warning_data[0]["name"],
+        "conditions": [],
+        "messages": []
+    }
+
+    conditions = {}
+    for row in warning_data:
+        roomID = row["roomID"]
+        if roomID not in conditions:
+            conditions[roomID] = {
+                "roomID": roomID,
+                "conditions": []
+            }
+        conditions[roomID]["conditions"].append({
+            "variable": row["variable"],
+            "lower_bound": row["lower_bound"],
+            "upper_bound": row["upper_bound"]
+        })
+
+    warning["conditions"] = list(conditions.values())
+
+    for row in warning_data:
+        warning["messages"].append({
+            "Authority": row["authority"],
+            "Title": row["title"],
+            "Location": row["location"],
+            "Severity": row["severity"],
+            "Summary": row["summary"]
+        })
 
     return jsonify(warning), 200
 
@@ -106,10 +143,12 @@ def get_warning(id):
 def make_warning():
     error, status_code = validate_session_cookie_edit(request)
     if error:
+        print(f"Validation error: {error}")
         return jsonify(error), status_code
     
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
@@ -117,15 +156,18 @@ def make_warning():
 
     name = data.get("name")
     if not name:
+        print("Name is required")
         return jsonify({"error": "Name is required"}), 400
 
     try:
-        cursor.execute("INSERT INTO warnings.rule (name, owner_id) VALUES (%s, %s)", (name, status_code))
+        cursor.execute("INSERT INTO rule (name, owner_id) VALUES (%s, %s)", (name, status_code))
         connection.commit()
         warning_id = cursor.lastrowid
     except Error as e:
         if "Duplicate entry" in str(e):
+            print("Name already used")
             return jsonify({"error": "Name already used"}), 400
+        print(f"Database error: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -137,10 +179,12 @@ def make_warning():
 def update_warning(id):
     error, status_code = validate_session_cookie_edit(request)
     if error:
+        print(f"Validation error: {error}")
         return jsonify(error), status_code
     
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
@@ -179,6 +223,7 @@ def update_warning(id):
         
         connection.commit()
     except Error as e:
+        print(f"Database error: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -189,10 +234,12 @@ def update_warning(id):
 def delete_warning(id):
     error, status_code = validate_session_cookie_edit(request)
     if error:
+        print(f"Validation error: {error}")
         return jsonify(error), status_code
     
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
@@ -204,6 +251,7 @@ def delete_warning(id):
         cursor.execute("DELETE FROM rule WHERE id = %s", (id,))
         connection.commit()
     except Error as e:
+        print(f"Database error: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -214,6 +262,7 @@ def delete_warning(id):
 def queue_test():
     error, status_code = validate_session_cookie_edit(request)
     if error:
+        print(f"Validation error: {error}")
         return jsonify(error), status_code
     
     data = request.get_json()
@@ -221,10 +270,12 @@ def queue_test():
     id = data.get("id")
     
     if mode not in ["full", "messages"]:
+        print("Invalid mode")
         return jsonify({"error": "Mode needs to be either 'full' or 'messages'"}), 400
     
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
     
     cursor = connection.cursor(dictionary=True)
@@ -232,12 +283,14 @@ def queue_test():
     rule = cursor.fetchone()
 
     if rule is None:
+        print("Invalid rule id")
         return jsonify({"error": "Invalid rule id"}), 400
     
     try:
         cursor.execute("INSERT INTO tests (rule_id, mode, requested_user) VALUES (%s, %s, %s)", (id, mode, status_code))
         connection.commit()
     except Error as e:
+        print(f"Database error: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -248,10 +301,12 @@ def queue_test():
 def get_test_result(id):
     error, status_code = validate_session_cookie_edit(request)
     if error:
+        print(f"Validation error: {error}")
         return jsonify(error), status_code
     
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
@@ -266,6 +321,7 @@ def get_test_result(id):
     cursor.close()
 
     if not test_result:
+        print("Test result not found")
         return jsonify({"error": "Test result not found"}), 404
 
     return jsonify(test_result), 200
@@ -274,10 +330,12 @@ def get_test_result(id):
 def get_logs():
     error, status_code = validate_session_cookie_edit(request)
     if error:
+        print(f"Validation error: {error}")
         return jsonify(error), status_code
 
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
 
     # Retrieve all logs and group their variables/messages
@@ -341,16 +399,19 @@ def get_logs():
 def acknowledge_warning(id):
     error, status_code = validate_session_cookie_edit(request)
     if error:
+        print(f"Validation error: {error}")
         return jsonify(error), status_code
 
     data = request.get_json()
     response_value = data.get("response")
     if response_value not in ["acknowledged", "denied", "ignored"]:
+        print("Invalid response")
         return jsonify({"error": "Invalid response"}), 400
 
     # Get user info
     connection = get_db_connection()
     if connection is None:
+        print("Database connection failed")
         return jsonify({"error": "Database connection failed"}), 500
 
     cursor = connection.cursor(dictionary=True)
