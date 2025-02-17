@@ -1,0 +1,233 @@
+from flask import Flask, request, jsonify, make_response
+from flask_cors import CORS
+import mysql.connector
+from mysql.connector import Error
+import bcrypt
+import uuid
+from datetime import datetime
+import os
+import time
+
+app = Flask(__name__)
+CORS(app, supports_credentials=True)
+
+# Establish a persistent connection to the database
+db_connection = None
+
+def get_db_connection():
+	attempts = 5
+	for attempt in range(attempts):
+		try:
+			db_connection = mysql.connector.connect(
+				host=os.getenv('DB_HOST'),
+				user=os.getenv('DB_USER'),
+				password=os.getenv('DB_PASSWORD'),
+				database=os.getenv('DB_NAME')
+			)
+			return db_connection
+		except Error as e:
+			print(f"Error connecting to MySQL (attempt {attempt + 1}/{attempts}): {e}")
+			time.sleep(2)  # Wait for 2 seconds before retrying
+	return None
+
+def validate_session_cookie(request):
+	VALIDATION_SITE = "http://account_login:5002/validate_cookie"
+	cookie = request.cookies.get("session_id")
+
+	if not cookie:
+		print("No session_id cookie found.")
+		return {"error": "Invalid cookie", "message": "Cookie missing"}, 401
+
+	print(f"Cookie found: {cookie}")
+	r = request.get(VALIDATION_SITE, headers={"session-id": cookie})
+	if r.status_code != 200:
+		print("ERR: Invalid cookie detected")
+		return {"error": "Invalid cookie"}, 401 #, "message": r.text
+
+	# Return None if everything is valid (no error)
+	return None
+
+# Get the users for the Admin page
+@app.route('/get_users', methods=['GET'])
+def get_users():
+	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+	if not session_id:
+		return jsonify({"error": "No session cookie or header provided"}), 400
+	
+	connection = get_db_connection()
+	if connection is None:
+		return jsonify({"error": "Database connection failed"}), 500
+	
+	cursor = connection.cursor(dictionary=True)
+	cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
+	user = cursor.fetchone()
+
+	if user is None or user["authority"] != "Admin":
+		print("Not admin")
+		return jsonify({"error": "Unauthorized access", "message": "Insufficient permission to check user list"}), 401
+	
+	cursor.execute("SELECT email, full_name as name, last_login, authority FROM users")
+	users = cursor.fetchall()
+	cursor.close()
+	connection.close()
+
+	return jsonify({"users": users}), 200
+	
+# Send messages to users using the send message button	
+@app.route('/send_message', methods=['POST'])
+def send_message():
+	session_validation = validate_session_cookie(request)
+	if session_validation:
+		return jsonify(session_validation), 401
+	
+	session_id = request.cookies.get("session_id")
+	connection = get_db_connection()
+	cursor = connection.cursor(dictionary=True)
+
+	cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
+	user = cursor.fetchone()
+	
+	if user is None:
+		cursor.close()
+		connection.close()
+		return jsonify({"error": "User not found!"}), 400
+
+	sender_id = user['user_id']
+	
+	data = request.get_json()
+	if not data or 'receiver_id' not in data or 'message' not in data:
+		cursor.close()
+		connection.close()
+		return jsonify({"error": "Receiver ID and message are required."}), 400
+	
+	receiver_id = data['receiver_id']
+	message = data['message']
+
+	try:
+		cursor.execute("""
+			INSERT INTO messages (receiver_id, sender_id, left_message)
+			VALUES (%s, %s, %s)
+		""", (receiver_id, sender_id, message))
+		connection.commit()
+		cursor.close()
+		connection.close()
+		return jsonify({"message": "Message sent successfully."}), 200
+	except Error as e:
+		cursor.close()
+		connection.close()
+		return jsonify({"error": f"Failed to send message: {e}"}), 500
+
+# Delete users using the delete button next to each user
+@app.route('/delete_user', methods=['POST'])
+def delete_user():
+	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+	if not session_id:
+		return jsonify({"error": "No session cookie or header provided"}), 400
+
+	connection = get_db_connection()
+	if connection is None:
+		return jsonify({"error": "Database connection failed"}), 500
+
+	cursor = connection.cursor(dictionary=True)
+	cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
+	user = cursor.fetchone()
+
+	if user is None or user["authority"] != "Admin":
+		return jsonify({"error": "Unauthorized access", "message": "Insufficient permission to delete users"}), 401
+
+	data = request.get_json()
+	if not data or "email" not in data:
+		return jsonify({"error": "Email is required for deletion"}), 400
+
+	try:
+		cursor.execute("DELETE FROM users WHERE email = %s", (data["email"],))
+		connection.commit()
+		cursor.close()
+		connection.close()
+		return jsonify({"message": "User deleted successfully"}), 200
+	except Error as e:
+		cursor.close()
+		connection.close()
+		return jsonify({"error": f"Failed to delete user: {e}"}), 500
+
+
+import bcrypt
+# Reset password functionality
+@app.route('/reset_password', methods=['POST'])
+def reset_password():
+	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+	if not session_id:
+		return jsonify({"error": "No session cookie or header provided"}), 400
+
+	connection = get_db_connection()
+	if connection is None:
+		return jsonify({"error": "Database connection failed"}), 500
+
+	cursor = connection.cursor(dictionary=True)
+	cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
+	user = cursor.fetchone()
+
+	if user is None or user["authority"] != "Admin":
+		return jsonify({"error": "Unauthorized access", "message": "Insufficient permission to reset passwords"}), 401
+
+	data = request.get_json()
+	if not data or "email" not in data or "new_password" not in data:
+		return jsonify({"error": "Email and new password are required"}), 400
+
+	hashed_password = bcrypt.hashpw(data["new_password"].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+	try:
+		cursor.execute("UPDATE users SET pass_hash = %s WHERE email = %s", (hashed_password, data["email"]))
+		connection.commit()
+		cursor.close()
+		connection.close()
+		return jsonify({"message": "Password reset successfully"}), 200
+	except Error as e:
+		cursor.close()
+		connection.close()
+		return jsonify({"error": f"Failed to reset password: {e}"}), 500
+
+
+# Adding a new user to the database:
+@app.route('/add_user', methods=['POST'])
+def add_user():
+    session_validation = validate_session_cookie(request)
+    if session_validation:
+        return jsonify(session_validation), 401
+
+    data = request.get_json()
+    if not data or 'full_name' not in data or 'email' not in data or 'is_admin' not in data:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    full_name = data['full_name']
+    email = data['email']
+    is_admin = data['is_admin']
+    authority = "Admin" if is_admin else "Reception"
+    
+    # Generate a default password and hash it
+    default_password = "password123"  # Consider sending an email to reset this
+    hashed_password = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    cursor = connection.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO users (full_name, email, authority, pass_hash)
+            VALUES (%s, %s, %s, %s)
+        """, (full_name, email, authority, hashed_password))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return jsonify({"message": "User added successfully"}), 201
+    except Error as e:
+        cursor.close()
+        connection.close()
+        return jsonify({"error": f"Failed to add user: {e}"}), 500
+
+
+if __name__ == '__main__':
+	get_db_connection()  # Ensure the connection is established at startup
+	app.run(host='0.0.0.0', port=5007)
