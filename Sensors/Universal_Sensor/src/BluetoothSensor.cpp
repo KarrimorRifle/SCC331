@@ -35,6 +35,8 @@ void BluetoothSensor::ledSetup() {
 void BluetoothSensor::setup() {
     BTstack.setBLEAdvertisementCallback(this->advertisementCallback);
     pinMode(BUZZER, OUTPUT);
+    pinMode(REDButton, INPUT);
+    pinMode(BLACKButton, INPUT);
     this->ledSetup();
 }
 
@@ -191,10 +193,32 @@ void BluetoothSensor::warningRecieved(String message) {
 }
 
 //for reply - staff/security??
+  //buttons used to acknowledge y/n
 void BluetoothSensor::warningAcknowledged() {
+  warningLive = false;
+  warningMessage = "";
+  leds->clear();
+  leds->setPixelColor(1, 4294967295);
+  leds->show();
+  
+  noTone(BUZZER);
 
+  if(BLACKButton){
+    display->clearDisplay();
+    display->setCursor(0, 0);
+    display->println("Acknowledgement sent:");
+    display->println("Dealt with");
+    display->display();
+  }else if(REDButton){
+    display->clearDisplay();
+    display->setCursor(0, 0);
+    display->println("Acknowledgement sent:");
+    display->println("Ignored");
+    display->display();
+  }
 }
 
+//for ends the warning - users
 void BluetoothSensor::warningOver() {
   warningLive = false;
   warningMessage = "";

@@ -13,6 +13,8 @@
 #define SCAN_DURATION 9500
 #define WAIT_DURATION 500
 #define BUZZER 7
+#define REDButton 12     
+#define BLACKButton 13
 
 class BluetoothSensor : public SensorType {
     public:
