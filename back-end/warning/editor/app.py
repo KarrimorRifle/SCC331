@@ -163,6 +163,9 @@ def make_warning():
         cursor.execute("INSERT INTO rule (name, owner_id) VALUES (%s, %s)", (name, status_code))
         connection.commit()
         warning_id = cursor.lastrowid
+        
+        cursor.execute("UPDATE updated SET updated = 1 WHERE id = 1")
+        connection.commit()
     except Error as e:
         if "Duplicate entry" in str(e):
             print("Name already used")
@@ -221,6 +224,8 @@ def update_warning(id):
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (id, authority, title, location, severity, summary))
         
+        cursor.execute("UPDATE updated SET updated = 1 WHERE id = 1")
+        
         connection.commit()
     except Error as e:
         print(f"Database error: {e}")
@@ -249,6 +254,9 @@ def delete_warning(id):
 
     try:
         cursor.execute("DELETE FROM rule WHERE id = %s", (id,))
+        connection.commit()
+        
+        cursor.execute("UPDATE updated SET updated = 1 WHERE id = 1")
         connection.commit()
     except Error as e:
         print(f"Database error: {e}")
