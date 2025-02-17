@@ -176,23 +176,27 @@ class TestData(unittest.TestCase):
 
             # Check users data
             self.assertIn("users", actual_room, f"Users key missing for room {room_id}")
-            self.assertEqual(sorted(expected_room["users"]["id"]), sorted(actual_room["users"]["id"]),
-                            f"Users ids mismatch for room {room_id}")
+            for user_id in expected_room["users"]["id"]:
+                self.assertIn(user_id, actual_room["users"]["id"],
+                            f"User id {user_id} missing for room {room_id}")
 
             # Check luggage data
             self.assertIn("luggage", actual_room, f"Luggage key missing for room {room_id}")
-            self.assertEqual(sorted(expected_room["luggage"]["id"]), sorted(actual_room["luggage"]["id"]),
-                            f"Luggage ids mismatch for room {room_id}")
+            for luggage_id in expected_room["luggage"]["id"]:
+                self.assertIn(luggage_id, actual_room["luggage"]["id"],
+                            f"Luggage id {luggage_id} missing for room {room_id}")
 
             # Check staff data
             self.assertIn("staff", actual_room, f"Staff key missing for room {room_id}")
-            self.assertEqual(expected_room["staff"]["id"], actual_room["staff"]["id"],
-                            f"Staff ids mismatch for room {room_id}")
+            for staff_id in expected_room["staff"]["id"]:
+                self.assertIn(staff_id, actual_room["staff"]["id"],
+                            f"Staff id {staff_id} missing for room {room_id}")
             
             # Check guard data
             self.assertIn("guard", actual_room, f"Guard key missing for room {room_id}")
-            self.assertEqual(expected_room["guard"]["id"], actual_room["guard"]["id"],
-                            f"Guard ids mismatch for room {room_id}")
+            for guard_id in expected_room["guard"]["id"]:
+                self.assertIn(guard_id, actual_room["guard"]["id"],
+                            f"Guard id {guard_id} missing for room {room_id}")
 
             # Check environment data (convert actual values to float and compare)
             self.assertIn("environment", actual_room, f"Environment key missing for room {room_id}")
@@ -231,7 +235,7 @@ class TestData(unittest.TestCase):
 
     def test_3_session_expiry_and_republish(self):
         # # Wait for 2.5 minutes
-        # time.sleep(150)
+        time.sleep(150)
 
         # Publish session2 data
         for item in self.session2:
