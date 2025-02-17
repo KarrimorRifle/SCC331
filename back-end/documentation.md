@@ -282,7 +282,7 @@ This service will allow admins of the page to add new rules that will activate m
       ],
       "messages": [
         {
-          "Authority": "admin | security | staff | staff | everyone", // Sends message to respective channel
+          "Authority": "admin | security | staff | users | everyone", // Sends message to respective channel
           "Title": "A string with the name of the warning",
           "Location": "RoomID",
           "Severity": "ENUM['doomed','danger','warning','notification']",
@@ -346,7 +346,7 @@ This service will allow admins of the page to add new rules that will activate m
     ],
     "messages": [
       {
-        "Authority": "admin | security | staff | staff | everyone", // Sends message to respective channel
+        "Authority": "admin | security | staff | users | everyone", // Sends message to respective channel
         "Title": "A string with the name of the warning",
         "Location": "RoomID",
         "Severity": "ENUM['doomed','danger','warning','notification']",

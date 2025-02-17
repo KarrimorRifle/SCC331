@@ -121,21 +121,21 @@ services:
     networks:
       - my_network
 
-  # warning_setter:
-  #   build: ./warning/setter
-  #   container_name: warning_setter
-  #   environment:
-  #     DB_HOST: mysql
-  #     DB_USER: data_reader
-  #     DB_PASSWORD: read_password
-  #     DB_NAME: pico
-  #   ports:
-  #     - "5004:5004"
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
-  #   networks:
-  #     - my_network
+  warning_editor:
+    build: ./warning/editor
+    container_name: warning_editor
+    environment:
+      DB_HOST: mysql
+      DB_USER: data_reader
+      DB_PASSWORD: read_password
+      DB_NAME: pico
+    ports:
+      - "5004:5004"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
 
   # warning_alert_active:
   #   build: ./warning/alert/active
