@@ -17,5 +17,8 @@ echo "Running tests..."
 # Wait for asset_editor service to be available
 /wait-for-it.sh assets_editor 5011 -- echo "asset_editor is up"
 
+# Wait for warning_editor service to be available
+/wait-for-it.sh warning_editor 5004 -- echo "asset_editor is up"
+
 # Run the tests with verbose output
 python -m unittest discover -s tests -v
