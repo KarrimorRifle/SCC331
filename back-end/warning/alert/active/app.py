@@ -194,6 +194,7 @@ def check_pico_status():
             del pico_locations[pico_id]
             del pico_types[pico_id]
             del pico_last_seen[pico_id]
+            del roomData[pico_id]
 
         time.sleep(60)  # Check every minute
 
@@ -287,6 +288,46 @@ def on_message(client, user_data, message):
     if not active:
         if last_heartbeat < last_message - 0.2:  # No heartbeat received for 60 seconds
             start_leader_timer(client)
+        return
+    
+    # Process the rule data
+    for rule in rules:
+        sendMessage = True 
+        for condition in rule["conditions"]:
+            roomID = condition["roomID"]
+            for variable in condition["conditions"]:
+                if variable["variable"] in ["users", "guard", "luggage", "staff"]:
+                    count = grabRoomCount(roomID, variable["variable"])
+                    if count < variable["lower_bound"] or count > variable["upper_bound"]:
+                        sendMessage = False
+                        break
+                else:
+                    value = roomData.get(roomID,{}).get(variable["variable"], None)
+                    if value is None:
+                        broken_sensor_message = {
+                            "Title": f"Broken room sensor: {roomID}",
+                            "Location": "SENSOR",
+                            "Severity": "warning",
+                            "Summary": f"sensor with roomID {roomID} has no valid data, please give it a checkup"
+                        }
+                        client.publish("warning/admin/-1", json.dumps(broken_sensor_message))
+                        sendMessage = False
+                        break
+                    if value < variable["lower_bound"] or value > variable["upper_bound"]:
+                        sendMessage = False
+                        break
+            if not sendMessage:
+                break
+        
+        # If we dont need to send a message go onto the next rule
+        if not sendMessage:
+            continue
+
+        # then we continue on to send the messages
+        for message in rule["messages"]:
+            authority = message.pop("Authority")
+            client.publish(f"warning/{authority}/{rule['id']}", json.dumps(message))
+
 
 def on_connect(client, user_data, connect_flags, result_code, properties):
     print(f"Connected with result code {result_code}")
