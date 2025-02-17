@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS rule_logs_activation (
   rule_id INT NOT NULL,
   `time` TIMESTAMP NOT NULL,
   FOREIGN KEY (rule_id) REFERENCES warnings.rule(id) ON DELETE CASCADE,
-)
+);
 
 CREATE TABLE IF NOT EXISTS rule_logs_variables (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -157,16 +157,18 @@ CREATE TABLE IF NOT EXISTS rule_logs_variables (
   upper_bound FLOAT NOT NULL,
   lower_bound FLOAT NOT NULL,
   FOREIGN KEY (log_id) REFERENCES warnings.rule_logs_activation(id) ON DELETE CASCADE,
-)
+);
 
 CREATE TABLE IF NOT EXISTS tests (
   id INT AUTO_INCREMENT PRIMARY KEY,
   rule_id INT NOT NULL,
   mode ENUM("full", "messages") NOT NULL,
-  result ENUM(0, 1, 2, 3) NOT NULL, -- 0: not done, rest are "Conditions met | Conditions not met | Messages sent"
+  result ENUM(0, 1, 2, 3) NOT NULL DEFAULT 0, -- 0: not done, rest are "Conditions met | Conditions not met | Messages sent"
   completed_time TIMESTAMP,
+  requested_user INT NOT NULL,
   FOREIGN KEY (rule_id) REFERENCES warnings.rule(id) ON DELETE CASCADE,
-)
+  FOREIGN KEY (requested_user) REFERENCES accounts.users(user_id) ON DELETE SET NULL,
+);
 -- =============================================
 -- Microservice-specific Accounts
 -- =============================================

@@ -371,7 +371,7 @@ This service will allow admins of the page to add new rules that will activate m
 - **DELETE**: `/warnings/<id>`
   - `id`: id of the warning rule you want to delete
 - **Cookies:**
-  - `session_id`: Valid Rule Owner session
+  - `session_id`: Valid Admin session
 - **Responses:**
   - `200`: Warning deleted.
     - ```json
