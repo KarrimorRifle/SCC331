@@ -18,7 +18,13 @@ port: 5002
   - `email`: Email of the user (required)
   - `password`: Password of the user (required)
 - **Responses:**
-  - `200`: Login successful, sets a `session_id` cookie
+  - `200`: Login successful, sets a `session_id` cookie and returns:
+    ```json
+    {
+      "message": "Login successful",
+      "expires": "2024-01-01T12:00:00Z"
+    }
+    ```
   - `400`: Missing email or password
   - `401`: Invalid email or password
   - `500`: Database connection failed or other server error
@@ -30,6 +36,21 @@ port: 5002
   - `200`: Cookie is valid, returns user: `email`, `authority`, `uid` 
   - `400`: No session cookie or header provided
   - `401`: Invalid cookie
+  - `500`: Database connection failed or other server error
+
+### POST: `/refresh_cookie`
+- **Headers or Cookies:**
+  - `session-id`: Session ID cookie (required)
+- **Responses:**
+  - `200`: Cookie refreshed, sets a new `session_id` cookie and returns:
+    ```json
+    {
+      "message": "Cookie refreshed",
+      "expires": "2024-01-01T12:00:00Z"
+    }
+    ```
+  - `400`: No session cookie or header provided
+  - `401`: Invalid session
   - `500`: Database connection failed or other server error
 
 ### POST: `/logout`
@@ -85,6 +106,9 @@ For PicoType 1 (rooms):
 For PicoType 2 (luggage) & 3 (Users):
   Data variable is currently negligible
 
+For PicoType 4 (staff) & 5 (guard):
+  Data variable is currently negligible
+
 ## Reader
 port: 5003
 
@@ -127,6 +151,14 @@ port: 5003
             "count": 1,
             "id": ["201"]
           },
+          "staff": {
+            "count": 1,
+            "id": [301]
+          },
+          "guard": {
+            "count": 1,
+            "id": [401]
+          },
           "environment": {
             "temperature": 22.5,
             "sound": 45.3,
@@ -144,6 +176,14 @@ port: 5003
           "luggage": {
             "count": 2,
             "id": ["202", "203"]
+          },
+          "staff": {
+            "count": 2,
+            "id": [302, 303]
+          },
+          "guard": {
+            "count": 1,
+            "id": [402]
           },
           "environment": {
             "temperature": 23.0,

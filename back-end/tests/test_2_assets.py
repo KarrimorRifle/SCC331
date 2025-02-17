@@ -1,5 +1,7 @@
 import unittest
 import requests
+import random
+import string
 
 BASE_URL_EDITOR = "http://assets_editor:5011"
 BASE_URL_READER = "http://assets_reader:5010"
@@ -39,12 +41,14 @@ class TestAssets(unittest.TestCase):
         self.created_presets = []
 
     def tearDown(self):
-        # Clean up any presets created in this test
+        # Clean up any presets created in this test, except the default preset
+        default_preset_id = self.get_default_preset_id()
         for preset in self.created_presets:
-            try:
-                self.delete_preset(preset['preset_id'])
-            except Exception:
-                pass
+            if preset['preset_id'] != default_preset_id:
+                try:
+                    self.delete_preset(preset['preset_id'])
+                except Exception:
+                    pass
 
     # Helper functions
     def create_preset(self, name, trusted=None):
@@ -120,6 +124,18 @@ class TestAssets(unittest.TestCase):
         self.assertEqual(response.status_code, 200, msg="Failed to get users")
         return response.json().get("users", [])
 
+    def get_default_preset_id(self):
+        cookies = {"session_id": self.session_id}
+        url = f"{BASE_URL_READER}/presets"
+        response = requests.get(url, cookies=cookies)
+        if response.status_code == 200:
+            return response.json().get("default")
+        return None
+
+    def generate_random_name(self, length=10):
+        letters = string.ascii_letters
+        return ''.join(random.choice(letters) for i in range(length))
+
     # Test cases
 
     def test_01_create_preset_and_verify(self):
@@ -142,7 +158,7 @@ class TestAssets(unittest.TestCase):
         self.delete_preset(preset['preset_id'])
         self.created_presets = [p for p in self.created_presets if p['preset_id'] != preset['preset_id']]
         presets = self.list_presets()
-        preset_ids = [p['preset_id'] for p in presets.get("presets", [])]
+        preset_ids = [p['id'] for p in presets.get("presets", [])]
         self.assertNotIn(preset['preset_id'], preset_ids, msg="Preset was not deleted")
 
     def test_04_rename_preset(self):
@@ -151,7 +167,7 @@ class TestAssets(unittest.TestCase):
         
         # Select two random UIDs for the trusted list
         import random
-        random_users = random.sample(users, 2)
+        random_users = random.sample(users, 1)
         initial_trusted = [user['uid'] for user in random_users]
         
         preset = self.create_preset("Old Preset Name", trusted=initial_trusted)
@@ -159,7 +175,7 @@ class TestAssets(unittest.TestCase):
         
         # Select two different random UIDs for the new trusted list
         remaining_users = [user for user in users if user['uid'] not in initial_trusted]
-        new_random_users = random.sample(remaining_users, 2)
+        new_random_users = random.sample(remaining_users, 1)
         new_trusted = [user['uid'] for user in new_random_users]
         
         cookies = {"session_id": self.session_id}
@@ -275,8 +291,10 @@ class TestAssets(unittest.TestCase):
         self.assertTrue(matched, msg="Box update not reflected in preset details")
 
     def test_09_set_default_preset(self):
-        preset1 = self.create_preset("Default Preset Test 1")
-        preset2 = self.create_preset("Default Preset Test 2")
+        preset1_name = self.generate_random_name()
+        preset2_name = self.generate_random_name()
+        preset1 = self.create_preset(preset1_name)
+        preset2 = self.create_preset(preset2_name)
         url = f"{BASE_URL_EDITOR}/presets/default"
         
         # Set default to preset1

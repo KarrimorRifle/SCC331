@@ -6,7 +6,8 @@ import NotificationIcon from "./components/Notifications/NotificationIcon.vue";
 import Navbar from '@/components/Navbar.vue';
 import { useFetchData } from '@/utils/useFetchData';
 import { useCookies } from 'vue3-cookies';
-
+import { notificationQueue, addNotification, dismissNotification } from '@/stores/notificationStore';
+import axios from 'axios';
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
 const { overlayAreasConstant, overlayAreasData, updateOverlayAreaColor, updateAllOverlayAreas, updates, environmentHistory, warnings } = useFetchData(picoIds);
@@ -16,12 +17,8 @@ const showSeverePopup = ref(false);
 const safeWarnings = computed(() => Array.isArray(warnings.value) ? warnings.value : []);
 const warningCount = computed(() => notificationQueue.value.length);
 
-// ** Move notification storage to parent **
-const notificationQueue = ref<{ Title: string; Location: string; Severity: string; Summary: string }[]>([]);
-
-const dismissNotification = (index: number) => {
-  notificationQueue.value.splice(index, 1);
-};
+// first time loading for the warnings
+let firstTime = true;
 
 const handleUpdateOverlayAreaColor = ({ roomID, colour }) => {
   updateOverlayAreaColor(roomID, colour);
@@ -38,10 +35,12 @@ watch(
 
     const parsedWarnings = JSON.parse(newWarnings);
 
-    // ✅ Clear and re-add warnings to force reactivity
-    notificationQueue.value = [];
+    // // ✅ Clear and re-add warnings to force reactivity
+    // notificationQueue.value = [];
+    if(firstTime) firstTime = false;
+    else return;
     parsedWarnings.forEach((warning) => {
-      notificationQueue.value.push(warning);
+      addNotification(warning);
     });
 
     // Show severe pop-up if applicable
@@ -67,10 +66,33 @@ onUnmounted(() => {
 const { cookies } = useCookies();
 
 const isLoggedIn = ref<boolean>(!!cookies.get("session_id"));
+
+// Save a real expiration date from the server after login
+
+// Use the stored expiration for refreshCookie
+const refreshCookie = () => {
+  const expiryString = localStorage.getItem("session_expiry");
+  if (expiryString) {
+    const expiryTime = new Date(expiryString).getTime();
+    const currentTime = new Date().getTime();
+    const tenMinutes = 10 * 60 * 1000;
+
+    if (expiryTime - currentTime < tenMinutes) {
+      axios.post("http://localhost:5002/refresh_cookie", {}, { withCredentials: true })
+        .then((response) => {
+          // Update the expiration date (if present)
+          if (response.data && response.data.expires) {
+            localStorage.setItem("session_expiry", response.data.expires);
+          }
+        })
+        .catch((error) => console.error("Failed to refresh cookie:", error));
+    }
+  }
+};
 </script>
 
 <template>
-  <div id="app" class="d-flex flex-column max-vh-100">
+  <div id="app" class="d-flex flex-column max-vh-100" @click="refreshCookie">
     <Navbar 
       class="nav" 
       :isMobile="isMobile" 

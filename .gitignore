@@ -1,4 +1,15 @@
+#backend env variables 
 back-end/env
+
+# hardware Env variables git
 hardware/mqtt-device/env.py
 Sensors/Room_Sensor_MQTT/src/env.cpp
 Sensors/User_Luggage_Sensor_MQTT/src/env.cpp
+Sensors/Universal_Sensor/src/env.cpp
+
+#platformio bloat files
+.pioenvs
+.piolibdeps
+.clang_complete
+.gcc-flags.json
+.pio

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
   pass_hash CHAR(60) NOT NULL COMMENT 'BCrypt hashed',
   email VARCHAR(100) NOT NULL UNIQUE,
   cookie CHAR(64) COMMENT 'Secure session token',
+  cookie_expiry TIMESTAMP COMMENT 'Cookie expiry time',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   last_login TIMESTAMP,
   INDEX idx_email (email),
@@ -32,6 +33,20 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS luggage ( -- Consider storing it paired up
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  picoID VARCHAR(50) NOT NULL,
+  roomID VARCHAR(50) NOT NULL,
+  logged_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS staff(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  picoID VARCHAR(50) NOT NULL,
+  roomID VARCHAR(50) NOT NULL,
+  logged_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS guard (
   id INT AUTO_INCREMENT PRIMARY KEY,
   picoID VARCHAR(50) NOT NULL,
   roomID VARCHAR(50) NOT NULL,
@@ -56,7 +71,7 @@ USE assets;
 
 CREATE TABLE IF NOT EXISTS presets (
   preset_id INT AUTO_INCREMENT PRIMARY KEY,
-  preset_name VARCHAR(255) NOT NULL,
+  preset_name VARCHAR(255) NOT NULL UNIQUE,
   owner_id INT DEFAULT NULL,
   image_name VARCHAR(255) DEFAULT NULL,
   image_data LONGBLOB DEFAULT NULL,
@@ -107,7 +122,7 @@ FLUSH PRIVILEGES;
 
 -- Account Cookie Management Service (Update cookie + Read)
 CREATE USER IF NOT EXISTS 'cookie_manager'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'cookie_password';
-GRANT SELECT, UPDATE(cookie, last_login) ON accounts.users TO 'cookie_manager'@'%';
+GRANT SELECT, UPDATE(cookie, cookie_expiry, last_login) ON accounts.users TO 'cookie_manager'@'%';
 ALTER USER 'cookie_manager'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 

@@ -49,27 +49,29 @@ const handleSubmit = async () => {
   // Add your form submission logic here
 
   try {
-      const response = await axios.post("http://localhost:5002/login", {}, {
-        withCredentials: true,
-        headers: {
-          "Access-Control-Allow-Credentials": true,
-          "email": email.value,
-          "password": password.value
-        }
-      })
-
-      if (response.status === 200) {
-        router.push("/");
-        emit("login");
-      } else {
-        errorMessage.value = 'Login failed. Please check your credentials and try again.';
+    const response = await axios.post("http://localhost:5002/login", {}, {
+      withCredentials: true,
+      headers: {
+        "Access-Control-Allow-Credentials": true,
+        "email": email.value,
+        "password": password.value
       }
+    });
+
+    if (response.status === 200) {
+      // Save the expiration date (if present)
+      if (response.data && response.data.expires) {
+        localStorage.setItem("session_expiry", response.data.expires);
+      }
+      router.push("/");
+      emit("login");
+    } else {
+      errorMessage.value = 'Login failed. Please check your credentials and try again.';
+    }
   } catch (error) {
     errorMessage.value = 'An error occurred during login. Please try again later.';
     console.error('Error:', error);
   }
-
-
 };
 </script>
 

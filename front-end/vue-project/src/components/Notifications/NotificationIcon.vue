@@ -6,7 +6,7 @@ import { getCardBackgroundColor } from "@/utils/helper/warningUtils";
 
 const props = defineProps({
   warnings: {
-    type: Array as () => { Title: string; Location: string; Severity: string; Summary: string }[],
+    type: Array as () => { Title: string; Location?: string; Severity: string; Summary: string }[],
     required: true,
   },
   warningCount: Number,
@@ -20,7 +20,7 @@ const hasNewWarning = ref(false);
 
 // Get the highest severity for notification color (affects bell icon)
 const getHighestSeverity = computed(() => {
-  const severityPriority = ["doomed", "danger", "warning", "notification"]; // Ordered by priority
+  const severityPriority = ["doomed", "danger", "warning", "notification", "system"]; // Ordered by priority
 
   const highestSeverity = severityPriority.find(severity =>
     props.warnings.some(w => w.Severity === severity)
@@ -31,7 +31,7 @@ const getHighestSeverity = computed(() => {
 
 // Determine if there are active warnings for bell icon interaction
 const hasActiveWarnings = computed(() => {
-  return props.warnings.some(w => ["warning", "notification", "danger", "doomed"].includes(w.Severity));
+  return props.warnings.some(w => ["warning", "notification", "danger", "doomed", "system"].includes(w.Severity));
 });
 
 // Watch for new warnings and trigger bell animation
@@ -56,9 +56,11 @@ watch(
       :class="{ 'new-warning': hasNewWarning }"
       :style="{ backgroundColor: getHighestSeverity }"
       @click="emit('toggleWarningModal')"
+      @touchstart="emit('toggleWarningModal')"
       :disabled="!hasActiveWarnings"
     >
       <font-awesome-icon :icon="isWarningModalOpen ? faXmark : faBell" class="bell-icon" />
+      <span v-if="!isWarningModalOpen && warningCount > 0" class="notification-count">{{ props.warningCount }}</span>
     </button>
 
     <!-- Tooltip for "No Active Warnings" -->
@@ -95,6 +97,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .notification-icon:disabled {
@@ -125,5 +128,17 @@ watch(
   font-size: 12px;
   border-radius: 5px;
   box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.notification-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ff4d4d;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  min-width: 1.5rem;
 }
 </style>
