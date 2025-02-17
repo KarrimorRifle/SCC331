@@ -125,11 +125,14 @@ void BluetoothSensor::advertisementCallback(BLEAdvertisement *adv) {
   }
 }
 
-
+//different levels for the different types in future
+  //currently deals with one warning at a time
+  //may need to store somehow (subscriptions stacking up)
+  //number shown somewhere
 void BluetoothSensor::warningRecieved(String message) {
   warningLive = true;
   warningMessage = message;
-  //standard
+  //standard - if(JSON string states "Warning")
   leds->setPixelColor(2, leds->Color(255, 15, 15));
   leds->setPixelColor(3, leds->Color(255, 15, 15));
   leds->show();
@@ -145,7 +148,7 @@ void BluetoothSensor::warningRecieved(String message) {
   delay(2500);
 
   /*
-  //Danger
+  //Danger - if(JSON string states "Danger")
   leds->setPixelColor(2, leds->Color(255, 15, 15));
   leds->setPixelColor(3, leds->Color(255, 15, 15));
   leds->show();
@@ -160,7 +163,7 @@ void BluetoothSensor::warningRecieved(String message) {
 
   delay(2500);
 
-  //Doomed
+  //Doomed - if(JSON string states "Doomed")
   leds->setPixelColor(2, leds->Color(255, 15, 15));
   leds->setPixelColor(3, leds->Color(255, 15, 15));
   leds->show();
@@ -175,7 +178,7 @@ void BluetoothSensor::warningRecieved(String message) {
 
   delay(2500);
 
-  //Notification
+  //Notification - if(JSON string states "Notification")
   leds->setPixelColor(2, leds->Color(255, 15, 15));
   leds->setPixelColor(3, leds->Color(255, 15, 15));
   leds->show();
