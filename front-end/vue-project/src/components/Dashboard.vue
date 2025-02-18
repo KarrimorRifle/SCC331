@@ -223,7 +223,7 @@ onUnmounted(() => {
           <div class="marker-container">
             <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
           </div>
-          <p>Luggage Count: {{  data.tracker?.luggage?.count|| 0 }}</p>
+          <p>Luggage: {{  data.tracker?.luggage?.count|| 0 }}</p>
         </div>
 
         <!-- People Count -->
@@ -231,7 +231,7 @@ onUnmounted(() => {
           <div class="marker-container">
             <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
           </div>
-          <p>People Count: {{  data.tracker?.users?.count || 0 }}</p>
+          <p>People: {{  data.tracker?.users?.count || 0 }}</p>
         </div>
 
 
