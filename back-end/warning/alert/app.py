@@ -20,6 +20,8 @@ active = False
 last_heartbeat = 0
 last_message = 0
 leader_timer = None
+state_file_path = "/var/lib/node_state/first_run"
+lock_file_path = "/var/lib/node_state/lock"
 
 def get_db_connection():
     retry = 5
@@ -198,14 +200,27 @@ def check_pico_status():
 
         time.sleep(60)  # Check every minute
 
+def send_heartbeat(client):
+    while True:
+        if active:
+            client.publish(f"checkingwarnings/{node_id}", str(time.time()))
+        time.sleep(60)  # Send heartbeat every minute
+
 def start_leader_timer(client):
     global leader_timer
 
+    # Check if a leader timer already exists and is still active
+    if leader_timer is not None and leader_timer.is_alive():
+        print("Leader timer already exists and is active")
+        return
+
     def become_leader():
         global active
+        global leader_timer
         active = True
         client.publish(f"checkingwarnings/{node_id}", str(time.time()))
         print("Node is now active")
+        leader_timer = None
 
     delay = random.uniform(1, 5)  # Random delay between 1 and 5 seconds
     leader_timer = threading.Timer(delay, become_leader)
@@ -286,23 +301,30 @@ def on_message(client, user_data, message):
 
     # Check if the node should become active
     if not active:
-        if last_heartbeat < last_message - 0.2:  # No heartbeat received for 60 seconds
+        if time.time() - last_heartbeat > 60:  # No heartbeat received for 60 seconds
             start_leader_timer(client)
         return
     
     # Process the rule data
     for rule in rules:
         sendMessage = True 
-        for condition in rule["conditions"]:
-            roomID = condition["roomID"]
-            for variable in condition["conditions"]:
+        for rooms in rule["conditions"]:
+            print("this is a condition", rooms)
+            roomID = rooms["roomID"]
+            if roomID is None:
+                sendMessage = False
+                break
+            for variable in rooms["conditions"]:
+                print("Reading condition for: ",variable["variable"], "  lower:", variable["lower_bound"], ", upper: ", variable["upper_bound"])
                 if variable["variable"] in ["users", "guard", "luggage", "staff"]:
                     count = grabRoomCount(roomID, variable["variable"])
+                    print("Value:", count)
                     if count < variable["lower_bound"] or count > variable["upper_bound"]:
                         sendMessage = False
                         break
                 else:
                     value = roomData.get(roomID,{}).get(variable["variable"], None)
+                    print("Value:", value)
                     if value is None:
                         broken_sensor_message = {
                             "Title": f"Broken room sensor: {roomID}",
@@ -310,15 +332,17 @@ def on_message(client, user_data, message):
                             "Severity": "warning",
                             "Summary": f"sensor with roomID {roomID} has no valid data, please give it a checkup"
                         }
-                        client.publish("warning/admin/-1", json.dumps(broken_sensor_message))
+                        client.publish("broken/admin/-1", json.dumps(broken_sensor_message))
                         sendMessage = False
                         break
                     if value < variable["lower_bound"] or value > variable["upper_bound"]:
                         sendMessage = False
                         break
+                print("\n\n")
             if not sendMessage:
                 break
         
+        print(f"Rule: {rule['id']}, {sendMessage}")
         # If we dont need to send a message go onto the next rule
         if not sendMessage:
             continue
@@ -341,12 +365,26 @@ def on_connect(client, user_data, connect_flags, result_code, properties):
 def main():
     global last_heartbeat
     
-    # Start background thread to check Pico status
-    threading.Thread(target=check_pico_status, daemon=True).start()
-    
+    # Check if this is the first run
+    if not os.path.exists(state_file_path):
+        print("First run detected, setting node to active.")
+        active = True
+        with open(state_file_path, 'w') as f:
+            f.write('This file indicates that the node has been run before.')
+    else:
+        # Check if lock file exists
+        if not os.path.exists(lock_file_path):
+            # Create lock file
+            with open(lock_file_path, 'w') as f:
+                f.write('This file indicates that the node is active.')
+            active = True
+            print("Node is now active")
+        else:
+            print("Lock file exists, node will not become active")
+
     # MQTT connection
     print("Getting access token")
-    access_token = os.getenv("mqtt_token")
+    access_token = os.getenv("MQTT_TOKEN")
     print("Access token found")
 
     if not access_token:
@@ -360,6 +398,13 @@ def main():
     client.on_message = on_message
     client.username_pw_set(access_token, None)
     client.connect("mqtt.flespi.io", 1883)
+
+    # Start background thread to send heartbeat messages
+    threading.Thread(target=send_heartbeat, args=(client,), daemon=True).start()
+
+    # Start background thread to check Pico status
+    threading.Thread(target=check_pico_status, daemon=True).start()
+    
     client.loop_forever()
 
 if __name__ == "__main__":

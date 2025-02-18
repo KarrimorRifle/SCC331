@@ -302,7 +302,7 @@ class TestWarnings(unittest.TestCase):
             "PicoID": 300,
             "RoomID": 101,
             "PicoType": 1,
-            "Data": "12,50,35,20,1013,40"
+            "Data": "12,50,25,20,1013,40"
         }
         self.publish_data(room_data, "feeds/hardware-data/test_room")
         # Wait a few seconds to allow the warning system to process the room data

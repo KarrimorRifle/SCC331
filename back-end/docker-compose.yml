@@ -2,6 +2,7 @@ version: '3.8'
 
 volumes:
   mysql_data:
+  node_state:  # Add a volume to store the state file
 
 services:
   mysql:
@@ -139,32 +140,40 @@ services:
       - my_network
 
   warning_alert_node1:
-    build: ./warning/active
+    build: ./warning/alert
     container_name: warning_alert_node1
     environment:
       DB_HOST: mysql
       DB_USER: warning_processor
       DB_PASSWORD: processor_password
       DB_NAME: warning
+      NODE_ID: 1
       MQTT_TOKEN: ${mqtt_token}
+    volumes:
+      - node_state:/var/lib/node_state  # Mount the volume
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
     
   warning_alert_node2:
-    build: ./warning/active
+    build: ./warning/alert
     container_name: warning_alert_node2
     environment:
       DB_HOST: mysql
       DB_USER: warning_processor
       DB_PASSWORD: processor_password
       DB_NAME: warning
+      NODE_ID: 2
       MQTT_TOKEN: ${mqtt_token}
+    volumes:
+      - node_state:/var/lib/node_state  # Mount the volume
     depends_on:
       mysql:
         condition: service_healthy
+    restart: unless-stopped
     networks:
       - my_network
 
