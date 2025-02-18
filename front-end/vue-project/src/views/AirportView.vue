@@ -5,9 +5,12 @@ import BottomTabNavigator from "@/components/BottomTabNavigator.vue";
 import {onMounted, onUnmounted, ref, watch, computed, PropType, defineEmits}from "vue"
 import axios from "axios";
 import OverlayArea from '@/components/OverlayArea.vue';
+/*
 import type { Timeout } from "node:timers";
 import type {preset, presetListType, boxAndData, boxType, summaryType, environmentData, dataObject} from "../utils/mapTypes";
 import { addNotification } from '@/stores/notificationStore';
+*/
+import {usePresetStore} from "../utils/useFetchPresets";
 
 // Receive isMobile from App.vue
 const props = defineProps({
@@ -37,6 +40,7 @@ const props = defineProps({
   },
 });
 
+/*
 const emit = defineEmits(["updateOverlayAreaColor", "updateOverlayAreas"]);
 
 let pollingInterval: Timeout;
@@ -420,6 +424,21 @@ onMounted(async() => {
 onUnmounted(() => {
   if (pollingInterval) clearInterval(pollingInterval);
 });
+*/
+
+const isDashboardOpen = ref(true);
+const toggleDashboard = () => {
+  isDashboardOpen.value = !isDashboardOpen.value;
+};
+const presetStore = usePresetStore();
+
+onMounted(async () => {
+  presetStore.setOverlayAreasConstant(props.overlayAreasConstant);
+  await presetStore.fetchPresets();
+  if (presetStore.presetList.presets.length > 0) {
+    await presetStore.fetchPreset();
+  }
+});
 
 </script>
 
@@ -433,37 +452,37 @@ onUnmounted(() => {
         :overlayAreasConstant="overlayAreasConstant" 
         :overlayAreasData="overlayAreasData" 
         :warnings="warnings"
-        v-model="boxes_and_data"
-        :presetList="presetList"
-        :canCreate="canCreate"
-        :settable="settable"
-        :defaultPresetId="defaultPresetId"
-        :currentPreset="currentPreset"
-        :backgroundImage="presetImage"
-        :canDelete="canDelete"
-        :canEdit="canEdit"
-        :presetData="presetData"
-        :editMode="editMode"
-        @selectPreset="handleSelectPreset"
-        @setDefault="setDefaultPreset"
-        @newPreset="fetchPresets"
-        @newImage="fetchPreset"
-        @delete="deletePreset"
-        @edit="editMode = true"
-        @save="uploadBoxes"
-        @cancel="cancelBoxEdit"
+        v-model="presetStore.boxes_and_data"
+        :presetList="presetStore.presetList"
+        :canCreate="presetStore.canCreate"
+        :settable="presetStore.settable"
+        :defaultPresetId="presetStore.defaultPresetId"
+        :currentPreset="presetStore.currentPreset"
+        :backgroundImage="presetStore.presetImage"
+        :canDelete="presetStore.canDelete"
+        :canEdit="presetStore.canEdit"
+        :presetData="presetStore.presetData"
+        :editMode="presetStore.editMode"
+        @selectPreset="presetStore.handleSelectPreset"
+        @setDefault="presetStore.setDefaultPreset"
+        @newPreset="presetStore.fetchPresets"
+        @newImage="presetStore.fetchPreset"
+        @delete="presetStore.deletePreset"
+        @edit="presetStore.editMode = true"
+        @save="presetStore.uploadBoxes"
+        @cancel="presetStore.cancelBoxEdit"
       />
     </template>
 
     <!-- Slot for Dashboard -->
     <template #dashboard>
       <DashBoard
-        v-model="boxes_and_data"
-        :isLoading="isLoading"
-        :editMode="editMode"
-        @newBox="createNewBox"
-        @colourChange="handleColourChange"
-        @removeBox="removeBox"
+        v-model="presetStore.boxes_and_data"
+        :isLoading="presetStore.isLoading"
+        :editMode="presetStore.editMode"
+        @newBox="presetStore.createNewBox"
+        @colourChange="presetStore.handleColourChange"
+        @removeBox="presetStore.removeBox"
         :overlayAreasData="overlayAreasData" 
         :overlayAreasConstant="overlayAreasConstant"
         :userIds="picoIds"
@@ -480,33 +499,33 @@ onUnmounted(() => {
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
       :warnings="warnings"
-      v-model="boxes_and_data"
-      :presetList="presetList"
-      :canCreate="canCreate"
-      :settable="settable"
-      :defaultPresetId="defaultPresetId"
-      :currentPreset="currentPreset"
-      :backgroundImage="presetImage"
-      :canDelete="canDelete"
-      :canEdit="canEdit"
-      :presetData="presetData"
-      :editMode="editMode"
-      @selectPreset="handleSelectPreset"
-      @setDefault="setDefaultPreset"
-      @newPreset="fetchPresets"
-      @newImage="fetchPreset"
-      @delete="deletePreset"
-      @edit="editMode = true"
-      @save="uploadBoxes"
-      @cancel="cancelBoxEdit"
+      v-model="presetStore.boxes_and_data"
+      :presetList="presetStore.presetList"
+      :canCreate="presetStore.canCreate"
+      :settable="presetStore.settable"
+      :defaultPresetId="presetStore.defaultPresetId"
+      :currentPreset="presetStore.currentPreset"
+      :backgroundImage="presetStore.presetImage"
+      :canDelete="presetStore.canDelete"
+      :canEdit="presetStore.canEdit"
+      :presetData="presetStore.presetData"
+      :editMode="presetStore.editMode"
+      @selectPreset="presetStore.handleSelectPreset"
+      @setDefault="presetStore.setDefaultPreset"
+      @newPreset="presetStore.fetchPresets"
+      @newImage="presetStore.fetchPreset"
+      @delete="presetStore.deletePreset"
+      @edit="presetStore.editMode = true"
+      @save="presetStore.uploadBoxes"
+      @cancel="presetStore.cancelBoxEdit"
     />
     <DashBoard
-      v-model="boxes_and_data"
-      :isLoading="isLoading"
-      :editMode="editMode"
-      @newBox="createNewBox"
-      @colourChange="handleColourChange"
-      @removeBox="removeBox"
+      v-model="presetStore.boxes_and_data"
+      :isLoading="presetStore.isLoading"
+      :editMode="presetStore.editMode"
+      @newBox="presetStore.createNewBox"
+      @colourChange="presetStore.handleColourChange"
+      @removeBox="presetStore.removeBox"
       :overlayAreasData="overlayAreasData" 
       :overlayAreasConstant="overlayAreasConstant"
       :userIds="picoIds"
