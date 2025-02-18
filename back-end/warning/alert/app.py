@@ -340,20 +340,6 @@ def on_connect(client, user_data, connect_flags, result_code, properties):
 #set up the client to recieve messages
 def main():
     global last_heartbeat
-
-    # DB conection
-    print("Connecting to DB")
-    connection = get_db_connection()
-    if connection is None:
-        print("Unable to connect, aborting!")
-        return
-    print("Connected to MySQL server")
-
-    # Setting up rules to store
-    cursor = connection.cursor(dictionary=True)
-    
-    # Fetch initial rules
-    grabRules()
     
     # Start background thread to check Pico status
     threading.Thread(target=check_pico_status, daemon=True).start()
