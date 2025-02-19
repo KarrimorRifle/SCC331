@@ -234,7 +234,7 @@ class TestData(unittest.TestCase):
         self.assert_logs_contain(expected_logs, actual_logs)
 
     def test_3_session_expiry_and_republish(self):
-        # # Wait for 2.5 minutes
+        # Wait for 2.5 minutes
         time.sleep(150)
 
         # Publish session2 data

@@ -398,7 +398,8 @@ This service will allow admins of the page to add new rules that will activate m
   - `200`: Test successfully queued.
     ```json
     {
-      "message": "Test queued successfully"
+      "message": "Test queued successfully",
+      "test_id": 39 //ID of the test queued
     }
     ```
   - `400`: Invalid warning ID.

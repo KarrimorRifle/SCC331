@@ -157,6 +157,7 @@ CREATE TABLE IF NOT EXISTS rule_logs_variables (
 CREATE TABLE IF NOT EXISTS tests (
   id INT AUTO_INCREMENT PRIMARY KEY,
   rule_id INT NOT NULL,
+  `status` ENUM("success","failure") NOT NULL DEFAULT "failure",
   mode ENUM("full", "messages") NOT NULL DEFAULT "messages",
   result ENUM("not_done", "conditions_met", "conditions_not_met", "messages_sent") NOT NULL DEFAULT "not_done",
   completed_time TIMESTAMP,
@@ -164,6 +165,14 @@ CREATE TABLE IF NOT EXISTS tests (
   FOREIGN KEY (rule_id) REFERENCES warning.rule(id) ON DELETE CASCADE,
   FOREIGN KEY (requested_user) REFERENCES accounts.users(user_id) ON DELETE SET NULL
 );
+
+CREATE TABLE IF NOT EXISTS updated (
+  id INT PRIMARY KEY DEFAULT 1,
+  updated BOOLEAN NOT NULL DEFAULT 0
+);
+
+INSERT INTO updated (id, updated) VALUES (1, 0)
+ON DUPLICATE KEY UPDATE id = 1;
 
 -- =============================================
 -- Microservice-specific Accounts
@@ -229,16 +238,18 @@ GRANT SELECT ON warning.rule_logs_activation      TO 'warning_editor'@'%';
 GRANT SELECT ON warning.rule_logs_variables       TO 'warning_editor'@'%';
 GRANT SELECT, INSERT ON warning.tests             TO 'warning_editor'@'%';
 GRANT SELECT ON accounts.users                    TO 'warning_editor'@'%';
+GRANT SELECT, UPDATE(updated) ON warning.updated  TO 'warning_editor'@'%';
 FLUSH PRIVILEGES;
 
 CREATE USER IF NOT EXISTS 'warning_processor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'processor_password';
-GRANT SELECT ON warning.rule           TO 'warning_processor'@'%';
+GRANT SELECT ON warning.rule            TO 'warning_processor'@'%';
 GRANT SELECT ON warning.rule_conditions TO 'warning_processor'@'%';
 GRANT SELECT ON warning.rule_messages   TO 'warning_processor'@'%';
 GRANT SELECT, INSERT, UPDATE ON warning.rule_logs_activation TO 'warning_processor'@'%';
 GRANT SELECT, INSERT, UPDATE ON warning.rule_logs_variables  TO 'warning_processor'@'%';
-GRANT SELECT, UPDATE ON warning.tests                TO 'warning_processor'@'%';
-GRANT SELECT ON accounts.users                   TO 'warning_editor'@'%';
+GRANT SELECT, UPDATE ON warning.tests               TO 'warning_processor'@'%';
+GRANT SELECT, UPDATE(updated) ON warning.updated    TO 'warning_processor'@'%';
+GRANT SELECT ON accounts.users                      TO 'warning_editor'@'%';
 FLUSH PRIVILEGES;
 
 -- =============================================
