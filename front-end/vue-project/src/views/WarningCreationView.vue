@@ -28,8 +28,36 @@ const updateWarningConditions = (conditions: Record<string, any>) => {
   warningConditions.value = conditions;
 };
 
-const updateWarningMessages = (messages: string[]) => {
-  warningMessages.value = messages;
+const updateWarningMessages = (updatedMessages: any[]) => {
+  updatedMessages.forEach((msg) => {
+    const roomID = msg.Location.trim(); // Ensure correct roomID format
+
+    if (!warningConditions.value[roomID]) {
+      warningConditions.value[roomID] = { conditions: [], messages: [] };
+    }
+
+    // Ensure messages array exists
+    if (!Array.isArray(warningConditions.value[roomID].messages)) {
+      warningConditions.value[roomID].messages = [];
+    }
+
+    // Find existing message index
+    const existingMessageIndex = warningConditions.value[roomID].messages.findIndex(
+      (m) => m.Title.trim() === msg.Title.trim()
+    );
+
+    console.log("Existing Message Index:", existingMessageIndex);
+
+    if (existingMessageIndex !== -1) {
+      // Update existing message
+      warningConditions.value[roomID].messages[existingMessageIndex].Summary = msg.Summary;
+    } else {
+      // Add only if it does NOT exist
+      warningConditions.value[roomID].messages.push(msg);
+    }
+  });
+
+  console.log("Updated warningConditions:", JSON.parse(JSON.stringify(warningConditions.value)));
 };
 
 </script>

@@ -40,21 +40,45 @@ const setCondition = (roomID: string) => {
     return;
   }
 
-  if (max < min) {
+  if (max <= min) {
     alert("Max value cannot be less than Min value.");
     return;
   }
 
   if (!props.conditions[roomID]) {
-    props.conditions[roomID] = {};
+    props.conditions[roomID] = { conditions: [], messages: [] };
   }
 
-  props.conditions[roomID][conditionType] = { min, max };
+  // Check if the condition type already exists
+  const existingCondition = props.conditions[roomID].conditions.find(c => c.variable === conditionType);
+  if (existingCondition) {
+    existingCondition.lower_bound = min;
+    existingCondition.upper_bound = max;
+  } else {
+    props.conditions[roomID].conditions.push({
+      variable: conditionType,
+      lower_bound: min,
+      upper_bound: max,
+    });
+  }
+
+  // **Only add a message if it doesn't exist yet**
+  if (!props.conditions[roomID].messages.find(m => m.Title.includes(conditionType))) {
+    props.conditions[roomID].messages.push({
+      Authority: "everyone",
+      Title: `Warning for ${roomID} - ${conditionType}`,
+      Location: roomID,
+      Severity: "warning",
+      Summary: `${conditionType} should be between ${min} and ${max}.`,
+    });
+  }
 
   emit("updateConditions", { ...props.conditions });
 
   // Clear pending input
   delete pendingConditions.value[roomID][conditionType];
+
+  console.log(props.conditions);
 };
 
 const removeCondition = (roomID: string, conditionType: string) => {
