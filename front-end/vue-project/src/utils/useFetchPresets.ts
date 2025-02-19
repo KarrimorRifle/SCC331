@@ -1,13 +1,14 @@
 import { defineStore } from "pinia";
-import {onMounted, onUnmounted, ref, watch, computed, defineEmits}from "vue"
+import {onMounted, onUnmounted, ref, watch, computed }from "vue"
 import axios from "axios";
 import { addNotification } from "@/stores/notificationStore";
 import type { Timeout } from "node:timers";
 import type { presetListType, preset, summaryType, boxAndData, boxType, dataObject, environmentData } from "../utils/mapTypes";
 
 export const usePresetStore = defineStore("presetStore", () => {
-    const overlayAreasConstant = ref([]);
-    const emit = defineEmits(["updateOverlayAreaColor", "updateOverlayAreas"]);
+    const overlayAreasConstant = ref<any[]>([]);
+    let updateOverlayAreasCallback: (data: any) => void = () => {};
+    let updateOverlayAreaColorCallback: (data: any) => void = () => {};
 
     let pollingInterval: Timeout;
     let summary = ref<summaryType>(<summaryType>{});
@@ -27,9 +28,16 @@ export const usePresetStore = defineStore("presetStore", () => {
     });
     let fetchSummaryRetry:number = 3;
     
-    function setOverlayAreasConstant(data) {
+    function setOverlayAreasConstant(data: any) {
         overlayAreasConstant.value = data;
     }
+    function setUpdateOverlayAreasCallback(callback: (data: any) => void) {
+      updateOverlayAreasCallback = callback;
+    }
+
+    function setUpdateOverlayAreaColorCallback(callback: (data: any) => void) {
+      updateOverlayAreaColorCallback = callback;
+  }
 
     async function validateUser() {
       try {
@@ -186,9 +194,10 @@ export const usePresetStore = defineStore("presetStore", () => {
     
         if (presetData.value.boxes) {
           console.log("Updating overlay areas with preset colors...");
-    
+  
+          console.log(overlayAreasConstant);
           // Update overlayAreasConstant with new colors from the preset
-          const updatedOverlayAreas = overlayAreasConstant.map(area => {
+          const updatedOverlayAreas = overlayAreasConstant.value.map(area => {
             const matchingBox = presetData.value.boxes.find(box => box.roomID === area.label.replace("Area ", ""));
             return matchingBox ? { ...area, color: matchingBox.colour } : area;
           });
@@ -196,7 +205,9 @@ export const usePresetStore = defineStore("presetStore", () => {
           console.log("Updated overlayAreasConstant:", updatedOverlayAreas);
     
           // Emit event to App.vue to update global state & localStorage
-          emit("updateOverlayAreas", updatedOverlayAreas);
+          if (typeof updateOverlayAreasCallback === "function") {
+            updateOverlayAreasCallback(updatedOverlayAreas);
+          }
         }
     
       } catch (error) {
@@ -262,7 +273,9 @@ export const usePresetStore = defineStore("presetStore", () => {
         height: 100,
         colour: randomColor,
       };
-      emit("updateOverlayAreaColor", { roomID, colour: randomColor });
+      if (typeof updateOverlayAreaColorCallback === "function") {
+        updateOverlayAreaColorCallback({ roomID, colour: randomColor });
+      }
     }
     
     const changeBoxColour =  (roomID: number | string, colour: string) => {
@@ -321,7 +334,7 @@ export const usePresetStore = defineStore("presetStore", () => {
     }
     
     const updateOverlayAreaColor = (roomID: string, newColor: string) => {
-      const area = overlayAreasConstant.find(area => area.label === `Area ${roomID}`);
+      const area = overlayAreasConstant.value.find(area => area.label === `Area ${roomID}`);
       if (area) {
         area.color = newColor; 
       }
@@ -339,7 +352,9 @@ export const usePresetStore = defineStore("presetStore", () => {
       if (currentPreset.value == defaultPresetId.value) {
         // Update overlay areas constant (this is to updates globally);
         updateOverlayAreaColor(roomID, newColor);
-        emit("updateOverlayAreaColor", { roomID, colour: newColor });
+        if (typeof updateOverlayAreaColorCallback === "function") {
+          updateOverlayAreaColorCallback({ roomID, colour: newColor });
+        }
       }else{
         console.log("doesn't match");
     
@@ -408,5 +423,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         deletePreset,
         handleSelectPreset, 
         setOverlayAreasConstant,
+        setUpdateOverlayAreasCallback,
+        setUpdateOverlayAreaColorCallback,
     };
 });
