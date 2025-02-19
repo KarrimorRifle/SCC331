@@ -346,6 +346,7 @@ class TestWarnings(unittest.TestCase):
             "Data": "12,50,35,20,1013,40"  # Temperature 35 out of valid range
         }
         self.publish_data(room_data, "feeds/hardware-data/test_room")
+        
         # Invoke the test endpoint to queue a test run for this rule.
         test_payload = {"id": warning_id, "mode": "messages"}
         test_response = requests.post(
@@ -354,15 +355,27 @@ class TestWarnings(unittest.TestCase):
             cookies={"session_id": self.admin_session_cookie}
         )
         self.assertEqual(test_response.status_code, 200)
-        # Wait 60 seconds to allow test results to be generated.
-        time.sleep(60)
+        test_id = test_response.json()["test_id"]
+
+        # Wait 2 seconds before sending new MQTT message for environment data
+        time.sleep(2)
+        new_room_data = {
+            "PicoID": 401,
+            "RoomID": 101,
+            "PicoType": 1,
+            "Data": "15,55,25,22,1015,45"  # New environment data
+        }
+        self.publish_data(new_room_data, "feeds/hardware-data/test_room")
+
+        # Wait 5 seconds to allow test results to be generated
+        time.sleep(5)
         result_response = requests.get(
-            f"{self.WARNINGS_URL}/warnings/test/result/{warning_id}",
+            f"{self.WARNINGS_URL}/warnings/test/result/{test_id}",
             cookies={"session_id": self.admin_session_cookie}
         )
         self.assertEqual(result_response.status_code, 200)
         result_json = result_response.json()
-        self.assertIn("status", result_json)
+        self.assertEqual(result_json.get("result"), "messages_sent")
 
     # 14. Get Warning Logs (authorized)
     def test_14_get_logs(self):

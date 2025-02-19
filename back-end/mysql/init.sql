@@ -162,6 +162,7 @@ CREATE TABLE IF NOT EXISTS rule_logs_variables (
 CREATE TABLE IF NOT EXISTS tests (
   id INT AUTO_INCREMENT PRIMARY KEY,
   rule_id INT NOT NULL,
+  `status` ENUM("success","failure") NOT NULL DEFAULT "failure",
   mode ENUM("full", "messages") NOT NULL DEFAULT "messages",
   result ENUM("not_done", "conditions_met", "conditions_not_met", "messages_sent") NOT NULL DEFAULT "not_done",
   completed_time TIMESTAMP,

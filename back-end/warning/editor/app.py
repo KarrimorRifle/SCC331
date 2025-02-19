@@ -297,13 +297,14 @@ def queue_test():
     try:
         cursor.execute("INSERT INTO tests (rule_id, mode, requested_user) VALUES (%s, %s, %s)", (id, mode, status_code))
         connection.commit()
+        test_id = cursor.lastrowid  # Get the ID of the newly created test
     except Error as e:
         print(f"Database error: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
 
-    return jsonify({"message": "Test queued successfully"}), 200
+    return jsonify({"message": "Test queued successfully", "test_id": test_id}), 200
 
 @app.route("/warnings/test/result/<int:id>", methods=["GET"])
 def get_test_result(id):
@@ -319,7 +320,7 @@ def get_test_result(id):
 
     cursor = connection.cursor(dictionary=True)
     cursor.execute("""
-        SELECT t.id, t.rule_id, t.mode, t.result, t.completed_time, r.name AS rule_name, u.full_name AS requested_by
+        SELECT t.id, t.rule_id, t.mode, t.status, t.result, t.completed_time, r.name AS rule_name, u.full_name AS requested_by
         FROM tests t
         JOIN rule r ON t.rule_id = r.id
         LEFT JOIN accounts.users u ON t.requested_user = u.user_id

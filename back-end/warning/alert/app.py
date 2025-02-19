@@ -22,6 +22,7 @@ last_message = 0
 leader_timer = None
 state_file_path = "/var/lib/node_state/first_run"
 lock_file_path = "/var/lib/node_state/lock"
+tests_to_perform = []
 
 def get_db_connection():
     retry = 5
@@ -43,10 +44,16 @@ def get_db_connection():
             db_connection = None
     return db_connection
 
+def reset_db_session():
+    global db_connection
+    if db_connection and db_connection.is_connected():
+        db_connection.reset_session()
+
 def grabRules():
     global firstTime
     global rules
     with rules_lock:
+        reset_db_session()
         connection = get_db_connection()
         if connection is None:
             print("Database connection failed")
@@ -59,7 +66,7 @@ def grabRules():
         updated_flag = cursor.fetchone()["updated"]
         
         if not firstTime and not updated_flag:
-            print("No updates to rules, skipping fetch")
+            # print("No updates to rules, skipping fetch")
             return
         
         cursor.execute("""
@@ -109,7 +116,7 @@ def grabRules():
 
         rules = new_rules
         print("Rules updated")
-        print(json.dumps(rules, indent=2))  # Print the rules variable for verification
+        # print(json.dumps(rules, indent=2))  # Print the rules variable for verification
 
         # Reset the updated flag
         cursor = connection.cursor()
@@ -193,10 +200,15 @@ def check_pico_status():
                 to_remove.append(pico_id)
 
         for pico_id in to_remove:
-            del pico_locations[pico_id]
-            del pico_types[pico_id]
-            del pico_last_seen[pico_id]
-            del roomData[pico_id]
+            try:
+                del pico_locations[pico_id]
+                del pico_types[pico_id]
+                del pico_last_seen[pico_id]
+                del roomData[pico_id]
+            except KeyError:
+                # print("something failed here, but should be ok")
+                continue
+
 
         time.sleep(60)  # Check every minute
 
@@ -226,9 +238,51 @@ def start_leader_timer(client):
     leader_timer = threading.Timer(delay, become_leader)
     leader_timer.start()
 
+def store_test_rule_ids():
+    reset_db_session()
+    connection = get_db_connection()
+    if connection is None:
+        print("Database connection failed")
+        return
+
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM tests WHERE result = 'not_done'")
+    tests = cursor.fetchall()
+    cursor.close()
+
+    global tests_to_perform
+    tests_to_perform = tests
+
+def store_test_result(test_id, result):
+    connection = get_db_connection()
+    if connection is None:
+        print("Database connection failed")
+        return
+
+    status = "failure"
+    if result in ["conditions_met", "message_sent"]:
+        status = "success"
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        UPDATE tests
+        SET result = %s, completed_time = %s, status = %s
+        WHERE id = %s
+    """, (result, time.strftime('%Y-%m-%d %H:%M:%S'), status, test_id))
+    connection.commit()
+    cursor.close()
+    
+    global tests_to_perform
+    for test in tests_to_perform:
+        if test["id"] == test_id:
+            tests_to_perform.remove(test)
+
 #whenever a message is recieved from a feed, print it and its details
 def on_message(client, user_data, message):
     global active, last_heartbeat, leader_timer
+
+    # Grab test rule IDs at the beginning
+    store_test_rule_ids()
 
     # Ignore own heartbeat messages
     if message.topic == f"checkingwarnings/{node_id}":
@@ -305,17 +359,19 @@ def on_message(client, user_data, message):
             start_leader_timer(client)
         return
     
+
+    print("processing the rules")
     # Process the rule data
     for rule in rules:
         sendMessage = True 
         for rooms in rule["conditions"]:
-            print("this is a condition", rooms)
+            # print("this is a condition", rooms)
             roomID = rooms["roomID"]
             if roomID is None:
                 sendMessage = False
                 break
             for variable in rooms["conditions"]:
-                print("Reading condition for: ",variable["variable"], "  lower:", variable["lower_bound"], ", upper: ", variable["upper_bound"])
+                # print("Reading condition for: ",variable["variable"], "  lower:", variable["lower_bound"], ", upper: ", variable["upper_bound"])
                 if variable["variable"] in ["users", "guard", "luggage", "staff"]:
                     count = grabRoomCount(roomID, variable["variable"])
                     print("Value:", count)
@@ -324,7 +380,7 @@ def on_message(client, user_data, message):
                         break
                 else:
                     value = roomData.get(roomID,{}).get(variable["variable"], None)
-                    print("Value:", value)
+                    # print("Value:", value)
                     if value is None:
                         broken_sensor_message = {
                             "Title": f"Broken room sensor: {roomID}",
@@ -338,20 +394,61 @@ def on_message(client, user_data, message):
                     if value < variable["lower_bound"] or value > variable["upper_bound"]:
                         sendMessage = False
                         break
-                print("\n\n")
             if not sendMessage:
                 break
         
-        print(f"Rule: {rule['id']}, {sendMessage}")
+        # print(f"Rule: {rule['id']}, {sendMessage}")
         # If we dont need to send a message go onto the next rule
         if not sendMessage:
             continue
 
         # then we continue on to send the messages
         for message in rule["messages"]:
-            authority = message.pop("Authority")
+            authority = message.get("Authority")
             client.publish(f"warning/{authority}/{rule['id']}", json.dumps(message))
 
+    if len(test) > 0:
+        print("tests", tests_to_perform)
+    # Perform tests
+    for test in tests_to_perform:
+        rule_id = test["rule_id"]
+        mode = test["mode"]
+        test_id = test["id"]
+
+        # Fetch the rule details
+        rule = next((r for r in rules if r["id"] == rule_id), None)
+        if not rule:
+            print(f"Rule {rule_id} not found")
+            continue
+
+        # print(f"Running test for {rule_id}")
+
+        # Perform the test
+        test_result = "conditions_not_met"
+        if mode == "full":
+            for condition in rule["conditions"]:
+                roomID = condition["roomID"]
+                for variable in condition["conditions"]:
+                    if variable["variable"] in ["users", "guard", "luggage", "staff"]:
+                        value = grabRoomCount(roomID, variable["variable"])
+                    else:
+                        value = roomData.get(roomID, {}).get(variable["variable"], None)
+                    if value is None or value < variable["lower_bound"] or value > variable["upper_bound"]:
+                        break
+                else:
+                    continue
+                break
+            else:
+                test_result = "conditions_met"
+        else:
+            test_result = "messages_sent"
+
+        for message in rule["messages"]:
+            authority = message.get("Authority")
+            client.publish(f"warning/{authority}/Testing-{rule['id']}", json.dumps(message))
+
+        # Store the test result
+        store_test_result(test_id, test_result)
 
 def on_connect(client, user_data, connect_flags, result_code, properties):
     print(f"Connected with result code {result_code}")
