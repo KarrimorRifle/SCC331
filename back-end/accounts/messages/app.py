@@ -48,7 +48,7 @@ def validate_session_cookie(request):
 	return None
 
 # Get the users for the Admin page
-@app.route('/get_users', methods=['GET'])
+@app.route('/get_users_admin', methods=['GET'])
 def get_users():
 	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
 	if not session_id:
@@ -59,13 +59,6 @@ def get_users():
 		return jsonify({"error": "Database connection failed"}), 500
 	
 	cursor = connection.cursor(dictionary=True)
-	cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
-	user = cursor.fetchone()
-
-	if user is None or user["authority"] != "Admin":
-		print("Not admin")
-		return jsonify({"error": "Unauthorized access", "message": "Insufficient permission to check user list"}), 401
-	
 	cursor.execute("SELECT email, full_name as name, last_login, authority FROM users")
 	users = cursor.fetchall()
 	cursor.close()
