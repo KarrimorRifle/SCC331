@@ -92,7 +92,8 @@ const refreshCookie = () => {
 </script>
 
 <template>
-  <div id="app" class="d-flex flex-column max-vh-100" @click="refreshCookie">
+  <!--<div id="app" class="d-flex flex-column max-vh-100" @click="refreshCookie">-->
+  <div id="app" class="d-flex flex-column max-vh-100">
     <Navbar 
       class="nav" 
       :isMobile="isMobile" 

@@ -49,6 +49,21 @@ CREATE TABLE IF NOT EXISTS luggage ( -- Consider storing it paired up
 	logged_at TIMESTAMP NOT NULL
 );
 
+
+CREATE TABLE IF NOT EXISTS staff(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  picoID VARCHAR(50) NOT NULL,
+  roomID VARCHAR(50) NOT NULL,
+  logged_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS guard (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  picoID VARCHAR(50) NOT NULL,
+  roomID VARCHAR(50) NOT NULL,
+  logged_at TIMESTAMP NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS environment (
 	id INT AUTO_INCREMENT PRIMARY KEY,
 	picoID VARCHAR(50) NOT NULL,
@@ -186,7 +201,7 @@ FLUSH PRIVILEGES;
 
 -- Account Messaging Service (Read and Write)
 CREATE USER IF NOT EXISTS 'account_messages'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'message_password';
-GRANT * ON accounts.messages TO 'account_messages'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON accounts.messages TO 'account_messages'@'%';
 ALTER USER 'account_messages'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
