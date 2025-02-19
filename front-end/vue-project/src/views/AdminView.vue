@@ -20,7 +20,7 @@ export default {
   },
   methods: {
     fetchUsers() {
-      axios.get('/get_users', { withCredentials: true })
+      axios.get('/get_users_admin', { withCredentials: true })
         .then(response => {
           this.users = response.data.users.map(user => ({
             fullName: user.name,
