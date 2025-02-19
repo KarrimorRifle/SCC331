@@ -2,6 +2,7 @@
 CREATE DATABASE IF NOT EXISTS accounts;
 CREATE DATABASE IF NOT EXISTS pico;
 CREATE DATABASE IF NOT EXISTS assets;
+CREATE DATABASE IF NOT EXISTS warning;
 
 -- =============================================
 -- Table Structure
@@ -104,6 +105,75 @@ CREATE TABLE IF NOT EXISTS default_preset (
 INSERT INTO default_preset (id, preset_id) VALUES (1, NULL)
 ON DUPLICATE KEY UPDATE id = 1;
 
+-- Warning System
+USE warning;
+
+CREATE TABLE IF NOT EXISTS rule (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(50) NOT NULL UNIQUE,
+  owner_id INT,
+  FOREIGN KEY (owner_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL -- if its null it will allow anyone to delete
+);
+
+CREATE TABLE IF NOT EXISTS rule_conditions (
+  id int AUTO_INCREMENT PRIMARY KEY,
+  rule_id INT NOT NULL,
+  roomID VARCHAR(50) NOT NULL,
+  variable VARCHAR(50) NOT NULL,
+  upper_bound FLOAT NOT NULL,
+  lower_bound FLOAT NOT NULL,
+  FOREIGN KEY (rule_id) REFERENCES warning.rule(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS rule_messages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  rule_id INT NOT NULL,
+  authority ENUM("admin", "security", "staff", "users", "everyone") NOT NULL, -- Who the message is going to
+  title VARCHAR(255) NOT NULL,
+  `location` VARCHAR(100),
+  severity ENUM("doomed", "danger", "warning", "notification") NOT NULL,
+  summary VARCHAR(255),
+  FOREIGN KEY (rule_id) REFERENCES warning.rule(id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS rule_logs_activation (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  rule_id INT NOT NULL,
+  `time` TIMESTAMP NOT NULL,
+  FOREIGN KEY (rule_id) REFERENCES warning.rule(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS rule_logs_variables (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  log_id INT NOT NULL,
+  variable VARCHAR(100) NOT NULL,
+  `value` FLOAT NOT NULL,
+  upper_bound FLOAT NOT NULL,
+  lower_bound FLOAT NOT NULL,
+  FOREIGN KEY (log_id) REFERENCES warning.rule_logs_activation(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS tests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  rule_id INT NOT NULL,
+  `status` ENUM("success","failure") NOT NULL DEFAULT "failure",
+  mode ENUM("full", "messages") NOT NULL DEFAULT "messages",
+  result ENUM("not_done", "conditions_met", "conditions_not_met", "messages_sent") NOT NULL DEFAULT "not_done",
+  completed_time TIMESTAMP,
+  requested_user INT,
+  FOREIGN KEY (rule_id) REFERENCES warning.rule(id) ON DELETE CASCADE,
+  FOREIGN KEY (requested_user) REFERENCES accounts.users(user_id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS updated (
+  id INT PRIMARY KEY DEFAULT 1,
+  updated BOOLEAN NOT NULL DEFAULT 0
+);
+
+INSERT INTO updated (id, updated) VALUES (1, 0)
+ON DUPLICATE KEY UPDATE id = 1;
+
 -- =============================================
 -- Microservice-specific Accounts
 -- =============================================
@@ -157,6 +227,29 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON assets.map_blocks     TO 'assets_editor'
 GRANT SELECT, INSERT, UPDATE, DELETE ON assets.preset_trusted TO 'assets_editor'@'%';
 GRANT SELECT, UPDATE ON assets.default_preset TO 'assets_editor'@'%';
 ALTER USER 'assets_editor'@'%' WITH MAX_USER_CONNECTIONS 1;
+FLUSH PRIVILEGES;
+
+-- warning Editing service
+CREATE USER IF NOT EXISTS 'warning_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'warning_password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON warning.rule            TO 'warning_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON warning.rule_conditions TO 'warning_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON warning.rule_messages   TO 'warning_editor'@'%';
+GRANT SELECT ON warning.rule_logs_activation      TO 'warning_editor'@'%';
+GRANT SELECT ON warning.rule_logs_variables       TO 'warning_editor'@'%';
+GRANT SELECT, INSERT ON warning.tests             TO 'warning_editor'@'%';
+GRANT SELECT ON accounts.users                    TO 'warning_editor'@'%';
+GRANT SELECT, UPDATE(updated) ON warning.updated  TO 'warning_editor'@'%';
+FLUSH PRIVILEGES;
+
+CREATE USER IF NOT EXISTS 'warning_processor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'processor_password';
+GRANT SELECT ON warning.rule            TO 'warning_processor'@'%';
+GRANT SELECT ON warning.rule_conditions TO 'warning_processor'@'%';
+GRANT SELECT ON warning.rule_messages   TO 'warning_processor'@'%';
+GRANT SELECT, INSERT, UPDATE ON warning.rule_logs_activation TO 'warning_processor'@'%';
+GRANT SELECT, INSERT, UPDATE ON warning.rule_logs_variables  TO 'warning_processor'@'%';
+GRANT SELECT, UPDATE ON warning.tests               TO 'warning_processor'@'%';
+GRANT SELECT, UPDATE(updated) ON warning.updated    TO 'warning_processor'@'%';
+GRANT SELECT ON accounts.users                      TO 'warning_editor'@'%';
 FLUSH PRIVILEGES;
 
 -- =============================================
