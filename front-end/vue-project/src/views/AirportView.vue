@@ -2,7 +2,7 @@
 import AirportMap from "@/components/AirportMap.vue";
 import DashBoard from "@/components/Dashboard.vue";
 import BottomTabNavigator from "@/components/BottomTabNavigator.vue";
-import {onMounted, onUnmounted, ref, watch, computed, PropType, defineEmits}from "vue"
+import {onMounted, onUnmounted, ref, watch, computed, PropType, defineEmits,}from "vue"
 import axios from "axios";
 import OverlayArea from '@/components/OverlayArea.vue';
 /*
@@ -39,6 +39,7 @@ const props = defineProps({
     required: true,
   },
 });
+const emit = defineEmits(["updateOverlayAreaColor", "updateOverlayAreas"]);
 
 /*
 const emit = defineEmits(["updateOverlayAreaColor", "updateOverlayAreas"]);
@@ -434,6 +435,12 @@ const presetStore = usePresetStore();
 
 onMounted(async () => {
   presetStore.setOverlayAreasConstant(props.overlayAreasConstant);
+  presetStore.setUpdateOverlayAreasCallback((updatedOverlayAreas) => {
+    emit("updateOverlayAreas", updatedOverlayAreas);
+  });
+  presetStore.setUpdateOverlayAreaColorCallback((updatedData) => {
+    emit("updateOverlayAreaColor", updatedData);
+  });
   await presetStore.fetchPresets();
   if (presetStore.presetList.presets.length > 0) {
     await presetStore.fetchPreset();
@@ -448,7 +455,7 @@ onMounted(async () => {
     <template #map>
       <AirportMap
         class="flex-grow-1"
-        :isLoading="isLoading"
+        :isLoading="presetStore.isLoading"
         :overlayAreasConstant="overlayAreasConstant" 
         :overlayAreasData="overlayAreasData" 
         :warnings="warnings"
@@ -495,7 +502,7 @@ onMounted(async () => {
   <div v-else class="airport-view-container d-flex flex-row">
     <AirportMap
       class="flex-grow-1"
-      :isLoading="isLoading"
+      :isLoading="presetStore.isLoading"
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
       :warnings="warnings"

@@ -1,97 +1,130 @@
 <script setup lang="ts">
 import { ref, defineEmits, defineProps } from "vue";
 
-const props = defineProps ({
+const props = defineProps({
     presetData: Object,
-})
+    isRoomSelectionVisible: Boolean, 
+});
 
-const rooms = props.presetData.boxes;
+// Ensure rooms are reactive and derived from props
+const rooms = ref(props.presetData?.boxes || []);
 const selectedRooms = ref<string[]>([]);
-
 const emit = defineEmits(["updateRooms"]);
 
+// Function to handle room selection
+const toggleRoomSelection = (room: any) => {
+    const index = selectedRooms.value.findIndex(r => r === room.roomID);
+    if (index !== -1) {
+        selectedRooms.value.splice(index, 1); // Deselect room
+    } else {
+        selectedRooms.value.push(room.roomID); // Select room
+    }
+    emit("updateRooms", { label: room.label, roomID: room.roomID });
+};
 </script>
 
 <template>
-  <div>
-    <h3>Select Rooms</h3>
-    <div v-for="room in rooms" :key="room">
+  <h3 v-if="!isRoomSelectionVisible" class="warning-message">
+    Select a warning first
+  </h3>
 
-      <label>
-        <input 
+  <div v-else class="room-selection">
+    <h3>Select Areas</h3>
+    <div class="room-grid">
+      <div 
+        v-for="room in rooms" 
+        :key="room.roomID"
+        class="room-card"
+        :style="{ backgroundColor: room.colour }"
+        @click="toggleRoomSelection(room)"
+      >
+        <label>
+          <input 
             type="checkbox" 
-            :value="room" 
-            v-model="selectedRooms" 
-            @change="emit('updateRooms', {label: room.label, roomID: room.roomID})"/>
-        {{ room.label }}
-      </label>
+            :value="room.roomID" 
+            v-model="selectedRooms"
+            @click.stop="toggleRoomSelection(room)"
+          />
+          Area {{ room.label }}
+        </label>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Room Selection Wrapper */
-div {
+/* Overall Room Selection Container */
+
+.warning-message {
+  background: #FF6B6B !important;
+  color: white !important;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.room-selection {
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 500px;
 }
 
 /* Title */
 h3 {
-  font-size: 22px;
-  color: #305F72; /* Text Color */
-  text-align: center;
+  text-align: left;
   margin-bottom: 15px;
 }
 
-/* Room Checkbox List */
-div > div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #F0B7A4; /* Secondary Color */
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  transition: 0.3s ease-in-out;
+/* Grid Layout */
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Up to 3 per row */
+  gap: 15px;
 }
 
-div > div:hover {
-  background: #F18C8E; /* Primary Color */
-  color: #ffffff; /* White Text */
+/* Room Cards */
+.room-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+  text-align: center;
+}
+
+.room-card:hover {
+  transform: scale(1.05);
 }
 
 /* Checkbox Styling */
 input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #568EA6; /* Accent Color */
+  margin-right: 8px;
   cursor: pointer;
 }
 
-/* Room Label */
 label {
   font-size: 18px;
-  color: #305F72; /* Text Color */
+  color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-/* Selected Room Highlight */
-input[type="checkbox"]:checked + label {
   font-weight: bold;
-  color: #ffffff; /* White Text */
 }
 
-@media (max-width: 768px) {
-  div {
-    width: 90%;
+/* Responsive */
+@media (max-width: 600px) {
+  .room-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 per row on small screens */
+  }
+}
+
+@media (max-width: 400px) {
+  .room-grid {
+    grid-template-columns: repeat(1, 1fr); /* 1 per row on very small screens */
   }
 }
 </style>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import axios from "axios";
-import { ref, onMounted, computed } from "vue";
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { ref, onMounted, computed, warn } from "vue";
 import { usePresetStore } from "../utils/useFetchPresets";
 import RoomSelection from "@/components/WarningCreation/RoomSelection.vue";
 import WarningConditions from "@/components/WarningCreation/WarningConditions.vue";
-import CustomWarningMessage from "@/components/WarningCreation/CustomWarningMessage.vue";
+// import CustomWarningMessage from "@/components/WarningCreation/CustomWarningMessage.vue";
 
 const presetStore = usePresetStore();
 const selectedRooms = ref<string[]>([]);
@@ -15,28 +17,29 @@ const selectedWarningId = ref<number | null>(null);
 const selectedWarning = ref<any>(null);
 const newWarningName = ref<string>("");
 const isRoomSelectionVisible = ref(false);
-
+const activeSection = ref('warnings'); 
 // wait for the presets data to populate
 const presetData = computed(() => presetStore.presetData);
 const isPresetDataAvailable = computed(() => presetData.value && Object.keys(presetData.value).length > 0);
 
 const fetchWarnings = async () => {
   try {
-    console.log("fetching");
     const response = await axios.get("http://localhost:5004/warnings", { withCredentials: true });
     warningsList.value = response.data;
-    console.log(warningsList);
-
   } catch (error) {
     console.error("Error fetching warnings:", error);
   }
 };
 
 const fetchWarningById = async (warningId: number) => {
+  if (selectedWarningId.value === warningId){
+    resetWarningSelection();
+    return;
+  }
   try {
     const response = await axios.get(`http://localhost:5004/warnings/${warningId}`, { withCredentials: true });
     selectedWarningId.value = response.data.id;
-     selectedWarning.value = response.data;
+    selectedWarning.value = response.data;
 
     warningConditions.value = response.data.conditions.reduce((acc, item) => {
       acc[item.roomID] = {
@@ -47,6 +50,7 @@ const fetchWarningById = async (warningId: number) => {
     }, {});
 
     isRoomSelectionVisible.value = true;
+    activeSection.value = "rooms";
   } catch (error) {
     console.error("Error fetching warning details:", error);
   }
@@ -77,15 +81,24 @@ const updateWarning = async () => {
     return;
   }
 
+  console.log("warning condition: ", warningConditions.value);
+  // ✅ Step 1: Format conditions (Prevent Duplicates)
   const formattedConditions = Object.entries(warningConditions.value).reduce((acc, [roomID, data]) => {
     const validConditions = data.conditions.filter(
       cond => cond.variable !== null && cond.lower_bound !== null && cond.upper_bound !== null
     );
 
     if (validConditions.length > 0) {
+      const uniqueConditions = validConditions.reduce((unique, cond) => {
+        if (!unique.some(existing => existing.variable === cond.variable)) {
+          unique.push(cond);
+        }
+        return unique;
+      }, []);
+
       acc.push({
         roomID,
-        conditions: validConditions.map(cond => ({
+        conditions: uniqueConditions.map(cond => ({
           variable: cond.variable,
           lower_bound: cond.lower_bound,
           upper_bound: cond.upper_bound,
@@ -96,22 +109,31 @@ const updateWarning = async () => {
     return acc;
   }, []);
 
-  const formattedMessages = Object.entries(warningConditions.value).reduce((acc, [roomID, data]) => {
-    console.log("Messages for Room:", roomID, data.messages);
+  // ✅ Step 2: Format messages and prevent duplicates
+  const formattedMessages = [];
+  Object.entries(warningConditions.value).forEach(([roomID, data]) => {
+    const seenTitles = new Set(); // Keep track of seen Titles to avoid duplicates
 
     data.messages.forEach(msg => {
-      acc.push({
-        Authority: msg.Authority,
-        Title: msg.Title || "No Title Provided", // ✅ Allow null, replace with fallback
-        Location: msg.Location,
-        Severity: msg.Severity,
-        Summary: msg.Summary || "No Summary Provided", // ✅ Allow null, replace with fallback
-      });
-    });
+      // ✅ Normalize title casing to avoid duplicates
+      const normalizedTitle = msg.Title ? msg.Title.trim().toLowerCase() : "untitled";
 
-    return acc;
-  }, []);
-  
+      if (!seenTitles.has(normalizedTitle) || normalizedTitle !== "untitled") {
+        seenTitles.add(normalizedTitle);
+        formattedMessages.push({
+          Authority: msg.Authority || "users",
+          Title: msg.Title,
+          Location: msg.Location || roomID,
+          Severity: msg.Severity || "notification",
+          Summary: msg.Summary,
+        });
+      }
+    });
+  });
+
+  console.log("✅ Formatted Conditions: ", formattedConditions);
+  console.log("✅ Formatted Messages: ", formattedMessages);
+
   const payload = {
     name: selectedWarning.value.name || `Updated Warning ${selectedWarningId.value}`,
     id: selectedWarningId.value,
@@ -126,6 +148,7 @@ const updateWarning = async () => {
     console.error("Error updating warning:", error);
   }
 };
+
 
 const deleteWarning = async (warningId: number) => {
   try {
@@ -183,8 +206,6 @@ const updateWarningConditions = (updatedConditions: Record<string, any>) => {
       }
     });
   });
-
-  console.log("Merged warningConditions:", warningConditions.value);
   updateWarning();
 };
 
@@ -205,9 +226,6 @@ const updateWarningMessages = (updatedMessages: any[]) => {
     const existingMessageIndex = warningConditions.value[roomID].messages.findIndex(
       (m) => m.Title.trim() === msg.Title.trim()
     );
-
-    console.log("Existing Message Index:", existingMessageIndex);
-
     if (existingMessageIndex !== -1) {
       // Update existing message
       warningConditions.value[roomID].messages[existingMessageIndex].Summary = msg.Summary;
@@ -216,57 +234,265 @@ const updateWarningMessages = (updatedMessages: any[]) => {
       warningConditions.value[roomID].messages.push(msg);
     }
   });
+};
 
-  console.log("Updated warningConditions:", JSON.parse(JSON.stringify(warningConditions.value)));
+const setActiveSection = (section: string) => {
+  activeSection.value = section;
+};
+
+const getSidebarClass = (section: string) => {
+  return { active: activeSection.value === section };
 };
 
 onMounted(fetchWarnings);
 </script>
 
 <template>
-  <div class="warning-creation-view">
-    <div>
-      <h3>Existing Warnings</h3>
-      <ul>
-        <li v-for="warning in warningsList" :key="warning.id">
-          <span @click="fetchWarningById(warning.id)">{{ warning.name }}</span>
-          <button @click="deleteWarning(warning.id)">Delete</button>
-        </li>
-      </ul>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <button @click="setActiveSection('warnings')" :class="{ active: activeSection === 'warnings' }">⚠️ Warnings</button>
+      <button @click="setActiveSection('rooms')" :class="{ active: activeSection === 'rooms' }">📌 Room Selection</button>
+      <button @click="setActiveSection('conditions')" :class="{ active: activeSection === 'conditions' }">🔧 Conditions</button>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="warning-creation-content">
+      <!-- Existing Warnings List -->
+      <div 
+        :class="['section', { dimmed: activeSection !== 'warnings' }]"
+        @click="setActiveSection('warnings')"
+      >
+        <div class="existing-warning-header">
+          <h3>Existing Warnings</h3>
+          <div class="add-warning-container">
+            <input v-model="newWarningName" placeholder="Enter warning name" />
+            <button @click="createWarning(newWarningName)">Create Warning</button>
+          </div>
+        </div>
+        <ul class="existing-warning-list">
+          <li v-for="warning in warningsList" 
+              :key="warning.id" 
+              :class="['warning-item', { selected: selectedWarningId === warning.id }]"
+              @click="fetchWarningById(warning.id)"
+               >
+            <div class="warning-content">
+              <div class="warning-details">
+                <h5>Warning Name</h5>
+                <p>{{ warning.name }}</p>
+              </div>
+              <button @click.stop="deleteWarning(warning.id)" class="delete-button">
+                <FontAwesomeIcon :icon="faTrash" />
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Room Selection -->
+      <RoomSelection 
+        v-if="isPresetDataAvailable" 
+        :isRoomSelectionVisible="isRoomSelectionVisible"
+        :presetData="presetData"
+        :class="['section', { dimmed: activeSection !== 'rooms' }]"
+        @updateRooms="toggleRoomSelection"
+        @click="setActiveSection('rooms')"
+      />
+
+      <!-- Warning Conditions -->
+      <WarningConditions 
+        v-if="selectedWarning" 
+        :selectedWarning="selectedWarning"
+        :selectedRooms="selectedRooms" 
+        :conditions="warningConditions"
+        :class="['section', { dimmed: activeSection !== 'conditions' }]"
+        @updateConditions="updateWarningConditions" 
+        @click="setActiveSection('conditions')"
+      />
+
+      <!-- Custom Warning Messages 
+      <CustomWarningMessage 
+        :conditions="warningConditions" 
+        :class="['section', { dimmed: activeSection !== 'messages' }]"
+        @updateMessages="updateWarningMessages" 
+      />
+      
+
+      <button @click="resetWarningSelection">Clear Selection</button>
+      -->
     </div>
-
-    <div>
-      <input v-model="newWarningName" placeholder="Enter warning name" />
-      <button @click="createWarning(newWarningName)">Create Warning</button>
-    </div>
-
-    <RoomSelection 
-      v-if="isPresetDataAvailable && isRoomSelectionVisible" 
-      :presetData="presetData"
-      @updateRooms="toggleRoomSelection"
-    />  
-
-    <WarningConditions 
-      v-if="selectedWarning" 
-      :selectedWarning="selectedWarning"
-      :selectedRooms="selectedRooms" 
-      :conditions="warningConditions"
-      :createWarning="createWarning"
-      @updateConditions="updateWarningConditions" 
-    />
-
-    <CustomWarningMessage 
-      :conditions="warningConditions" 
-      @updateMessages="updateWarningMessages" 
-    />
-
-    <button @click="resetWarningSelection">Clear Selection</button>
   </div>
 </template>
 
 <style scoped>
-.warning-creation-view {
+.app-container {
+  display: flex;
+  background: #f8f8ff;
+}
+
+.sidebar h3 {
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+.sidebar {
+  width: 200px;
+  padding: 20px;
+  background-color: #305F72;
+  color: white;
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 10px;
+  text-align: left;
+  transition: background 0.3s;
+  border-radius: 5px;
+}
+
+.sidebar button:hover,
+.sidebar button.active {
+  background: #568EA6;
+}
+
+.warning-creation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.section {
+  padding: 20px;
+  border-radius: 8px;
+  background: white;
+  color: black;
+  transition: opacity 0.3s;
+  border: 2px solid #568EA6;
+}
+
+.dimmed {
+  opacity: 0.4;
+}
+
+.existing-warning-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.existing-warning-list {
+  padding: 0;
+}
+
+.warning-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #305F72;
+  padding: 5px;
+  margin: 10px 0;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.warning-item:hover {
+  background: lightgray;
+  transform: scale(1.01);
+}
+
+.warning-item.selected {
+  background: #F18C8E;
+  transform: scale(1.01);
+}
+
+.warning-content {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.warning-details {
+  text-align: left;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #FF6B6B;
+  font-size: 18px;
+  transition: color 0.3s ease-in-out;
+}
+
+.delete-button:hover {
+  color: #D94A4A !important;
+  z-index: 999;
+}
+
+.add-warning-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #568EA6;
+}
+
+.add-warning-container input {
+  padding: 10px;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-size: 16px;
+  outline: none;
+  transition: border 0.2s ease-in-out;
+}
+
+.add-warning-container input:focus {
+  border-color: #568EA6;
+}
+
+.add-warning-container button {
+  background: #568EA6;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+}
+
+.add-warning-container button:hover {
+  background: #305F72;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    width: 100%;
+  }
+  .existing-warning-header{
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 </style>
