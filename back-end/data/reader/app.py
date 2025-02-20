@@ -120,7 +120,6 @@ def pico(PICO):
             contiguous_logs = logs[start_idx:end_idx+1]
             movement = { row['logged_at'].isoformat(): row['roomID'] for row in contiguous_logs }
             pico_type = contiguous_logs[0]['pico_type'] if contiguous_logs else "unknown"
-            print({"type": pico_type, "movement": movement})
             return jsonify({"type": pico_type, "movement": movement})
         else:
             # Fallback: use the old algorithm (using a 2-minute gap to pick session_start)
@@ -173,7 +172,6 @@ def pico(PICO):
                 if not hasattr(row['logged_at'], 'isoformat'):
                     row['logged_at'] = datetime.strptime(row['logged_at'], "%Y-%m-%d %H:%M:%S")
             movement = { row['logged_at'].isoformat(): row['roomID'] for row in session_logs }
-            print({"type": pico_type, "movement": movement})
             return jsonify({"type": pico_type, "movement": movement})
     except Error as e:
         print(f"Error querying data: {e}")
@@ -351,6 +349,162 @@ def summary():
         cursor.close()
         connection.close()
 
+import re
+
+def parse_period(period_str):
+    """
+    Parse a period string (e.g., "5min", "1hr", "1hr5min") and return the total seconds.
+    The minimum allowed period is 60 seconds and the maximum is 604800 seconds (1 week).
+    """
+    period_str = period_str.strip().lower()
+    # Pattern: optional hours followed by optional minutes. At least one must be provided.
+    pattern = re.compile(r"(?:(\d+)\s*hr)?\s*(?:(\d+)\s*min)?")
+    m = pattern.fullmatch(period_str)
+    if not m or (not m.group(1) and not m.group(2)):
+        raise ValueError("Invalid period format")
+    hours = int(m.group(1)) if m.group(1) else 0
+    minutes = int(m.group(2)) if m.group(2) else 0
+    total_seconds = hours * 3600 + minutes * 60
+    if total_seconds < 60:
+        raise ValueError("Minimum grouping period is 1 minute")
+    if total_seconds > 604800:
+        raise ValueError("Maximum grouping period is 1 week")
+    return total_seconds
+
+@app.route('/summary/average', methods=['GET'])
+def summary_average():
+    # Validate session cookie
+    cookie_validation_error = validate_session_cookie(request)
+    if cookie_validation_error:
+        return jsonify(cookie_validation_error[0]), cookie_validation_error[1]
+
+    req_data = request.get_json(silent=True) or {}
+    
+    if req_data:
+        if "start_time" in req_data and not req_data["start_time"].strip():
+            return jsonify({"error": "Missing or invalid parameters: start_time is empty"}), 400
+        if "rooms" in req_data and isinstance(req_data["rooms"], list) and len(req_data["rooms"]) == 0:
+            return jsonify({"error": "Missing or invalid parameters: rooms list is empty"}), 400
+
+    now = datetime.utcnow()
+    start_time_str = req_data.get("start_time")
+    end_time_str = req_data.get("end_time")
+    period_str = req_data.get("time_periods", "1hr")
+    rooms = req_data.get("rooms")
+
+    try:
+        period_seconds = parse_period(period_str)
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+
+    if not start_time_str:
+        start_dt = now - timedelta(hours=24)
+    else:
+        try:
+            start_dt = datetime.fromisoformat(start_time_str.replace("Z", ""))
+        except ValueError:
+            return jsonify({"error": "Invalid start_time format"}), 400
+
+    if not end_time_str:
+        end_dt = now
+    else:
+        try:
+            end_dt = datetime.fromisoformat(end_time_str.replace("Z", ""))
+        except ValueError:
+            return jsonify({"error": "Invalid end_time format"}), 400
+
+    if start_dt >= end_dt:
+        return jsonify({"error": "Invalid request parameters: start_time must be before end_time"}), 400
+
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "MySQL connection unavailable"}), 500
+
+    cursor = connection.cursor(dictionary=True)
+    try:
+        # Flexible grouping using period_seconds
+        env_query = f"""
+        SELECT 
+            roomID,
+            FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(logged_at)/%s)*%s) as bucket,
+            AVG(temperature) as avg_temperature, MAX(temperature) as peak_temperature, MIN(temperature) as trough_temperature,
+            AVG(sound) as avg_sound, MAX(sound) as peak_sound, MIN(sound) as trough_sound,
+            AVG(light) as avg_light, MAX(light) as peak_light, MIN(light) as trough_light,
+            AVG(IAQ) as avg_IAQ, MAX(IAQ) as peak_IAQ, MIN(IAQ) as trough_IAQ,
+            AVG(pressure) as avg_pressure, MAX(pressure) as peak_pressure, MIN(pressure) as trough_pressure,
+            AVG(humidity) as avg_humidity, MAX(humidity) as peak_humidity, MIN(humidity) as trough_humidity
+        FROM environment
+        WHERE logged_at BETWEEN %s AND %s
+        """
+        params = [period_seconds, period_seconds, start_dt, end_dt]
+        if rooms:
+            env_query += " AND roomID IN (" + ",".join(["%s"] * len(rooms)) + ")"
+            params.extend(rooms)
+        env_query += " GROUP BY roomID, bucket ORDER BY bucket ASC;"
+        cursor.execute(env_query, params)
+        env_results = cursor.fetchall()
+
+        average_summary = {}
+        for row in env_results:
+            # Convert bucket to ISO string if it is a datetime
+            bucket = row['bucket']
+            if isinstance(bucket, datetime):
+                bucket = bucket.isoformat() + "Z"
+            else:
+                bucket = str(bucket)
+            room_id = str(row['roomID'])
+            if bucket not in average_summary:
+                average_summary[bucket] = {}
+            average_summary[bucket][room_id] = {
+                "temperature": {"average": row["avg_temperature"], "peak": row["peak_temperature"], "trough": row["trough_temperature"]},
+                "sound": {"average": row["avg_sound"], "peak": row["peak_sound"], "trough": row["trough_sound"]},
+                "light": {"average": row["avg_light"], "peak": row["peak_light"], "trough": row["trough_light"]},
+                "IAQ": {"average": row["avg_IAQ"], "peak": row["peak_IAQ"], "trough": row["trough_IAQ"]},
+                "pressure": {"average": row["avg_pressure"], "peak": row["peak_pressure"], "trough": row["trough_pressure"]},
+                "humidity": {"average": row["avg_humidity"], "peak": row["peak_humidity"], "trough": row["trough_humidity"]}
+            }
+
+        occupancy_types = ["users", "luggage", "staff", "guard"]
+        for occ in occupancy_types:
+            occ_query = f"""
+            SELECT 
+                roomID,
+                FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(logged_at)/%s)*%s) as bucket,
+                COUNT(*) as occ_count
+            FROM {occ}
+            WHERE logged_at BETWEEN %s AND %s
+            """
+            occ_params = [period_seconds, period_seconds, start_dt, end_dt]
+            if rooms:
+                occ_query += " AND roomID IN (" + ",".join(["%s"] * len(rooms)) + ")"
+                occ_params.extend(rooms)
+            occ_query += " GROUP BY roomID, bucket ORDER BY bucket ASC;"
+            cursor.execute(occ_query, occ_params)
+            occ_results = cursor.fetchall()
+            for row in occ_results:
+                bucket = row['bucket']
+                if isinstance(bucket, datetime):
+                    bucket = bucket.isoformat() + "Z"
+                else:
+                    bucket = str(bucket)
+                room_id = str(row['roomID'])
+                if bucket not in average_summary:
+                    average_summary[bucket] = {}
+                if room_id not in average_summary[bucket]:
+                    average_summary[bucket][room_id] = {}
+                count = row["occ_count"]
+                average_summary[bucket][room_id][occ] = {
+                    "average": count,
+                    "peak": count,
+                    "trough": count
+                }
+        return jsonify(average_summary)
+    except Error as e:
+        print(f"Error querying data: {e}")
+        return jsonify({"error": "Error querying data", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
 
 
 if __name__ == '__main__':

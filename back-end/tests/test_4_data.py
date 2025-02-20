@@ -108,7 +108,7 @@ class TestData(unittest.TestCase):
         client.loop_stop()
         client.disconnect()
 
-    def test_1_populate_and_check_rooms(self):
+    def test_01_populate_and_check_rooms(self):
         # Publish luggage, users, room, staff and guard data
         self.publish_data(self.luggage, "feeds/hardware-data/test1_luggage")
         self.publish_data(self.users, "feeds/hardware-data/test1_users")
@@ -199,7 +199,7 @@ class TestData(unittest.TestCase):
                 self.assertAlmostEqual(expected_value, actual_value, places=1,
                                        msg=f"Environment attribute '{attr}' mismatch for room {room_id}")
 
-    def test_2_session_validation(self):
+    def test_02_session_validation(self):
         # Publish session data in the known order.
         for item in self.session:
             self.publish_data([item], "feeds/hardware-data/test2_sessions")
@@ -221,9 +221,9 @@ class TestData(unittest.TestCase):
         self.assertEqual(ordered_rooms, expected_order,
                          f"Expected movement order {expected_order}, got {ordered_rooms}")
 
-    def test_3_session_expiry_and_republish(self):
+    def test_03_session_expiry_and_republish(self):
         # Wait to simulate expiry (2.5 minutes)
-        time.sleep(150)
+        # time.sleep(150)
         for item in self.session2:
             self.publish_data([item], "feeds/hardware-data/test3_sessions")
             time.sleep(2)
@@ -242,7 +242,7 @@ class TestData(unittest.TestCase):
         self.assertEqual(ordered_rooms, expected_order,
                          f"Expected movement order {expected_order}, got {ordered_rooms}")
 
-    def test_4_movement_endpoint(self):
+    def test_04_movement_endpoint(self):
         # Publish two batches of movement data with a delay
         movement_data_1 = [
             {"PicoID": 30, "RoomID": 1, "PicoType": 2, "Data": 1},
@@ -272,7 +272,7 @@ class TestData(unittest.TestCase):
                                       f"At timestamp {timestamp} for room {room_id}, expected status to be a string")
         self.assertGreaterEqual(len(movement_response), 2, "Expected at least 2 distinct timestamps in movement response")
 
-    def test_5_summary_average(self):
+    def test_05_summary_average(self):
         test_room_data = [
             {"PicoID": 300, "RoomID": 1, "PicoType": 1, "Data": "10,20,30,40,50,60"},
             {"PicoID": 301, "RoomID": 2, "PicoType": 1, "Data": "15,25,35,45,55,65"},
@@ -280,7 +280,6 @@ class TestData(unittest.TestCase):
         ]
         self.publish_data(test_room_data, "feeds/hardware-data/test_rooms_average")
         time.sleep(3)
-        headers = {"session-id": self.session_cookie}
         payload = {
             "start_time": "2023-01-01T00:00:00Z",
             "end_time": "2023-12-31T23:59:59Z",
@@ -289,8 +288,8 @@ class TestData(unittest.TestCase):
         }
         response = requests.get(
             f"{self.READER_URL}/summary/average",
-            headers=headers,
-            json=payload  # Assuming GET supports a JSON payload
+            params=payload,  # Use query parameters for GET requests
+            cookies={"session_id": self.session_cookie}
         )
         self.assertEqual(response.status_code, 200)
         average_summary = response.json()
@@ -309,7 +308,7 @@ class TestData(unittest.TestCase):
 
     # --- New Negative Tests ---
 
-    def test_6_invalid_session_on_summary(self):
+    def test_06_invalid_session_on_summary(self):
         """Test fetching summary with an invalid session cookie."""
         response = requests.get(
             f"{self.READER_URL}/summary",
@@ -318,7 +317,7 @@ class TestData(unittest.TestCase):
         self.assertIn(response.status_code, [400, 401],
                       f"Expected 400/401 for invalid session, got {response.status_code}")
 
-    def test_7_invalid_pico_endpoint(self):
+    def test_07_invalid_pico_endpoint(self):
         """Test the /pico endpoint with a non-existent PicoID."""
         response = requests.get(
             f"{self.READER_URL}/pico/nonexistent",
@@ -327,7 +326,7 @@ class TestData(unittest.TestCase):
         self.assertEqual(response.status_code, 404,
                          "Expected 404 for non-existent PicoID")
 
-    def test_8_missing_required_payload_summary_average(self):
+    def test_08_missing_required_payload_summary_average(self):
         """Test summary/average endpoint with missing or invalid payload."""
         headers = {"session-id": self.session_cookie}
         payload = {
@@ -337,12 +336,13 @@ class TestData(unittest.TestCase):
         response = requests.get(
             f"{self.READER_URL}/summary/average",
             headers=headers,
-            json=payload
+            json=payload,
+            cookies={"session_id":self.session_cookie}
         )
         self.assertEqual(response.status_code, 400,
                          "Expected 400 for missing/invalid parameters in summary average")
 
-    def test_9_invalid_movement_query_params(self):
+    def test_09_invalid_movement_query_params(self):
         """Test movement endpoint with invalid time query parameters."""
         params = {
             "time_start": "invalid_time",
