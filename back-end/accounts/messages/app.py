@@ -66,7 +66,6 @@ def get_users():
 
 	return jsonify({"users": users}), 200
 	
-# Send messages to users using the send message button	
 @app.route('/send_message', methods=['POST'])
 def send_message():
 	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
@@ -79,6 +78,7 @@ def send_message():
 
 	cursor = connection.cursor(dictionary=True)
 
+	# Get sender user_id from session
 	cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
 	user = cursor.fetchone()
 	
@@ -90,13 +90,24 @@ def send_message():
 	sender_id = user['user_id']
 	
 	data = request.get_json()
-	if not data or 'receiver_id' not in data or 'message' not in data:
+	if not data or 'receiver_email' not in data or 'message' not in data:
 		cursor.close()
 		connection.close()
-		return jsonify({"error": "Receiver ID and message are required."}), 403
+		return jsonify({"error": "Receiver email and message are required."}), 403
 	
-	receiver_id = data['receiver_id']
+	receiver_email = data['receiver_email']
 	message = data['message']
+
+	# Get receiver_id using email
+	cursor.execute("SELECT user_id FROM users WHERE email = %s", (receiver_email,))
+	receiver = cursor.fetchone()
+	
+	if receiver is None:
+		cursor.close()
+		connection.close()
+		return jsonify({"error": "Receiver not found!"}), 404
+
+	receiver_id = receiver['user_id']
 
 	try:
 		cursor.execute("""
@@ -111,7 +122,8 @@ def send_message():
 		cursor.close()
 		connection.close()
 		return jsonify({"error": f"Failed to send message: {e}"}), 500
-
+		
+		
 # Delete users using the delete button next to each user
 @app.route('/delete_user', methods=['POST'])
 def delete_user():
@@ -211,6 +223,34 @@ def add_user():
 		cursor.close()
 		connection.close()
 		return jsonify({"error": f"Failed to add user: {e}"}), 500
+
+@app.route('/check_admin', methods=['GET'])
+def check_admin():
+    session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+    if not session_id:
+        return jsonify({"error": "No session cookie or header provided"}), 400
+
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    cursor = connection.cursor(dictionary=True)
+
+    # Get user role from session
+    cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
+    user = cursor.fetchone()
+    
+    cursor.close()
+    connection.close()
+
+    if user is None:
+        return jsonify({"error": "User not found!"}), 404
+
+    if user["authority"] != "Admin":
+        return jsonify({"error": "Not authorized"}), 403
+
+    return jsonify({"message": "Authorized"}), 200
+
 
 
 if __name__ == '__main__':
