@@ -40,7 +40,7 @@ export default {
 		},
 		addUser() {
 			if (this.newUser.fullName && this.newUser.email) {
-				axios.post('/add_user', {
+				axios.post('http://localhost:5007/add_user', {
 					full_name: this.newUser.fullName,
 					email: this.newUser.email,
 					is_admin: this.newUser.isAdmin
@@ -60,7 +60,7 @@ export default {
 		},
 		deleteUser(index) {
 			const userEmail = this.users[index].email;
-			axios.post('/delete_user', { email: userEmail }, { withCredentials: true })
+			axios.post('http://localhost:5007/delete_user', { email: userEmail }, { withCredentials: true })
 				.then(() => {
 					this.users.splice(index, 1);
 				})
@@ -77,7 +77,7 @@ export default {
 		resetPassword() {
 			if (this.newPassword === this.confirmPassword && this.newPassword.trim()) {
 				const userEmail = this.users[this.resetPasswordUserIndex].email;
-				axios.post('/reset_password', { email: userEmail, new_password: this.newPassword }, { withCredentials: true })
+				axios.post('http://localhost:5007/reset_password', { email: userEmail, new_password: this.newPassword }, { withCredentials: true })
 					.then(() => {
 						alert(`Password for ${this.users[this.resetPasswordUserIndex].fullName} has been reset.`);
 						this.showResetPasswordModal = false;
@@ -96,7 +96,7 @@ export default {
 		},
 		sendMessage() {
 			const receiverEmail = this.users[this.messageUserIndex].email;
-			axios.post('/send_message', { receiver_email: receiverEmail, message: this.userMessage }, { withCredentials: true })
+			axios.post('http://localhost:5007/send_message', { receiver_email: receiverEmail, message: this.userMessage }, { withCredentials: true })
 				.then(() => {
 					alert(`Message sent to ${this.users[this.messageUserIndex].fullName}`);
 					this.showMessageModal = false;
@@ -114,6 +114,25 @@ export default {
 </script>
 
 <template>
+	<div v-if="showMessageModal" class="modal">
+		<div class="modal-content">
+			<h3>Send Message</h3>
+			<textarea v-model="userMessage" class="textarea"></textarea>
+			<button @click="sendMessage" class="send button">Send</button>
+			<button @click="showMessageModal = false" class="cancel button">Cancel</button>
+		</div>
+	</div>
+
+	<div v-if="showResetPasswordModal" class="modal">
+		<div class="modal-content">
+			<h3>Reset Password</h3>
+			<input v-model="newPassword" type="password" placeholder="New Password" class="input">
+			<input v-model="confirmPassword" type="password" placeholder="Confirm Password" class="input">
+			<button @click="resetPassword" class="reset button">Reset</button>
+			<button @click="showResetPasswordModal = false" class="cancel button">Cancel</button>
+		</div>
+	</div>
+
 	<div class="container">
 		<h1 class="title">User List</h1>
 		<div class="input-section">
