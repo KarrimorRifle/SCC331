@@ -114,7 +114,7 @@ export const usePresetStore = defineStore("presetStore", () => {
       try {
         isLoading.value = true;
         let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}`, { withCredentials: true });
-        console.log(request.data);
+        //console.log(request.data);
         presetData.value = request.data;
         processPresetImage();
       } catch (error) {
@@ -164,7 +164,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         }
       });
     
-      console.log("boxes and data", boxes_and_data.value)
+      //console.log("boxes and data", boxes_and_data.value)
     }
     
     const update_data = () => {
