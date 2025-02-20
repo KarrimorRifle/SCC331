@@ -69,7 +69,7 @@ const handleSubmit = async () => {
       errorMessage.value = 'Login failed. Please check your credentials and try again.';
     }
   } catch (error) {
-    errorMessage.value = 'An error occurred during login. Please try again later.';
+    errorMessage.value = 'Wrong username or password. Try again.';
     console.error('Error:', error);
   }
 };
