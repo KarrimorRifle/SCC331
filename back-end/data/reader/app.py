@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, make_response
 import mysql.connector
 from flask_cors import CORS
 from mysql.connector import Error
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import requests
 
@@ -48,73 +48,136 @@ def validate_session_cookie(request):
     return None
 
 # make route for most recent pico session
-@app.route('/pico/<int:PICO>', methods=['GET'])
+@app.route('/pico/<string:PICO>', methods=['GET'])
 def pico(PICO):
     cookie_validation_error = validate_session_cookie(request)
     if cookie_validation_error:
         return jsonify(cookie_validation_error[0]), cookie_validation_error[1]
 
     connection = get_db_connection()
-    
     if connection is None:
         return jsonify({"error": "MySQL connection unavailable"}), 500
-    
+
     cursor = connection.cursor(dictionary=True)
     try:
-        # Query to get the most recent session for the specified PicoID across all tables
-        query = """
-        SELECT roomID, logged_at
-        FROM (
-            SELECT roomID, logged_at,
-                   LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
-            FROM (
-                SELECT roomID, logged_at FROM users WHERE PicoID = %s
-                UNION ALL
-                SELECT roomID, logged_at FROM luggage WHERE PicoID = %s
-                UNION ALL
-                SELECT roomID, logged_at FROM staff WHERE PicoID = %s
-                UNION ALL
-                SELECT roomID, logged_at FROM guard WHERE PicoID = %s
-            ) AS combined
+        # Check if a "time" attribute was passed in the JSON request body
+        req_data = request.get_json(silent=True)
+        provided_time = None
+        if req_data and req_data.get("time"):
+            provided_time = datetime.fromisoformat(req_data.get("time"))
+
+        if provided_time:
+            # Fetch all logs for PicoID in ascending order
+            query = """
+            SELECT roomID, logged_at, 'user' as pico_type FROM users WHERE PicoID = %s
+            UNION ALL
+            SELECT roomID, logged_at, 'luggage' as pico_type FROM luggage WHERE PicoID = %s
+            UNION ALL
+            SELECT roomID, logged_at, 'staff' as pico_type FROM staff WHERE PicoID = %s
+            UNION ALL
+            SELECT roomID, logged_at, 'guard' as pico_type FROM guard WHERE PicoID = %s
+            ORDER BY logged_at ASC;
+            """
+            cursor.execute(query, (PICO, PICO, PICO, PICO))
+            logs = cursor.fetchall()
+            if not logs:
+                return jsonify({"error": "No logs found for the specified Pico"}), 404
+
+            # Convert logged_at to datetime objects if needed
+            for row in logs:
+                if not hasattr(row['logged_at'], 'isoformat'):
+                    row['logged_at'] = datetime.strptime(row['logged_at'], "%Y-%m-%d %H:%M:%S")
+            
+            # Find the contiguous block containing the provided time.
+            gap = timedelta(seconds=90)  # 1.5 minutes
+
+            # Find the index where the provided_time fits
+            idx = None
+            for i, row in enumerate(logs):
+                if row['logged_at'] >= provided_time:
+                    idx = i
+                    break
+            if idx is None:
+                idx = len(logs) - 1  # provided time later than all logs
+
+            # Expand upward (later times)
+            end_idx = idx
+            while end_idx + 1 < len(logs):
+                if logs[end_idx + 1]['logged_at'] - logs[end_idx]['logged_at'] <= gap:
+                    end_idx += 1
+                else:
+                    break
+
+            # Expand downward (earlier times)
+            start_idx = idx
+            while start_idx - 1 >= 0:
+                if logs[start_idx]['logged_at'] - logs[start_idx - 1]['logged_at'] <= gap:
+                    start_idx -= 1
+                else:
+                    break
+
+            # Select contiguous block
+            contiguous_logs = logs[start_idx:end_idx+1]
+            movement = { row['logged_at'].isoformat(): row['roomID'] for row in contiguous_logs }
+            pico_type = contiguous_logs[0]['pico_type'] if contiguous_logs else "unknown"
+            print({"type": pico_type, "movement": movement})
+            return jsonify({"type": pico_type, "movement": movement})
+        else:
+            # Fallback: use the old algorithm (using a 2-minute gap to pick session_start)
+            query = """
+            SELECT roomID, logged_at, pico_type FROM (
+                SELECT roomID, logged_at, pico_type,
+                       LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
+                FROM (
+                    SELECT roomID, logged_at, 'user' as pico_type FROM users WHERE PicoID = %s
+                    UNION ALL
+                    SELECT roomID, logged_at, 'luggage' FROM luggage WHERE PicoID = %s
+                    UNION ALL
+                    SELECT roomID, logged_at, 'staff' FROM staff WHERE PicoID = %s
+                    UNION ALL
+                    SELECT roomID, logged_at, 'guard' FROM guard WHERE PicoID = %s
+                ) AS combined
+                ORDER BY logged_at DESC
+            ) AS ordered_logs
+            WHERE TIMESTAMPDIFF(MINUTE, prev_log, logged_at) >= 2 OR prev_log IS NULL
             ORDER BY logged_at DESC
-        ) AS ordered_logs
-        WHERE TIMESTAMPDIFF(MINUTE, prev_log, logged_at) >= 2 OR prev_log IS NULL
-        ORDER BY logged_at DESC
-        LIMIT 1;
-        """
-        cursor.execute(query, (PICO, PICO, PICO, PICO))
-        session_start = cursor.fetchone()
+            LIMIT 1;
+            """
+            cursor.execute(query, (PICO, PICO, PICO, PICO))
+            session_start = cursor.fetchone()
+            if not session_start:
+                return jsonify({"error": "No session found for the specified Pico"}), 404
 
-        if not session_start:
-            return jsonify({"error": "No session found for the specified PicoID"}), 404
-
-        # Query to get all logs for the most recent session from the same table logs
-        query = """
-        SELECT roomID, logged_at
-        FROM (
-            SELECT roomID, logged_at,
-                   LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
-            FROM (
-                SELECT roomID, logged_at FROM users WHERE PicoID = %s
-                UNION ALL
-                SELECT roomID, logged_at FROM luggage WHERE PicoID = %s
-                UNION ALL
-                SELECT roomID, logged_at FROM staff WHERE PicoID = %s
-                UNION ALL
-                SELECT roomID, logged_at FROM guard WHERE PicoID = %s
-            ) AS combined
-            ORDER BY logged_at DESC
-        ) AS ordered_logs
-        WHERE logged_at >= %s
-        ORDER BY logged_at;
-        """
-        cursor.execute(query, (PICO, PICO, PICO, PICO, session_start['logged_at']))
-        session_logs = cursor.fetchall()
-
-        return jsonify(session_logs)
+            pico_type = session_start['pico_type']
+            query = """
+            SELECT roomID, logged_at FROM (
+                SELECT roomID, logged_at, pico_type,
+                       LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
+                FROM (
+                    SELECT roomID, logged_at, 'user' as pico_type FROM users WHERE PicoID = %s
+                    UNION ALL
+                    SELECT roomID, logged_at, 'luggage' FROM luggage WHERE PicoID = %s
+                    UNION ALL
+                    SELECT roomID, logged_at, 'staff' FROM staff WHERE PicoID = %s
+                    UNION ALL
+                    SELECT roomID, logged_at, 'guard' FROM guard WHERE PicoID = %s
+                ) AS combined
+                ORDER BY logged_at DESC
+            ) AS ordered_logs
+            WHERE logged_at >= %s
+            ORDER BY logged_at;
+            """
+            cursor.execute(query, (PICO, PICO, PICO, PICO, session_start['logged_at']))
+            session_logs = cursor.fetchall()
+            for row in session_logs:
+                if not hasattr(row['logged_at'], 'isoformat'):
+                    row['logged_at'] = datetime.strptime(row['logged_at'], "%Y-%m-%d %H:%M:%S")
+            movement = { row['logged_at'].isoformat(): row['roomID'] for row in session_logs }
+            print({"type": pico_type, "movement": movement})
+            return jsonify({"type": pico_type, "movement": movement})
     except Error as e:
         print(f"Error querying data: {e}")
-        return jsonify({"error": "Error querying data", "message":f"{e}"}), 500
+        return jsonify({"error": "Error querying data", "message": str(e)}), 500
     finally:
         cursor.close()
         connection.close()
