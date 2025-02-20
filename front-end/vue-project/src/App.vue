@@ -7,13 +7,19 @@ import Navbar from '@/components/Navbar.vue';
 import { useFetchData } from '@/utils/useFetchData';
 import { useCookies } from 'vue3-cookies';
 import { notificationQueue, addNotification, dismissNotification } from '@/stores/notificationStore';
+import { fetchWarnings, fetchFullWarningConditions, warningsList, fullWarningConditions } from './stores/warningStore';
+import { usePresetStore } from './utils/useFetchPresets';
+import { checkWarningAreas } from './utils/warningChecker';
 import axios from 'axios';
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
 const { overlayAreasConstant, overlayAreasData, updateOverlayAreaColor, updateAllOverlayAreas, updates, environmentHistory, warnings } = useFetchData(picoIds);
+console.log(warnings);
+const presetStore = usePresetStore();
 const isMobile = ref(window.innerWidth < 768);
 const isWarningModalOpen = ref(false);
 const showSeverePopup = ref(false);
+const summary = presetStore.summary;
 const safeWarnings = computed(() => Array.isArray(warnings.value) ? warnings.value : []);
 const warningCount = computed(() => notificationQueue.value.length);
 
@@ -29,11 +35,17 @@ const handleUpdateAllOverlayAreas = (newOverlayAreas) => {
 };
 // Sync `notificationQueue` when `safeWarnings` updates
 watch(
-  () => JSON.stringify(safeWarnings.value), // 🔄 Track JSON string to detect deep changes
+  () => JSON.stringify(safeWarnings.value), 
   (newWarnings) => {
-    if (!newWarnings) return;
+    if (!newWarnings || newWarnings === "[]") {
+      console.log("Waiting for safeWarnings to load...");
+      return;
+    }
 
     const parsedWarnings = JSON.parse(newWarnings);
+    if (parsedWarnings.length === 0) {
+      return;
+    }
 
     // // ✅ Clear and re-add warnings to force reactivity
     // notificationQueue.value = [];
@@ -57,6 +69,11 @@ const updateIsMobile = () => {
 
 onMounted(() => {
   window.addEventListener("resize", updateIsMobile);
+});
+
+onMounted(async () => {
+  await fetchWarnings(); 
+  await fetchFullWarningConditions(); 
 });
 
 onUnmounted(() => {
@@ -89,6 +106,33 @@ const refreshCookie = () => {
     }
   }
 };
+
+watch(
+  () => presetStore.summary,
+  (newSummary) => {
+    if (!newSummary || Object.keys(newSummary).length === 0) return;
+
+    console.log("Summary is now available, running warning checks...");
+    
+    Object.entries(fullWarningConditions.value).forEach(([warningId, warning]) => {
+      const triggeredAreas = checkWarningAreas(newSummary, warning);
+      console.log(`Triggered Areas for Warning ${warningId}:`, triggeredAreas);
+      triggeredAreas.forEach(({ roomID, messages }) => {
+        messages.forEach(msg => {
+          addNotification(msg); // Ensure unique notifications get added
+        });
+
+        // Show severe pop-up if applicable
+        if (messages.some(m => ["doomed", "danger"].includes(m.Severity))) {
+          showSeverePopup.value = true;
+        }
+      });
+    });
+  },
+  { deep: true, immediate: true }
+);
+
+
 </script>
 
 <template>

@@ -43,6 +43,7 @@ const props = defineProps({
   isLoading: Boolean,
   
 });
+console.log(props.warnings);
 const emit = defineEmits(["update:modelValue", "newBox","colourChange", "removeBox"]);
 
 const colourPickerVisible = ref<string | null>(null);
@@ -97,7 +98,7 @@ const getUpdatesForArea = (areaKey) => {
 
 const warningsByArea = computed(() => {
   return props.overlayAreasConstant.reduce((acc, area) => {
-    acc[area.label] = props.warnings.filter(warning => warning.Location === area.label);
+    acc[area.label] = props.warnings.filter(warning => `Area ${warning.Location}` === area.label);
     return acc;
   }, {} as Record<string, { Title: string; Location: string; Severity: string; Summary: string }[]>);
 });
