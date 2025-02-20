@@ -6,6 +6,7 @@ import os
 import requests
 import random
 import string
+from datetime import datetime, timedelta
 
 class TestData(unittest.TestCase):
     MQTT_BROKER = "mqtt.flespi.io"
@@ -189,15 +190,22 @@ class TestData(unittest.TestCase):
 
             # Check environment keys and values.
             self.assertEqual(set(expected_room["environment"].keys()),
-                             set(actual_room["environment"].keys()),
-                             f"Mismatch in environment keys for room {room_id}")
-            for attr, expected_value in expected_room["environment"].items():
-                try:
-                    actual_value = float(actual_room["environment"][attr])
-                except (ValueError, TypeError):
-                    self.fail(f"Environment attribute {attr} in room {room_id} is not convertible to float")
-                self.assertAlmostEqual(expected_value, actual_value, places=1,
-                                       msg=f"Environment attribute '{attr}' mismatch for room {room_id}")
+                            set(actual_room["environment"].keys()),
+                            f"Mismatch in environment keys for room {room_id}")
+            for attr in expected_room["environment"]:
+                expected_value = expected_room["environment"][attr]
+                actual_value = actual_room["environment"][attr]
+                if isinstance(expected_value, list):
+                    # Check that each item in expected_value is in actual_value.
+                    self.assertTrue(set(expected_value).issubset(set(actual_value)),
+                                    f"For {attr} in room {room_id}, expected items {expected_value} to be subset of {actual_value}")
+                else:
+                    try:
+                        actual_value = float(actual_value)
+                    except (ValueError, TypeError):
+                        self.fail(f"Environment attribute {attr} in room {room_id} is not convertible to float")
+                    self.assertAlmostEqual(expected_value, actual_value, places=1,
+                                        msg=f"Environment attribute '{attr}' mismatch for room {room_id}")
 
     def test_02_session_validation(self):
         # Publish session data in the known order.
@@ -364,6 +372,88 @@ class TestData(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 405,
                          "Expected 405 Method Not Allowed for POST on a GET endpoint")
+
+    def test_11_summary_mode_all(self):
+        """
+        Publish occupancy data and environment data, then query /summary with a snapshot time
+        (using current time). Verify that mode 'all' returns both occupancy and environment data.
+        """
+        # Publish occupancy data (e.g., from self.users) to simulate pico data.
+        self.publish_data(self.users, "feeds/hardware-data/test_summary_picos")
+        # Publish environment data (simulate room sensor data) using self.room.
+        self.publish_data(self.room, "feeds/hardware-data/test_summary_env")
+        # Wait a few seconds to let the data be processed.
+        time.sleep(5)
+        # Use the current time as snapshot_time.
+        snapshot_time = datetime.utcnow().isoformat() + "Z"
+        params = {"time": snapshot_time, "mode": "all"}
+        response = requests.get(
+            f"{self.READER_URL}/summary",
+            params=params,
+            cookies={"session_id": self.session_cookie}
+        )
+        self.assertEqual(response.status_code, 200, "Expected 200 OK from /summary with mode all")
+        summary_data = response.json()
+        # Check that each room that has occupancy data also has environment data.
+        for room_id, data in summary_data.items():
+            # For occupancy, at least one pico should be present in one of the categories.
+            pico_present = any(data[occ]["count"] > 0 for occ in ["users", "luggage", "staff", "guard"])
+            self.assertTrue(pico_present, f"Expected occupancy data for room {room_id}")
+            # And environment data should be non-empty.
+            self.assertTrue(data["environment"], f"Expected environment data for room {room_id}")
+
+    def test_12_summary_mode_picos(self):
+        """
+        Publish occupancy data only, then query /summary with mode "picos".
+        Verify that the returned data includes occupancy data but no environment data.
+        """
+        # Publish occupancy data
+        self.publish_data(self.users, "feeds/hardware-data/test_summary_picos")
+        # (Do not publish any environment data.)
+        time.sleep(5)
+        snapshot_time = datetime.utcnow().isoformat() + "Z"
+        params = {"time": snapshot_time, "mode": "picos"}
+        response = requests.get(
+            f"{self.READER_URL}/summary",
+            params=params,
+            cookies={"session_id": self.session_cookie}
+        )
+        self.assertEqual(response.status_code, 200, "Expected 200 OK from /summary with mode picos")
+        summary_data = response.json()
+        # Verify that occupancy data is present and that the environment key is empty or missing.
+        for room_id, data in summary_data.items():
+            pico_present = any(data[occ]["count"] > 0 for occ in ["users", "luggage", "staff", "guard"])
+            self.assertTrue(pico_present, f"Expected occupancy data for room {room_id}")
+            # Either environment key is an empty dict or not provided.
+            self.assertTrue(not data["environment"] or data["environment"] == {},
+                            f"Did not expect environment data for room {room_id} in mode picos")
+
+    def test_13_summary_environment_no_data(self):
+        """
+        Publish environment data older than one minute, then query /summary with a snapshot time 
+        that is recent. Verify that no environment data is returned (since no record exists within 
+        the last minute).
+        """
+        # Publish environment data, but simulate it being old by publishing it with a back-dated time.
+        # For testing, assume that publishing to "feeds/hardware-data/test_summary_env" uses the current time,
+        # so we wait long enough to ensure that record is older than one minute.
+        self.publish_data(self.room, "feeds/hardware-data/test_summary_env")
+        # Wait for 70 seconds (more than one minute) so that the environment record is now older.
+        time.sleep(70)
+        # Now query with a snapshot time of 'now' so that no environment data exists in the last minute.
+        snapshot_time = datetime.utcnow().isoformat() + "Z"
+        params = {"time": snapshot_time, "mode": "environment"}
+        response = requests.get(
+            f"{self.READER_URL}/summary",
+            params=params,
+            cookies={"session_id": self.session_cookie}
+        )
+        self.assertEqual(response.status_code, 200, "Expected 200 OK from /summary with mode environment")
+        summary_data = response.json()
+        # For each room in the summary, the environment data should be empty (since no record is recent)
+        for room_id, data in summary_data.items():
+            self.assertFalse(data["environment"],
+                            f"Expected no environment data for room {room_id} as records are too old")
 
     # --- Helper Methods ---
 

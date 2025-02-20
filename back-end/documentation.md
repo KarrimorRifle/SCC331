@@ -117,7 +117,7 @@ port: 5003
 - **Headers:**
   - `session-id`: Session ID cookie (required)
 - **Request:**
-  - `time`: 
+  - `time`: Select time in which the period covers
 - **Responses:**
   - `200`: Returns the most recent session logs for the specified PicoID
     - **Example:**
@@ -137,6 +137,9 @@ port: 5003
 ### GET: `/summary`
 - **Headers:**
   - `session-id`: Session ID cookie (required)
+- **Request:**
+  - `time`: Time in which you want to get the exact data for (optional)
+  - `mode`: ENUM: "all" | "picos" | "environment": grabd either all the data, pico data or environment data (optional)
 - **Responses:**
   - `200`: Returns a summary of the current state of all rooms
     - **Example:**

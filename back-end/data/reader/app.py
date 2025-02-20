@@ -183,168 +183,109 @@ def pico(PICO):
 
 @app.route('/summary', methods=['GET'])
 def summary():
+    # Validate session cookie.
     cookie_validation_error = validate_session_cookie(request)
     if cookie_validation_error:
         return jsonify(cookie_validation_error[0]), cookie_validation_error[1]
 
+    # Read query parameters from URL.
+    # Using request.args since these are GET parameters.
+    time_str = request.args.get("time")
+    mode = request.args.get("mode", "all")
+    if mode not in ("all", "picos", "environment"):
+        return jsonify({"error": "Invalid mode parameter"}), 400
+
+    # Set snapshot_time: use provided time if valid, otherwise current UTC time.
+    now = datetime.utcnow()
+    if time_str:
+        try:
+            snapshot_time = datetime.fromisoformat(time_str.replace("Z", ""))
+        except ValueError:
+            return jsonify({"error": "Invalid time format"}), 400
+    else:
+        snapshot_time = now
+
     connection = get_db_connection()
-    
     if connection is None:
         return jsonify({"error": "MySQL connection unavailable"}), 500
-    
+
     cursor = connection.cursor(dictionary=True)
+    summary = {}
     try:
-        # Query for users
-        query_users = """
-        SELECT roomID, PicoID, logged_at as latest_log
-        FROM users
-        WHERE (PicoID, logged_at) IN (
-            SELECT PicoID, MAX(logged_at)
-            FROM users
-            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-            GROUP BY PicoID
-        );
-        """
-        cursor.execute(query_users)
-        users_results = cursor.fetchall()
+        # Occupancy Data: only if mode is "all" or "picos"
+        if mode in ("all", "picos"):
+            # Define occupancy types in priority order.
+            occupancy_types = ["users", "luggage", "staff", "guard"]
+            # Global set to track PicoIDs already added (across all occupancy types)
+            tracked_picos = set()
+            for occ in occupancy_types:
+                occ_query = f"""
+                SELECT t.roomID, t.PicoID
+                FROM {occ} t
+                JOIN (
+                    SELECT PicoID, MAX(logged_at) AS max_time
+                    FROM {occ}
+                    WHERE logged_at <= %s AND logged_at >= (%s - INTERVAL 1 MINUTE)
+                    GROUP BY PicoID
+                ) latest ON t.PicoID = latest.PicoID AND t.logged_at = latest.max_time;
+                """
+                cursor.execute(occ_query, (snapshot_time, snapshot_time))
+                results = cursor.fetchall()
+                for row in results:
+                    pico_id = str(row["PicoID"])
+                    # Only add this PicoID if it hasn't been seen already.
+                    if pico_id in tracked_picos:
+                        continue
+                    room_id = str(row["roomID"])
+                    if room_id not in summary:
+                        summary[room_id] = {
+                            "users": {"count": 0, "id": []},
+                            "luggage": {"count": 0, "id": []},
+                            "staff": {"count": 0, "id": []},
+                            "guard": {"count": 0, "id": []},
+                            "environment": {}
+                        }
+                    summary[room_id][occ]["id"].append(pico_id)
+                    summary[room_id][occ]["count"] += 1
+                    tracked_picos.add(pico_id)
 
-        # Query for luggage
-        query_luggage = """
-        SELECT roomID, PicoID, logged_at as latest_log
-        FROM luggage
-        WHERE (PicoID, logged_at) IN (
-            SELECT PicoID, MAX(logged_at)
-            FROM luggage
-            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-            GROUP BY PicoID
-        );
-        """
-        cursor.execute(query_luggage)
-        luggage_results = cursor.fetchall()
-
-        # Query for staff
-        query_staff = """
-        SELECT roomID, PicoID, logged_at as latest_log
-        FROM staff
-        WHERE (PicoID, logged_at) IN (
-            SELECT PicoID, MAX(logged_at)
-            FROM staff
-            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-            GROUP BY PicoID
-        );
-        """
-        cursor.execute(query_staff)
-        staff_results = cursor.fetchall()
-
-        # Query for guard
-        query_guard = """
-        SELECT roomID, PicoID, logged_at as latest_log
-        FROM guard
-        WHERE (PicoID, logged_at) IN (
-            SELECT PicoID, MAX(logged_at)
-            FROM guard
-            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-            GROUP BY PicoID
-        );
-        """
-        cursor.execute(query_guard)
-        guard_results = cursor.fetchall()
-
-        # Query for environment
-        query_environment = """
-        SELECT e.roomID, e.logged_at, e.temperature, e.sound, e.light, e.IAQ, e.pressure, e.humidity
-        FROM environment e
-        INNER JOIN (
-            SELECT roomID, MAX(logged_at) as latest_log
-            FROM environment
-            WHERE logged_at >= NOW() - INTERVAL 2 MINUTE
-            GROUP BY roomID
-        ) latest ON e.roomID = latest.roomID AND e.logged_at = latest.latest_log;
-        """
-        cursor.execute(query_environment)
-        environment_results = cursor.fetchall()
-
-        # Combine results
-        summary = {}
-        for row in users_results:
-            room_id = row['roomID']
-            pico_id = row['PicoID']
-            if room_id not in summary:
-                summary[room_id] = {
-                    "users": {"count": 0, "id": []},
-                    "luggage": {"count": 0, "id": []},
-                    "staff": {"count": 0, "id": []},
-                    "guard": {"count": 0, "id": []},
-                    "environment": {}
+        # Environment Data: only if mode is "all" or "environment"
+        if mode in ("all", "environment"):
+            # Query only records with logged_at in the last minute relative to snapshot_time.
+            env_query = """
+            SELECT e.roomID, e.temperature, e.sound, e.light, e.IAQ, e.pressure, e.humidity
+            FROM environment e
+            JOIN (
+                SELECT roomID, MAX(logged_at) AS max_time
+                FROM environment
+                WHERE logged_at BETWEEN (%s - INTERVAL 1 MINUTE) AND %s
+                GROUP BY roomID
+            ) latest ON e.roomID = latest.roomID AND e.logged_at = latest.max_time;
+            """
+            cursor.execute(env_query, (snapshot_time, snapshot_time))
+            env_results = cursor.fetchall()
+            for row in env_results:
+                room_id = str(row["roomID"])
+                if room_id not in summary:
+                    summary[room_id] = {
+                        "users": {"count": 0, "id": []},
+                        "luggage": {"count": 0, "id": []},
+                        "staff": {"count": 0, "id": []},
+                        "guard": {"count": 0, "id": []},
+                        "environment": {}
+                    }
+                summary[room_id]["environment"] = {
+                    "temperature": row["temperature"],
+                    "sound": row["sound"],
+                    "light": row["light"],
+                    "IAQ": row["IAQ"],
+                    "pressure": row["pressure"],
+                    "humidity": row["humidity"]
                 }
-            summary[room_id]['users']['count'] += 1
-            summary[room_id]['users']['id'].append(pico_id)
-
-        for row in luggage_results:
-            room_id = row['roomID']
-            pico_id = row['PicoID']
-            if room_id not in summary:
-                summary[room_id] = {
-                    "users": {"count": 0, "id": []},
-                    "luggage": {"count": 0, "id": []},
-                    "staff": {"count": 0, "id": []},
-                    "guard": {"count": 0, "id": []},
-                    "environment": {}
-                }
-            summary[room_id]['luggage']['count'] += 1
-            summary[room_id]['luggage']['id'].append(pico_id)
-
-        for row in staff_results:
-            room_id = row['roomID']
-            pico_id = row['PicoID']
-            if room_id not in summary:
-                summary[room_id] = {
-                    "users": {"count": 0, "id": []},
-                    "luggage": {"count": 0, "id": []},
-                    "staff": {"count": 0, "id": []},
-                    "guard": {"count": 0, "id": []},
-                    "environment": {}
-                }
-            summary[room_id]['staff']['count'] += 1
-            summary[room_id]['staff']['id'].append(pico_id)
-
-        for row in guard_results:
-            room_id = row['roomID']
-            pico_id = row['PicoID']
-            if room_id not in summary:
-                summary[room_id] = {
-                    "users": {"count": 0, "id": []},
-                    "luggage": {"count": 0, "id": []},
-                    "staff": {"count": 0, "id": []},
-                    "guard": {"count": 0, "id": []},
-                    "environment": {}
-                }
-            summary[room_id]['guard']['count'] += 1
-            summary[room_id]['guard']['id'].append(pico_id)
-
-        for row in environment_results:
-            room_id = row['roomID']
-            if room_id not in summary:
-                summary[room_id] = {
-                    "users": {"count": 0, "id": []},
-                    "luggage": {"count": 0, "id": []},
-                    "staff": {"count": 0, "id": []},
-                    "guard": {"count": 0, "id": []},
-                    "environment": {}
-                }
-            summary[room_id]['environment'] = {
-                "temperature": row['temperature'],
-                "sound": row['sound'],
-                "light": row['light'],
-                "IAQ": row['IAQ'],
-                "pressure": row['pressure'],
-                "humidity": row['humidity']
-            }
-
         return jsonify(summary)
     except Error as e:
         print(f"Error querying data: {e}")
-        return jsonify({"error": "Error querying data", "message": f"{e}"}), 500
+        return jsonify({"error": "Error querying data", "message": str(e)}), 500
     finally:
         cursor.close()
         connection.close()
