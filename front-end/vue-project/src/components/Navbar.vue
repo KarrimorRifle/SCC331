@@ -41,6 +41,11 @@ const handleLogout = async() => {
 const toggleMenu = () => {
 	isMenuOpen.value = !isMenuOpen.value;
 };
+
+const closeMenu = () =>{
+  isMenuOpen.value = false;
+}
+
 </script>
 
 <template>
@@ -51,41 +56,43 @@ const toggleMenu = () => {
 				<font-awesome-icon :icon="faBars" />
 			</button>
 
-			<NotificationIcon 
-				v-if="props.isMobile" 
-				:warnings="props.warnings" 
-				:warningCount="props.warningCount"
-				:isWarningModalOpen="props.isWarningModalOpen" 
-				@toggleWarningModal="emit('toggleWarningModal')"
-			/>
-		</div>
+      <NotificationIcon 
+        v-if="props.isMobile && loggedIn" 
+        :warnings="props.warnings" 
+        :warningCount="props.warningCount"
+        :isWarningModalOpen="props.isWarningModalOpen" 
+        @toggleWarningModal="emit('toggleWarningModal')"
+      />
+    </div>
 
-		<!-- Desktop Navigation -->
-		<div class="nav-links">
-			<RouterLink to="/" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
-			<RouterLink to="/map" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
-			<RouterLink to="/summary" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
-      <RouterLink to="/admin" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Admin</RouterLink>
-			<RouterLink to="/login" class="nav-link" exact-active-class="active" v-if="!props.loggedIn">Login</RouterLink>
-			<RouterLink to="#" class="nav-link" v-if="props.loggedIn" @click.prevent="handleLogout">
-				Log out
-			</RouterLink>
-		</div>
+    <!-- Desktop Navigation -->
+    <div class="nav-links">
+      <RouterLink to="/" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
+      <RouterLink to="/map" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
+      <RouterLink to="/summary" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
+      <RouterLink to="/create-warning" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Create Warning</RouterLink>
+      <RouterLink to="/admin" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Admin</RouterLink>
+      <RouterLink to="/login" class="nav-link" exact-active-class="active" v-if="!props.loggedIn">Login</RouterLink>
+      <RouterLink to="#" class="nav-link" v-if="props.loggedIn" @click.prevent="handleLogout">
+        Log out
+      </RouterLink>
+    </div>
 
-		<!-- Mobile Side Drawer -->
-		<div class="mobile-menu" :class="{ open: isMenuOpen }">
-			<button class="close-btn" @click="toggleMenu">
-				<font-awesome-icon :icon="faXmark" />
-			</button>
-			<RouterLink to="/" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
-			<RouterLink to="/map" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
-			<RouterLink to="/summary" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
-			<RouterLink to="/admin" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Admin</RouterLink>
-			<RouterLink to="/login" class="mobile-link" exact-active-class="active" v-if="!props.loggedIn">Login</RouterLink>
-			<RouterLink to="#" class="mobile-link" v-if="props.loggedIn" @click.prevent="handleLogout">
-				Log out
-			</RouterLink>
-		</div>
+    <!-- Mobile Side Drawer -->
+    <div class="mobile-menu" :class="{ open: isMenuOpen }">
+      <button class="close-btn" @click="toggleMenu">
+        <font-awesome-icon :icon="faXmark" />
+      </button>
+      <RouterLink to="/" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Home</RouterLink>
+      <RouterLink to="/map" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Map</RouterLink>
+      <RouterLink to="/summary" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Summary</RouterLink>
+      <RouterLink to="/create-warning" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Create Warning</RouterLink>
+      <RouterLink to="/admin" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Admin</RouterLink>
+      <RouterLink to="/login" class="mobile-link" exact-active-class="active" v-if="!props.loggedIn" @click="closeMenu">Login</RouterLink>
+      <RouterLink to="#" class="mobile-link" v-if="props.loggedIn" @click.prevent="handleLogout" @click="closeMenu">
+        Log out
+      </RouterLink>
+    </div>
 
 		<!-- Overlay when menu is open -->
 		<div class="overlay" v-if="isMenuOpen" @click="toggleMenu"></div>

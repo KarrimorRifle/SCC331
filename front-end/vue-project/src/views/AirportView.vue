@@ -2,12 +2,15 @@
 import AirportMap from "@/components/AirportMap.vue";
 import DashBoard from "@/components/Dashboard.vue";
 import BottomTabNavigator from "@/components/BottomTabNavigator.vue";
-import {onMounted, onUnmounted, ref, watch, computed, PropType}from "vue"
+import {onMounted, onUnmounted, ref, watch, computed, PropType, defineEmits,}from "vue"
 import axios from "axios";
 import OverlayArea from '@/components/OverlayArea.vue';
+/*
 import type { Timeout } from "node:timers";
 import type {preset, presetListType, boxAndData, boxType, summaryType, environmentData, dataObject} from "../utils/mapTypes";
 import { addNotification } from '@/stores/notificationStore';
+*/
+import {usePresetStore} from "../utils/useFetchPresets";
 
 // Receive isMobile from App.vue
 const props = defineProps({
@@ -36,6 +39,10 @@ const props = defineProps({
     required: true,
   },
 });
+const emit = defineEmits(["updateOverlayAreaColor", "updateOverlayAreas"]);
+
+/*
+const emit = defineEmits(["updateOverlayAreaColor", "updateOverlayAreas"]);
 
 let pollingInterval: Timeout;
 let summary = ref<summaryType>(<summaryType>{});
@@ -49,6 +56,7 @@ const defaultPresetId = ref<number|string>(-1);
 let presetImage = ref<string>("");
 let boxes_and_data = ref<boxAndData>(<boxAndData>{});
 let editMode = ref<boolean>(false);
+const isLoading = ref(true);
 const isDashboardOpen = ref(true);
 const settable = computed(() => {
   return canCreate.value && presetList.value.default + "" !== currentPreset.value + "";
@@ -107,6 +115,7 @@ const fetchSummary = async() => {
 
 const fetchPresets = async() => {
   try {
+    isLoading.value = true;
     let request = await axios.get("http://localhost:5010/presets", { withCredentials: true });
     presetList.value = request.data;
     // Set the default preset ID
@@ -120,12 +129,16 @@ const fetchPresets = async() => {
       Severity: "system",
       Summary: "Unable to fetch presets, server may be down, try again later."
     });
+  } finally {
+    isLoading.value = false;
   }
 }
 
 const fetchPreset = async() => {
   try {
+    isLoading.value = true;
     let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}`, { withCredentials: true });
+    console.log(request.data);
     presetData.value = request.data;
     processPresetImage();
   } catch (error) {
@@ -135,6 +148,8 @@ const fetchPreset = async() => {
       Severity: "system",
       Summary: "Unable to fetch preset data, server may be down, try again later."
     });
+  }finally{
+    isLoading.value = false;
   }
 }
 
@@ -213,6 +228,22 @@ const setDefaultPreset = async () => {
     });
     alert("Default preset set successfully");
     await fetchPresets();
+
+    if (presetData.value.boxes) {
+      console.log("Updating overlay areas with preset colors...");
+
+      // Update overlayAreasConstant with new colors from the preset
+      const updatedOverlayAreas = props.overlayAreasConstant.map(area => {
+        const matchingBox = presetData.value.boxes.find(box => box.roomID === area.label.replace("Area ", ""));
+        return matchingBox ? { ...area, color: matchingBox.colour } : area;
+      });
+
+      console.log("Updated overlayAreasConstant:", updatedOverlayAreas);
+
+      // Emit event to App.vue to update global state & localStorage
+      emit("updateOverlayAreas", updatedOverlayAreas);
+    }
+
   } catch (error) {
     console.error("Error setting default preset:", error);
     alert("Failed to set default preset");
@@ -276,6 +307,7 @@ const createNewBox = (roomID: number | string) => {
     height: 100,
     colour: randomColor,
   };
+  emit("updateOverlayAreaColor", { roomID, colour: randomColor });
 }
 
 const changeBoxColour =  (roomID: number | string, colour: string) => {
@@ -333,6 +365,32 @@ const cancelBoxEdit = () => {
   editMode.value = false;
 }
 
+const updateOverlayAreaColor = (roomID: string, newColor: string) => {
+  const area = props.overlayAreasConstant.find(area => area.label === `Area ${roomID}`);
+  if (area) {
+    area.color = newColor; 
+  }
+};
+
+const handleColourChange = (roomID: string, newColor: string) => {
+  console.log(`Colour change detected for Area ${roomID}: ${newColor}`);
+
+  // Update box color logic
+  changeBoxColour(roomID, newColor);
+
+  console.log("current preset: ", currentPreset.value);
+  console.log("default preset: ", defaultPresetId.value);
+
+  if (currentPreset.value == defaultPresetId.value) {
+    // Update overlay areas constant (this is to updates globally);
+    updateOverlayAreaColor(roomID, newColor);
+    emit("updateOverlayAreaColor", { roomID, colour: newColor });
+  }else{
+    console.log("doesn't match");
+
+  }
+};
+
 watch(currentPreset, async () => {
   await fetchPreset();
   create_data();
@@ -354,6 +412,7 @@ onMounted(async() => {
       currentPreset.value = presetList.value.default;
     } else if (presetList.value.presets.length > 0) {
       currentPreset.value = presetList.value.presets[0].id;
+      await setDefaultPreset();
     }
     await fetchPreset();
   } catch (error) {
@@ -366,6 +425,27 @@ onMounted(async() => {
 onUnmounted(() => {
   if (pollingInterval) clearInterval(pollingInterval);
 });
+*/
+
+const isDashboardOpen = ref(true);
+const toggleDashboard = () => {
+  isDashboardOpen.value = !isDashboardOpen.value;
+};
+const presetStore = usePresetStore();
+
+onMounted(async () => {
+  presetStore.setOverlayAreasConstant(props.overlayAreasConstant);
+  presetStore.setUpdateOverlayAreasCallback((updatedOverlayAreas) => {
+    emit("updateOverlayAreas", updatedOverlayAreas);
+  });
+  presetStore.setUpdateOverlayAreaColorCallback((updatedData) => {
+    emit("updateOverlayAreaColor", updatedData);
+  });
+  await presetStore.fetchPresets();
+  if (presetStore.presetList.presets.length > 0) {
+    await presetStore.fetchPreset();
+  }
+});
 
 </script>
 
@@ -375,39 +455,41 @@ onUnmounted(() => {
     <template #map>
       <AirportMap
         class="flex-grow-1"
+        :isLoading="presetStore.isLoading"
         :overlayAreasConstant="overlayAreasConstant" 
         :overlayAreasData="overlayAreasData" 
         :warnings="warnings"
-        v-model="boxes_and_data"
-        :presetList="presetList"
-        :canCreate="canCreate"
-        :settable="settable"
-        :defaultPresetId="defaultPresetId"
-        :currentPreset="currentPreset"
-        :backgroundImage="presetImage"
-        :canDelete="canDelete"
-        :canEdit="canEdit"
-        :presetData="presetData"
-        :editMode="editMode"
-        @selectPreset="handleSelectPreset"
-        @setDefault="setDefaultPreset"
-        @newPreset="fetchPresets"
-        @newImage="fetchPreset"
-        @delete="deletePreset"
-        @edit="editMode = true"
-        @save="uploadBoxes"
-        @cancel="cancelBoxEdit"
+        v-model="presetStore.boxes_and_data"
+        :presetList="presetStore.presetList"
+        :canCreate="presetStore.canCreate"
+        :settable="presetStore.settable"
+        :defaultPresetId="presetStore.defaultPresetId"
+        :currentPreset="presetStore.currentPreset"
+        :backgroundImage="presetStore.presetImage"
+        :canDelete="presetStore.canDelete"
+        :canEdit="presetStore.canEdit"
+        :presetData="presetStore.presetData"
+        :editMode="presetStore.editMode"
+        @selectPreset="presetStore.handleSelectPreset"
+        @setDefault="presetStore.setDefaultPreset"
+        @newPreset="presetStore.fetchPresets"
+        @newImage="presetStore.fetchPreset"
+        @delete="presetStore.deletePreset"
+        @edit="presetStore.editMode = true"
+        @save="presetStore.uploadBoxes"
+        @cancel="presetStore.cancelBoxEdit"
       />
     </template>
 
     <!-- Slot for Dashboard -->
     <template #dashboard>
       <DashBoard
-        v-model="boxes_and_data"
-        :editMode="editMode"
-        @newBox="createNewBox"
-        @colourChange="changeBoxColour"
-        @removeBox="removeBox"
+        v-model="presetStore.boxes_and_data"
+        :isLoading="presetStore.isLoading"
+        :editMode="presetStore.editMode"
+        @newBox="presetStore.createNewBox"
+        @colourChange="presetStore.handleColourChange"
+        @removeBox="presetStore.removeBox"
         :overlayAreasData="overlayAreasData" 
         :overlayAreasConstant="overlayAreasConstant"
         :userIds="picoIds"
@@ -420,35 +502,37 @@ onUnmounted(() => {
   <div v-else class="airport-view-container d-flex flex-row">
     <AirportMap
       class="flex-grow-1"
+      :isLoading="presetStore.isLoading"
       :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
       :warnings="warnings"
-      v-model="boxes_and_data"
-      :presetList="presetList"
-      :canCreate="canCreate"
-      :settable="settable"
-      :defaultPresetId="defaultPresetId"
-      :currentPreset="currentPreset"
-      :backgroundImage="presetImage"
-      :canDelete="canDelete"
-      :canEdit="canEdit"
-      :presetData="presetData"
-      :editMode="editMode"
-      @selectPreset="handleSelectPreset"
-      @setDefault="setDefaultPreset"
-      @newPreset="fetchPresets"
-      @newImage="fetchPreset"
-      @delete="deletePreset"
-      @edit="editMode = true"
-      @save="uploadBoxes"
-      @cancel="cancelBoxEdit"
+      v-model="presetStore.boxes_and_data"
+      :presetList="presetStore.presetList"
+      :canCreate="presetStore.canCreate"
+      :settable="presetStore.settable"
+      :defaultPresetId="presetStore.defaultPresetId"
+      :currentPreset="presetStore.currentPreset"
+      :backgroundImage="presetStore.presetImage"
+      :canDelete="presetStore.canDelete"
+      :canEdit="presetStore.canEdit"
+      :presetData="presetStore.presetData"
+      :editMode="presetStore.editMode"
+      @selectPreset="presetStore.handleSelectPreset"
+      @setDefault="presetStore.setDefaultPreset"
+      @newPreset="presetStore.fetchPresets"
+      @newImage="presetStore.fetchPreset"
+      @delete="presetStore.deletePreset"
+      @edit="presetStore.editMode = true"
+      @save="presetStore.uploadBoxes"
+      @cancel="presetStore.cancelBoxEdit"
     />
     <DashBoard
-      v-model="boxes_and_data"
-      :editMode="editMode"
-      @newBox="createNewBox"
-      @colourChange="changeBoxColour"
-      @removeBox="removeBox"
+      v-model="presetStore.boxes_and_data"
+      :isLoading="presetStore.isLoading"
+      :editMode="presetStore.editMode"
+      @newBox="presetStore.createNewBox"
+      @colourChange="presetStore.handleColourChange"
+      @removeBox="presetStore.removeBox"
       :overlayAreasData="overlayAreasData" 
       :overlayAreasConstant="overlayAreasConstant"
       :userIds="picoIds"

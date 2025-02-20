@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { getTextColour } from '../../../utils/helper/colorUtils';
 import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
 import LuggageMarker from '../../ObjectMarker/LuggageMarker.vue';
 import EnvironmentDataGraph from '../EnvironmentDataGraph.vue';
@@ -73,7 +74,7 @@ const filteredAreas = computed(() => {
     <!-- Cards Layout -->
     <div class="summary-grid">
       <div v-for="(area, index) in filteredAreas" :key="index" class="summary-card">
-        <div class="card-header" :style="{ backgroundColor: area.color }">
+        <div class="card-header" :style="{ backgroundColor: area.color, color: getTextColour(area.color) }">
           <h3>{{ area.label }}</h3>
         </div>
         <div class="card-body">

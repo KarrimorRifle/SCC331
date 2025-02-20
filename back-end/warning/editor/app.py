@@ -10,7 +10,7 @@ import paho.mqtt.client as mqtt
 import json
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 # Establish a persistent connection to the database
 db_connection = None
