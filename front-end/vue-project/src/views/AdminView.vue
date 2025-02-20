@@ -15,19 +15,30 @@ export default {
 			confirmPassword: "",
 			showMessageModal: false,
 			messageUserIndex: null,
-			userMessage: ""
+			userMessage: "",
+			userIsAdmin: false,
+			loading: true
 		};
 	},
 	methods: {
+		async checkAdmin() {
+			try {
+				const response = await axios.get('http://localhost:5007/check_admin', { withCredentials: true });
+				if (response.status === 200) {
+					this.userIsAdmin = true;
+					this.fetchUsers(); // Load users only if authorized
+				}
+			} catch (error) {
+				console.error("Authorization check failed:", error);
+				this.userIsAdmin = false;
+			} finally {
+				this.loading = false;
+			}
+		},
 		fetchUsers() {
 			axios.get('http://localhost:5007/get_users_admin', { withCredentials: true })
 				.then(response => {
-					
-					console.log(response)
-					console.log(response.data)
-					console.log(response.data.users)
-					
-					this.users = [...response.data.users].map(user => ({
+					this.users = response.data.users.map(user => ({
 						fullName: user.name,
 						email: user.email,
 						lastActive: user.last_login,
@@ -47,7 +58,7 @@ export default {
 				}, { withCredentials: true })
 					.then(() => {
 						alert("User added successfully!");
-						this.fetchUsers(); // Refresh the user list
+						this.fetchUsers();
 						this.newUser = { fullName: "", email: "", lastActive: "Just now", isAdmin: false };
 					})
 					.catch(error => {
@@ -107,33 +118,15 @@ export default {
 		}
 	},
 	mounted() {
-		this.fetchUsers();
-		
+		this.checkAdmin();
 	}
 };
 </script>
 
 <template>
-	<div v-if="showMessageModal" class="modal">
-		<div class="modal-content">
-			<h3>Send Message</h3>
-			<textarea v-model="userMessage" class="textarea"></textarea>
-			<button @click="sendMessage" class="send button">Send</button>
-			<button @click="showMessageModal = false" class="cancel button">Cancel</button>
-		</div>
-	</div>
-
-	<div v-if="showResetPasswordModal" class="modal">
-		<div class="modal-content">
-			<h3>Reset Password</h3>
-			<input v-model="newPassword" type="password" placeholder="New Password" class="input">
-			<input v-model="confirmPassword" type="password" placeholder="Confirm Password" class="input">
-			<button @click="resetPassword" class="reset button">Reset</button>
-			<button @click="showResetPasswordModal = false" class="cancel button">Cancel</button>
-		</div>
-	</div>
-
-	<div class="container">
+	<div v-if="loading" class="loading-container">Checking authorization...</div>
+	<div v-else-if="!userIsAdmin" class="not-authorized">Not Authorized</div>
+	<div v-else class="container">
 		<h1 class="title">User List</h1>
 		<div class="input-section">
 			<input v-model="newUser.fullName" type="text" placeholder="Full Name" class="input">
@@ -173,7 +166,19 @@ export default {
 	</div>
 </template>
 
+
 <style scoped>
+.loading-container,
+.not-authorized {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	font-size: 32px;
+	font-weight: bold;
+	color: #e53e3e;
+	text-align: center;
+}
 .container {
 	max-width: 900px;
 	margin: 0 auto;
