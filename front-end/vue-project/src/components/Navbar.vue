@@ -86,6 +86,8 @@ const closeMenu = () =>{
       <RouterLink to="/" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Home</RouterLink>
       <RouterLink to="/map" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Map</RouterLink>
       <RouterLink to="/summary" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Summary</RouterLink>
+      <RouterLink to="/create-warning" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Create Warning</RouterLink>
+      <RouterLink to="/admin" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Admin</RouterLink>
       <RouterLink to="/login" class="mobile-link" exact-active-class="active" v-if="!props.loggedIn" @click="closeMenu">Login</RouterLink>
       <RouterLink to="#" class="mobile-link" v-if="props.loggedIn" @click.prevent="handleLogout" @click="closeMenu">
         Log out
