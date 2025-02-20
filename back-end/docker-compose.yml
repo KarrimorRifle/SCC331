@@ -1,211 +1,212 @@
 version: '3.8'
 
 volumes:
- mysql_data:
- node_state:  # Add a volume to store the state file
+  mysql_data:
+  node_state:  # Add a volume to store the state file
 
 services:
- mysql:
-  image: mysql:latest
-  container_name: mysql_server
-  ports:
-   - "3306:3306" # Remove so its only accessible by other containers later
-  volumes:
-   - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
-   - mysql_data:/var/lib/mysql
-   - /etc/localtime:/etc/localtime:ro
-   - /etc/timezone:/etc/timezone:ro
-  networks:
-   - my_network
-  restart: unless-stopped
-  environment:
-   TZ: Europe/London
-   MYSQL_RANDOM_ROOT_PASSWORD: 'true'
-  healthcheck:
-   test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-   interval: 10s
-   timeout: 5s
-   retries: 10
+  mysql:
+    image: mysql:latest
+    container_name: mysql_server
+    ports:
+      - "3306:3306" # Remove so its only accessible by other containers later
+    volumes:
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      - my_network
+    restart: unless-stopped
+    environment:
+      TZ: Europe/London
+      MYSQL_RANDOM_ROOT_PASSWORD: 'true'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
-account_registration:
-  build: ./accounts/registration
-  container_name: account_registration
-  ports:
-   - "5001:5001"
-  environment:
-   DB_HOST: mysql
-   DB_USER: account_registration
-   DB_PASSWORD: reg_password
-   DB_NAME: accounts
-  depends_on:
-   mysql:
-    condition: service_healthy
-  networks:
-   - my_network
-	 
-account_messages:
-  build: ./accounts/messages
-  container_name: account_messages
-  ports:
-   - "5007:5007"
-  environment:
-   DB_HOST: mysql
-   DB_USER: account_messages
-   DB_PASSWORD: message_password
-   DB_NAME: accounts
-  depends_on:
-   mysql:
-    condition: service_healthy
-  networks:
-   - my_network
+  account_registration:
+    build: ./accounts/registration
+    container_name: account_registration
+    ports:
+      - "5001:5001"
+    environment:
+      DB_HOST: mysql
+      DB_USER: account_registration
+      DB_PASSWORD: reg_password
+      DB_NAME: accounts
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
 
-account_login:
-  build: ./accounts/login
-  container_name: account_login
-  ports:
-   - "5002:5002"
-  environment:
-   DB_HOST: mysql
-   DB_USER: cookie_manager
-   DB_PASSWORD: cookie_password
-   DB_NAME: accounts
-  depends_on:
-   mysql:
-    condition: service_healthy
-  networks:
-   - my_network
+  account_login:
+    build: ./accounts/login
+    container_name: account_login
+    ports:
+      - "5002:5002"
+    environment:
+      DB_HOST: mysql
+      DB_USER: cookie_manager
+      DB_PASSWORD: cookie_password
+      DB_NAME: accounts
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
 
-data_processor:
-  build: ./data/processor
-  container_name: data_processor
-  environment:
-   mqtt_token: ${mqtt_token}
-   DB_HOST: mysql
-   DB_USER: data_processor
-   DB_PASSWORD: process_password
-   DB_NAME: pico
-  depends_on:
-   mysql:
-    condition: service_healthy
-  networks:
-   - my_network
+  account_messages:
+    build: ./accounts/messages
+    container_name: account_messages
+    ports:
+      - "5007:5007"
+    environment:
+      DB_HOST: mysql
+      DB_USER: account_messages
+      DB_PASSWORD: message_password
+      DB_NAME: accounts
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
 
-data_reader:
-  build: ./data/reader
-  container_name: data_reader
-  environment:
-   DB_HOST: mysql
-   DB_USER: data_reader
-   DB_PASSWORD: read_password
-   DB_NAME: pico
-  ports:
-   - "5003:5003"
-  depends_on:
-   mysql:
-    condition: service_healthy
-  networks:
-   - my_network
 
-assets_editor:
-  build: ./assets/editor
-  container_name: assets_editor
-  environment:
-   DB_HOST: mysql
-   DB_USER: assets_editor
-   DB_PASSWORD: edit_password
-   DB_NAME: assets
-  ports:
-   - "5011:5011"
-  depends_on:
-   mysql:
-    condition: service_healthy
-  networks:
-   - my_network
+  data_processor:
+    build: ./data/processor
+    container_name: data_processor
+    environment:
+      mqtt_token: ${mqtt_token}
+      DB_HOST: mysql
+      DB_USER: data_processor
+      DB_PASSWORD: process_password
+      DB_NAME: pico
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
 
-assets_reader:
-  build: ./assets/reader
-  container_name: assets_reader
-  environment:
-   DB_HOST: mysql
-   DB_USER: assets_reader
-   DB_PASSWORD: read_password
-   DB_NAME: assets
-  ports:
-   - "5010:5010"
-  depends_on:
-   mysql:
-    condition: service_healthy
-  networks:
-   - my_network
+  data_reader:
+    build: ./data/reader
+    container_name: data_reader
+    environment:
+      DB_HOST: mysql
+      DB_USER: data_reader
+      DB_PASSWORD: read_password
+      DB_NAME: pico
+    ports:
+      - "5003:5003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
 
-warning_editor:
-  build: ./warning/editor
-  container_name: warning_editor
-  environment:
-   DB_HOST: mysql
-   DB_USER: warning_editor
-   DB_PASSWORD: warning_password
-   DB_NAME: warning
-   mqtt_token: ${mqtt_token}
-  ports:
-   - "5004:5004"
-  depends_on:
-   mysql:
-    condition: service_healthy
-  networks:
-   - my_network
+  assets_editor:
+    build: ./assets/editor
+    container_name: assets_editor
+    environment:
+      DB_HOST: mysql
+      DB_USER: assets_editor
+      DB_PASSWORD: edit_password
+      DB_NAME: assets
+    ports:
+      - "5011:5011"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
 
-warning_alert_node1:
-  build: ./warning/alert
-  container_name: warning_alert_node1
-  environment:
-   DB_HOST: mysql
-   DB_USER: warning_processor
-   DB_PASSWORD: processor_password
-   DB_NAME: warning
-   NODE_ID: 1
-   MQTT_TOKEN: ${mqtt_token}
-  volumes:
-   - node_state:/var/lib/node_state  # Mount the volume
-  depends_on:
-   mysql:
-    condition: service_healthy
-  networks:
-   - my_network
-  restart: unless-stopped
-  
-warning_alert_node2:
-  build: ./warning/alert
-  container_name: warning_alert_node2
-  environment:
-   DB_HOST: mysql
-   DB_USER: warning_processor
-   DB_PASSWORD: processor_password
-   DB_NAME: warning
-   NODE_ID: 2
-   MQTT_TOKEN: ${mqtt_token}
-  volumes:
-   - node_state:/var/lib/node_state  # Mount the volume
-  depends_on:
-   mysql:
-    condition: service_healthy
-  restart: unless-stopped
-  networks:
-   - my_network
+  assets_reader:
+    build: ./assets/reader
+    container_name: assets_reader
+    environment:
+      DB_HOST: mysql
+      DB_USER: assets_reader
+      DB_PASSWORD: read_password
+      DB_NAME: assets
+    ports:
+      - "5010:5010"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
 
-test:
-  build:
-   context: .
-   dockerfile: Dockerfile.test
-  container_name: test_runner
-  environment:
-   mqtt_token: ${mqtt_token}
-  depends_on:
-   - account_login
-   - account_registration
-  networks:
-   - my_network
+  warning_editor:
+    build: ./warning/editor
+    container_name: warning_editor
+    environment:
+      DB_HOST: mysql
+      DB_USER: warning_editor
+      DB_PASSWORD: warning_password
+      DB_NAME: warning
+      mqtt_token: ${mqtt_token}
+    ports:
+      - "5004:5004"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
+  warning_alert_node1:
+    build: ./warning/alert
+    container_name: warning_alert_node1
+    environment:
+      DB_HOST: mysql
+      DB_USER: warning_processor
+      DB_PASSWORD: processor_password
+      DB_NAME: warning
+      NODE_ID: 1
+      MQTT_TOKEN: ${mqtt_token}
+    volumes:
+      - node_state:/var/lib/node_state  # Mount the volume
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+    restart: unless-stopped
+    
+  warning_alert_node2:
+    build: ./warning/alert
+    container_name: warning_alert_node2
+    environment:
+      DB_HOST: mysql
+      DB_USER: warning_processor
+      DB_PASSWORD: processor_password
+      DB_NAME: warning
+      NODE_ID: 2
+      MQTT_TOKEN: ${mqtt_token}
+    volumes:
+      - node_state:/var/lib/node_state  # Mount the volume
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - my_network
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: test_runner
+    environment:
+      mqtt_token: ${mqtt_token}
+    depends_on:
+      - account_login
+      - account_registration
+    networks:
+      - my_network
 
 networks:
- my_network:
-  driver: bridge
+  my_network:
+    driver: bridge
