@@ -69,12 +69,14 @@ def get_users():
 # Send messages to users using the send message button	
 @app.route('/send_message', methods=['POST'])
 def send_message():
-	session_validation = validate_session_cookie(request)
-	if session_validation:
-		return jsonify(session_validation), 401
-	
-	session_id = request.cookies.get("session_id")
+	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+	if not session_id:
+		return jsonify({"error": "No session cookie or header provided"}), 400
+
 	connection = get_db_connection()
+	if connection is None:
+		return jsonify({"error": "Database connection failed"}), 500
+
 	cursor = connection.cursor(dictionary=True)
 
 	cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
@@ -83,7 +85,7 @@ def send_message():
 	if user is None:
 		cursor.close()
 		connection.close()
-		return jsonify({"error": "User not found!"}), 400
+		return jsonify({"error": "User not found!"}), 402
 
 	sender_id = user['user_id']
 	
@@ -91,7 +93,7 @@ def send_message():
 	if not data or 'receiver_id' not in data or 'message' not in data:
 		cursor.close()
 		connection.close()
-		return jsonify({"error": "Receiver ID and message are required."}), 400
+		return jsonify({"error": "Receiver ID and message are required."}), 403
 	
 	receiver_id = data['receiver_id']
 	message = data['message']
@@ -121,17 +123,12 @@ def delete_user():
 	if connection is None:
 		return jsonify({"error": "Database connection failed"}), 500
 
-	cursor = connection.cursor(dictionary=True)
-	cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
-	user = cursor.fetchone()
-
-	if user is None or user["authority"] != "Admin":
-		return jsonify({"error": "Unauthorized access", "message": "Insufficient permission to delete users"}), 401
-
 	data = request.get_json()
 	if not data or "email" not in data:
 		return jsonify({"error": "Email is required for deletion"}), 400
-
+		
+	cursor = connection.cursor(dictionary=True)
+	
 	try:
 		cursor.execute("DELETE FROM users WHERE email = %s", (data["email"],))
 		connection.commit()
@@ -157,11 +154,6 @@ def reset_password():
 		return jsonify({"error": "Database connection failed"}), 500
 
 	cursor = connection.cursor(dictionary=True)
-	cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
-	user = cursor.fetchone()
-
-	if user is None or user["authority"] != "Admin":
-		return jsonify({"error": "Unauthorized access", "message": "Insufficient permission to reset passwords"}), 401
 
 	data = request.get_json()
 	if not data or "email" not in data or "new_password" not in data:
@@ -184,41 +176,41 @@ def reset_password():
 # Adding a new user to the database:
 @app.route('/add_user', methods=['POST'])
 def add_user():
-    session_validation = validate_session_cookie(request)
-    if session_validation:
-        return jsonify(session_validation), 401
+	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+	if not session_id:
+		return jsonify({"error": "No session cookie or header provided"}), 400
 
-    data = request.get_json()
-    if not data or 'full_name' not in data or 'email' not in data or 'is_admin' not in data:
-        return jsonify({"error": "Missing required fields"}), 400
+	connection = get_db_connection()
+	if connection is None:
+		return jsonify({"error": "Database connection failed"}), 500
 
-    full_name = data['full_name']
-    email = data['email']
-    is_admin = data['is_admin']
-    authority = "Admin" if is_admin else "Reception"
-    
-    # Generate a default password and hash it
-    default_password = "password123"  # Consider sending an email to reset this
-    hashed_password = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+	data = request.get_json()
+	if not data or 'full_name' not in data or 'email' not in data or 'is_admin' not in data:
+		return jsonify({"error": "Missing required fields"}), 400
 
-    connection = get_db_connection()
-    if connection is None:
-        return jsonify({"error": "Database connection failed"}), 500
+	full_name = data['full_name']
+	email = data['email']
+	is_admin = data['is_admin']
+	authority = "Admin" if is_admin else "Reception"
+	
+	# Generate a default password and hash it
+	default_password = "password123"  # Consider sending an email to reset this
+	hashed_password = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-    cursor = connection.cursor()
-    try:
-        cursor.execute("""
-            INSERT INTO users (full_name, email, authority, pass_hash)
-            VALUES (%s, %s, %s, %s)
-        """, (full_name, email, authority, hashed_password))
-        connection.commit()
-        cursor.close()
-        connection.close()
-        return jsonify({"message": "User added successfully"}), 201
-    except Error as e:
-        cursor.close()
-        connection.close()
-        return jsonify({"error": f"Failed to add user: {e}"}), 500
+	cursor = connection.cursor()
+	try:
+		cursor.execute("""
+			INSERT INTO users (full_name, email, authority, pass_hash)
+			VALUES (%s, %s, %s, %s)
+		""", (full_name, email, authority, hashed_password))
+		connection.commit()
+		cursor.close()
+		connection.close()
+		return jsonify({"message": "User added successfully"}), 201
+	except Error as e:
+		cursor.close()
+		connection.close()
+		return jsonify({"error": f"Failed to add user: {e}"}), 500
 
 
 if __name__ == '__main__':
