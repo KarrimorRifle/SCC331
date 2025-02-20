@@ -10,161 +10,26 @@ import WarningConditions from "@/components/WarningCreation/WarningConditions.vu
 
 const presetStore = usePresetStore();
 const selectedRooms = ref<string[]>([]);
-const warningConditions = ref<Record<string, any>>({});
-const warningMessages = ref<string[]>([]);
-const warningsList = ref<any[]>([]); 
-const selectedWarningId = ref<number | null>(null);
-const selectedWarning = ref<any>(null);
-const newWarningName = ref<string>("");
-const isRoomSelectionVisible = ref(false);
-const activeSection = ref('warnings'); 
 // wait for the presets data to populate
 const presetData = computed(() => presetStore.presetData);
 const isPresetDataAvailable = computed(() => presetData.value && Object.keys(presetData.value).length > 0);
 
-const fetchWarnings = async () => {
-  try {
-    const response = await axios.get("http://localhost:5004/warnings", { withCredentials: true });
-    warningsList.value = response.data;
-  } catch (error) {
-    console.error("Error fetching warnings:", error);
-  }
-};
-
-const fetchWarningById = async (warningId: number) => {
-  if (selectedWarningId.value === warningId){
-    resetWarningSelection();
-    return;
-  }
-  try {
-    const response = await axios.get(`http://localhost:5004/warnings/${warningId}`, { withCredentials: true });
-    selectedWarningId.value = response.data.id;
-    selectedWarning.value = response.data;
-
-    warningConditions.value = response.data.conditions.reduce((acc, item) => {
-      acc[item.roomID] = {
-        conditions: [...item.conditions], // Pre-fill conditions
-        messages: response.data.messages.filter(msg => msg.Location === item.roomID), // Pre-fill messages for room
-      };
-      return acc;
-    }, {});
-
-    isRoomSelectionVisible.value = true;
-    activeSection.value = "rooms";
-  } catch (error) {
-    console.error("Error fetching warning details:", error);
-  }
-};
-
-const createWarning = async () => {
-  if (!newWarningName.value.trim()) {
-    alert("Warning name is required.");
-    return;
-  }
-
-  const payload = {
-    name: newWarningName.value,
-  };
-
-  try {
-    const response = await axios.post(`http://localhost:5004/warnings`, payload, { withCredentials: true });
-    console.log("Warning created:", response.data);
-    fetchWarnings(); // Refresh list
-  } catch (error) {
-    console.error("Error creating warning:", error);
-  }
-};
-
-const updateWarning = async () => {
-  if (!selectedWarningId.value) {
-    console.error("No warning selected for update.");
-    return;
-  }
-
-  console.log("warning condition: ", warningConditions.value);
-  // ✅ Step 1: Format conditions (Prevent Duplicates)
-  const formattedConditions = Object.entries(warningConditions.value).reduce((acc, [roomID, data]) => {
-    const validConditions = data.conditions.filter(
-      cond => cond.variable !== null && cond.lower_bound !== null && cond.upper_bound !== null
-    );
-
-    if (validConditions.length > 0) {
-      const uniqueConditions = validConditions.reduce((unique, cond) => {
-        if (!unique.some(existing => existing.variable === cond.variable)) {
-          unique.push(cond);
-        }
-        return unique;
-      }, []);
-
-      acc.push({
-        roomID,
-        conditions: uniqueConditions.map(cond => ({
-          variable: cond.variable,
-          lower_bound: cond.lower_bound,
-          upper_bound: cond.upper_bound,
-        })),
-      });
-    }
-
-    return acc;
-  }, []);
-
-  // ✅ Step 2: Format messages and prevent duplicates
-  const formattedMessages = [];
-  Object.entries(warningConditions.value).forEach(([roomID, data]) => {
-    const seenTitles = new Set(); // Keep track of seen Titles to avoid duplicates
-
-    data.messages.forEach(msg => {
-      // ✅ Normalize title casing to avoid duplicates
-      const normalizedTitle = msg.Title ? msg.Title.trim().toLowerCase() : "untitled";
-
-      if (!seenTitles.has(normalizedTitle) || normalizedTitle !== "untitled") {
-        seenTitles.add(normalizedTitle);
-        formattedMessages.push({
-          Authority: msg.Authority || "users",
-          Title: msg.Title,
-          Location: msg.Location || roomID,
-          Severity: msg.Severity || "notification",
-          Summary: msg.Summary,
-        });
-      }
-    });
-  });
-
-  console.log("✅ Formatted Conditions: ", formattedConditions);
-  console.log("✅ Formatted Messages: ", formattedMessages);
-
-  const payload = {
-    name: selectedWarning.value.name || `Updated Warning ${selectedWarningId.value}`,
-    id: selectedWarningId.value,
-    conditions: formattedConditions,
-    messages: formattedMessages,
-  };
-
-  try {
-    await axios.patch(`http://localhost:5004/warnings/${selectedWarningId.value}`, payload, { withCredentials: true });
-    await fetchWarnings(); 
-  } catch (error) {
-    console.error("Error updating warning:", error);
-  }
-};
-
-
-const deleteWarning = async (warningId: number) => {
-  try {
-    await axios.delete(`http://localhost:5004/warnings/${warningId}`, { withCredentials: true });
-    warningsList.value = warningsList.value.filter(w => w.id !== warningId);
-  } catch (error) {
-    console.error("Error deleting warning:", error);
-  }
-};
-
-const resetWarningSelection = () => {
-  selectedWarningId.value = null;
-  selectedWarning.value = null;
-  warningConditions.value = {};
-  isRoomSelectionVisible.value = false; 
-};
+import { 
+  warningsList, 
+  selectedWarningId, 
+  selectedWarning, 
+  newWarningName, 
+  warningConditions, 
+  warningMessages,
+  isRoomSelectionVisible,
+  activeSection,
+  fetchWarnings, 
+  fetchWarningById, 
+  createWarning, 
+  updateWarning, 
+  deleteWarning, 
+  resetWarningSelection 
+} from '../stores/warningStore';
 
 const toggleRoomSelection = (room: Object) => {
   const existingIndex = selectedRooms.value.findIndex((r) => r.roomID === room.roomID);
