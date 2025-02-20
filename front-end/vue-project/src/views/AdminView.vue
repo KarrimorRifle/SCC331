@@ -2,226 +2,232 @@
 import axios from 'axios';
 
 export default {
-  name: "UserListPage",
-  data() {
-    return {
-      users: [],
-      newUser: { fullName: "", email: "", lastActive: "Just now", isAdmin: false },
-      editingIndex: null,
-      editedName: "",
-      showResetPasswordModal: false,
-      resetPasswordUserIndex: null,
-      newPassword: "",
-      confirmPassword: "",
-      showMessageModal: false,
-      messageUserIndex: null,
-      userMessage: ""
-    };
-  },
-  methods: {
-    fetchUsers() {
-      axios.get('/get_users_admin', { withCredentials: true })
-        .then(response => {
-          this.users = response.data.users.map(user => ({
-            fullName: user.name,
-            email: user.email,
-            lastActive: user.last_login,
-            isAdmin: user.authority === "Admin"
-          }));
-        })
-        .catch(error => {
-          console.error("Error fetching users:", error);
-        });
-    },
-    addUser() {
-      if (this.newUser.fullName && this.newUser.email) {
-        axios.post('/add_user', {
-          full_name: this.newUser.fullName,
-          email: this.newUser.email,
-          is_admin: this.newUser.isAdmin
-        }, { withCredentials: true })
-          .then(() => {
-            alert("User added successfully!");
-            this.fetchUsers(); // Refresh the user list
-            this.newUser = { fullName: "", email: "", lastActive: "Just now", isAdmin: false };
-          })
-          .catch(error => {
-            console.error("Error adding user:", error);
-            alert("Failed to add user.");
-          });
-      } else {
-        alert("Full Name and Email are required.");
-      }
-    },
-    deleteUser(index) {
-      const userEmail = this.users[index].email;
-      axios.post('/delete_user', { email: userEmail }, { withCredentials: true })
-        .then(() => {
-          this.users.splice(index, 1);
-        })
-        .catch(error => {
-          console.error("Error deleting user:", error);
-        });
-    },
-    openResetPasswordModal(index) {
-      this.resetPasswordUserIndex = index;
-      this.showResetPasswordModal = true;
-      this.newPassword = "";
-      this.confirmPassword = "";
-    },
-    resetPassword() {
-      if (this.newPassword === this.confirmPassword && this.newPassword.trim()) {
-        const userEmail = this.users[this.resetPasswordUserIndex].email;
-        axios.post('/reset_password', { email: userEmail, new_password: this.newPassword }, { withCredentials: true })
-          .then(() => {
-            alert(`Password for ${this.users[this.resetPasswordUserIndex].fullName} has been reset.`);
-            this.showResetPasswordModal = false;
-          })
-          .catch(error => {
-            console.error("Error resetting password:", error);
-          });
-      } else {
-        alert("Passwords do not match or are empty.");
-      }
-    },
-    openMessageModal(index) {
-      this.messageUserIndex = index;
-      this.showMessageModal = true;
-      this.userMessage = "";
-    },
-    sendMessage() {
-      const receiverEmail = this.users[this.messageUserIndex].email;
-      axios.post('/send_message', { receiver_email: receiverEmail, message: this.userMessage }, { withCredentials: true })
-        .then(() => {
-          alert(`Message sent to ${this.users[this.messageUserIndex].fullName}`);
-          this.showMessageModal = false;
-        })
-        .catch(error => {
-          console.error("Error sending message:", error);
-        });
-    }
-  },
-  mounted() {
-    this.fetchUsers();
-  }
+	name: "UserListPage",
+	data() {
+		return {
+			users: [],
+			newUser: { fullName: "", email: "", lastActive: "Just now", isAdmin: false },
+			editingIndex: null,
+			editedName: "",
+			showResetPasswordModal: false,
+			resetPasswordUserIndex: null,
+			newPassword: "",
+			confirmPassword: "",
+			showMessageModal: false,
+			messageUserIndex: null,
+			userMessage: ""
+		};
+	},
+	methods: {
+		fetchUsers() {
+			axios.get('http://localhost:5007/get_users_admin', { withCredentials: true })
+				.then(response => {
+					
+					console.log(response)
+					console.log(response.data)
+					console.log(response.data.users)
+					
+					this.users = [...response.data.users].map(user => ({
+						fullName: user.name,
+						email: user.email,
+						lastActive: user.last_login,
+						isAdmin: user.authority === "Admin"
+					}));
+				})
+				.catch(error => {
+					console.error("Error fetching users:", error);
+				});
+		},
+		addUser() {
+			if (this.newUser.fullName && this.newUser.email) {
+				axios.post('/add_user', {
+					full_name: this.newUser.fullName,
+					email: this.newUser.email,
+					is_admin: this.newUser.isAdmin
+				}, { withCredentials: true })
+					.then(() => {
+						alert("User added successfully!");
+						this.fetchUsers(); // Refresh the user list
+						this.newUser = { fullName: "", email: "", lastActive: "Just now", isAdmin: false };
+					})
+					.catch(error => {
+						console.error("Error adding user:", error);
+						alert("Failed to add user.");
+					});
+			} else {
+				alert("Full Name and Email are required.");
+			}
+		},
+		deleteUser(index) {
+			const userEmail = this.users[index].email;
+			axios.post('/delete_user', { email: userEmail }, { withCredentials: true })
+				.then(() => {
+					this.users.splice(index, 1);
+				})
+				.catch(error => {
+					console.error("Error deleting user:", error);
+				});
+		},
+		openResetPasswordModal(index) {
+			this.resetPasswordUserIndex = index;
+			this.showResetPasswordModal = true;
+			this.newPassword = "";
+			this.confirmPassword = "";
+		},
+		resetPassword() {
+			if (this.newPassword === this.confirmPassword && this.newPassword.trim()) {
+				const userEmail = this.users[this.resetPasswordUserIndex].email;
+				axios.post('/reset_password', { email: userEmail, new_password: this.newPassword }, { withCredentials: true })
+					.then(() => {
+						alert(`Password for ${this.users[this.resetPasswordUserIndex].fullName} has been reset.`);
+						this.showResetPasswordModal = false;
+					})
+					.catch(error => {
+						console.error("Error resetting password:", error);
+					});
+			} else {
+				alert("Passwords do not match or are empty.");
+			}
+		},
+		openMessageModal(index) {
+			this.messageUserIndex = index;
+			this.showMessageModal = true;
+			this.userMessage = "";
+		},
+		sendMessage() {
+			const receiverEmail = this.users[this.messageUserIndex].email;
+			axios.post('/send_message', { receiver_email: receiverEmail, message: this.userMessage }, { withCredentials: true })
+				.then(() => {
+					alert(`Message sent to ${this.users[this.messageUserIndex].fullName}`);
+					this.showMessageModal = false;
+				})
+				.catch(error => {
+					console.error("Error sending message:", error);
+				});
+		}
+	},
+	mounted() {
+		this.fetchUsers();
+		
+	}
 };
 </script>
 
 <template>
-  <div class="container">
-    <h1 class="title">User List</h1>
-    <div class="input-section">
-      <input v-model="newUser.fullName" type="text" placeholder="Full Name" class="input">
-      <input v-model="newUser.email" type="email" placeholder="Email" class="input">
-      <label class="checkbox-label">
-        <input v-model="newUser.isAdmin" type="checkbox" class="checkbox">
-        <span>Admin</span>
-      </label>
-      <button @click="addUser" class="button add">Add User</button>
-    </div>
-    <div class="table-container">
-      <table class="user-table">
-        <thead>
-          <tr>
-            <th>Full Name</th>
-            <th>Email</th>
-            <th>Last Active</th>
-            <th>Admin</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(user, index) in users" :key="index">
-            <td>{{ user.fullName }}</td>
-            <td>{{ user.email }}</td>
-            <td>{{ user.lastActive }}</td>
-            <td>{{ user.isAdmin ? 'Yes' : 'No' }}</td>
-            <td>
-              <button @click="openMessageModal(index)" class="button message">Leave a Message</button>
-              <button @click="deleteUser(index)" class="button delete">Delete</button>
-              <button @click="openResetPasswordModal(index)" class="button reset">Reset Password</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+	<div class="container">
+		<h1 class="title">User List</h1>
+		<div class="input-section">
+			<input v-model="newUser.fullName" type="text" placeholder="Full Name" class="input">
+			<input v-model="newUser.email" type="email" placeholder="Email" class="input">
+			<label class="checkbox-label">
+				<input v-model="newUser.isAdmin" type="checkbox" class="checkbox">
+				<span>Admin</span>
+			</label>
+			<button @click="addUser" class="button add">Add User</button>
+		</div>
+		<div class="table-container">
+			<table class="user-table">
+				<thead>
+					<tr>
+						<th>Full Name</th>
+						<th>Email</th>
+						<th>Last Active</th>
+						<th>Admin</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="(user, index) in users" :key="index">
+						<td>{{ user.fullName }}</td>
+						<td>{{ user.email }}</td>
+						<td>{{ user.lastActive }}</td>
+						<td>{{ user.isAdmin ? 'Yes' : 'No' }}</td>
+						<td>
+							<button @click="openMessageModal(index)" class="btn-secondary btn btn-sm me-2">Message</button>
+							<button @click="deleteUser(index)" class="btn-danger btn btn-sm ">Delete</button>
+							<button @click="openResetPasswordModal(index)" class="btn-primary btn btn-sm mt-2" title="Reset user's password">Reset</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
 </template>
 
 <style scoped>
 .container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
-  background: linear-gradient(to right, #ebf8ff, #90cdf4);
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 20px;
+	background: linear-gradient(to right, #ebf8ff, #90cdf4);
+	border-radius: 10px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 .title {
-  text-align: center;
-  font-size: 24px;
-  font-weight: bold;
-  color: #2d3748;
-  margin-bottom: 20px;
+	text-align: center;
+	font-size: 24px;
+	font-weight: bold;
+	color: #2d3748;
+	margin-bottom: 20px;
 }
 .input-section {
-  display: flex;
-  gap: 10px;
-  background: white;
-  padding: 10px;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	display: flex;
+	gap: 10px;
+	background: white;
+	padding: 10px;
+	border-radius: 10px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .input {
-  border: 1px solid #ccc;
-  padding: 8px;
-  border-radius: 5px;
-  width: 20%;
+	border: 1px solid #ccc;
+	padding: 8px;
+	border-radius: 5px;
+	width: 20%;
 }
 .button {
-  padding: 8px 12px;
-  border-radius: 5px;
-  color: white;
-  cursor: pointer;
+	padding: 8px 12px;
+	border-radius: 5px;
+	color: white;
+	cursor: pointer;
 }
 .add { background: #38a169; }
-.message { background: #805ad5; }
+.message { background: #c4bad9; }
 .delete { background: #e53e3e; }
 .reset { background: #3182ce; }
 .cancel { background: #718096; }
 .send { background: #38a169; }
 .table-container {
-  background: white;
-  padding: 10px;
-  border-radius: 10px;
+	background: white;
+	padding: 10px;
+	border-radius: 10px;
 }
 .user-table {
-  width: 100%;
-  border-collapse: collapse;
+	width: 100%;
+	border-collapse: collapse;
 }
 .user-table th, .user-table td {
-  padding: 10px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
+	padding: 10px;
+	text-align: left;
+	border-bottom: 1px solid #ddd;
 }
 .modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 .modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  width: 30%;
+	background: white;
+	padding: 20px;
+	border-radius: 10px;
+	width: 30%;
 }
 .textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
 }
 </style>
