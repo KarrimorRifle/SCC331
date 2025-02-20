@@ -15,7 +15,7 @@ const emit = defineEmits(["updateConditions"]);
 // List of possible condition types
 const conditionTypes = ["Temperature", "Person", "Luggage", "Light Level"];
 const authorities = ["admin", "security", "staff", "users", "everyone"];
-const severities = ["doomed", "danger", "warning", "notification"];
+const severities = ["danger", "warning", "notification"];
 
 const selectedAuthority = ref<{ [key: string]: string }>({});
 const selectedSeverity = ref<{ [key: string]: string }>({});
@@ -85,7 +85,10 @@ const updatePendingMessage = (roomID: string, key: "Authority" | "Severity" | "T
   }else {
     pendingConditions.value[roomID].messages[0].Location = roomID;
   }
-  pendingConditions.value[roomID].messages[0][key] = value || (key === "Authority" ? authorities[0] : severities[0]);
+  pendingConditions.value[roomID].messages[0][key] = 
+  key === "Authority" ? value || authorities[0] :
+  key === "Severity" ? value || severities[0] :
+  value; 
   pendingConditions.value = { ...pendingConditions.value };
 };
 
@@ -269,9 +272,11 @@ watch(
       <div class="condition-row">
         <label>
           Title (max 20 characters):
-          <input type="text"
-                 maxlength="20"
-                 @input="updatePendingMessage(room.roomID, 'Title', $event.target.value)" />
+          <input 
+            type="text"
+            v-model.trim="pendingConditions[room.roomID].messages[0].Title"
+            maxlength="20"
+            @input="updatePendingMessage(room.roomID, 'Title', $event.target.value)" />
         </label>
 
         <label>
