@@ -59,6 +59,23 @@ services:
     networks:
       - my_network
 
+  account_messages:
+    build: ./accounts/messages
+    container_name: account_messages
+    ports:
+      - "5007:5007"
+    environment:
+      DB_HOST: mysql
+      DB_USER: account_messages
+      DB_PASSWORD: message_password
+      DB_NAME: accounts
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
+
   data_processor:
     build: ./data/processor
     container_name: data_processor

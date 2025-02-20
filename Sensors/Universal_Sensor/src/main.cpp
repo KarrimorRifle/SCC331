@@ -8,7 +8,7 @@
 #include "BluetoothSensor.hpp"
 
 
-int picoType = LUGGAGE_PICO; // The Type of methods this Pico will be utilising 
+int picoType = PASSENGER_PICO; // The Type of methods this Pico will be utilising 
 
 
 // WiFi Stuff:
@@ -55,9 +55,21 @@ void setupWIFI() {
 
 	// Connect to Wi-Fi:
 	WiFi.begin(ssid, password);
-	while (WiFi.status() != WL_CONNECTED) {
-		delay(1000); // Not sure if this is needed to be honest...
+	if (WiFi.waitForConnectResult(15000) != WL_CONNECTED) {
+		display.clearDisplay();
+		display.setTextSize(1);     
+		display.setTextColor(WHITE);
+		display.setCursor(0, 0);
+		display.println("Connection Failed");
+		display.printf("To router %s", ssid);
+		display.println("");
+		display.println("Please Reset Device");
+		display.display(); 
+		exit(-1);
 	}
+
+	display.clearDisplay();
+	display.display();
 }
 
 
@@ -68,7 +80,11 @@ void setupMQTT() {
 	display.println("Connected.");
 	display.println("Connecting to mqtt broker...");
 	display.display(); 
+
   	mqtt.connectToBroker();
+
+	display.clearDisplay();
+	display.display();
 }
 
 
@@ -81,6 +97,9 @@ void getInitialSensorType() {
 	display.display(); 
 	
 	// TODO WAIT FOR REMOTE SETUP FROM SERVER
+
+	display.clearDisplay();
+	display.display();
 }
 
 

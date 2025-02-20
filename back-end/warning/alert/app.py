@@ -407,7 +407,7 @@ def on_message(client, user_data, message):
             authority = message.get("Authority")
             client.publish(f"warning/{authority}/{rule['id']}", json.dumps(message))
 
-    if len(test) > 0:
+    if len(tests_to_perform) > 0:
         print("tests", tests_to_perform)
     # Perform tests
     for test in tests_to_perform:

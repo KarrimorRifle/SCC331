@@ -14,7 +14,7 @@
 
 AsyncMqttClient MqttConnection::mqttClient;
 bool MqttConnection::connectedToMQTT;
-MqttSubscription MqttConnection::subscriptions[5];
+MqttSubscription* MqttConnection::subscriptions[5];
 const int MqttConnection::maxSubscriptions = 5;
 int MqttConnection::currentSubscriptionAmount;
 
@@ -27,6 +27,7 @@ MqttConnection::MqttConnection() {
     mqttClient.onDisconnect(onMQTTDisconnect);
     mqttClient.onPublish(onMQTTPublish);
     mqttClient.onMessage(onMQTTMessage);
+    mqttClient.setKeepAlive(65000);
 
     connectedToMQTT = false;
 }
@@ -35,6 +36,9 @@ MqttConnection::MqttConnection() {
 bool MqttConnection::connectToBroker() {
     mqttClient.connect();
     connectedToMQTT = mqttClient.connected();
+    long startTime = millis();
+    while(!connectedToMQTT && startTime + 10000 != millis())
+        connectedToMQTT = mqttClient.connected();
     return connectedToMQTT;
 }
 
@@ -74,22 +78,30 @@ bool MqttConnection::publishHardwareData(String data) {
 }
 
 
-bool MqttConnection::addSubscription(MqttSubscription sub) {
-    if (currentSubscriptionAmount != maxSubscriptions) {
-        mqttClient.subscribe(sub.getSubscriptionRoute().c_str(), 2);
-
-        subscriptions[currentSubscriptionAmount] = sub;
-        currentSubscriptionAmount++;
-        return true;
+bool MqttConnection::addSubscription(MqttSubscription* sub) {
+    if (currentSubscriptionAmount == maxSubscriptions) {
+        Serial.println("Max reached");
+        return false;
     }
 
-    return false;
+    if (sub->getSubscriptionRoute() == "") {
+        Serial.println("No route");
+        return false;
+    }
+
+    mqttClient.subscribe(sub->getSubscriptionRoute().c_str(), 2);
+
+    subscriptions[currentSubscriptionAmount] = sub;
+    currentSubscriptionAmount++;
+    return true;
+
+
 }
 
 
-bool MqttConnection::removeSubscription(MqttSubscription sub) {
+bool MqttConnection::removeSubscription(MqttSubscription* sub) {
     for (int i = 0; i < currentSubscriptionAmount; i++) {
-        if (subscriptions[currentSubscriptionAmount].getSubscriptionRoute().equals(sub.getSubscriptionRoute())) {
+        if (subscriptions[currentSubscriptionAmount]->getSubscriptionRoute().equals(sub->getSubscriptionRoute())) {
             for (int j = currentSubscriptionAmount; j > i; j--) {
                 subscriptions[j-1] = subscriptions[j];
             }
@@ -104,7 +116,6 @@ bool MqttConnection::removeSubscription(MqttSubscription sub) {
 // MQTT Methods:
 void MqttConnection::onMQTTConnect(bool sessionPresent) {
     connectedToMQTT = true;
-    
     Serial.println("Connected to MQTT.");
 }
 
@@ -112,14 +123,69 @@ void MqttConnection::onMQTTConnect(bool sessionPresent) {
 void MqttConnection::onMQTTDisconnect(AsyncMqttClientDisconnectReason reason) {
     connectedToMQTT = false;
 
-    Serial.println("Disconnected from MQTT.");
+    Serial.print("Disconnected from MQTT, reason:");
+    String reasonText = "";
+    switch ((uint8_t) reason)
+    {
+      case 0:   //TCP_DISCONNECTED:
+        reasonText = "TCP_DISCONNECTED";
+        break;
+  
+      case 1:   //MQTT_UNACCEPTABLE_PROTOCOL_VERSION:
+        reasonText = "MQTT_UNACCEPTABLE_PROTOCOL_VERSION";
+        break;
+  
+      case 2:   //MQTT_IDENTIFIER_REJECTED:
+        reasonText = "MQTT_IDENTIFIER_REJECTED";
+        break;
+  
+      case 3:   //MQTT_SERVER_UNAVAILABLE:
+        reasonText = "MQTT_SERVER_UNAVAILABLE";
+        break;
+  
+      case 4:   //MQTT_MALFORMED_CREDENTIALS:
+        reasonText = "MQTT_MALFORMED_CREDENTIALS";
+        break;
+  
+      case 5:   //MQTT_NOT_AUTHORIZED:
+        reasonText = "MQTT_NOT_AUTHORIZED";
+        break;
+  
+      case 6:   //ESP8266_NOT_ENOUGH_SPACE:
+        reasonText = "ESP8266_NOT_ENOUGH_SPACE";
+        break;
+  
+      case 7:   //TLS_BAD_FINGERPRINT:
+        reasonText = "TLS_BAD_FINGERPRINT";
+        break;
+  
+      default:
+        break;
+    }
+    Serial.println(reasonText);
+
+    // mqttClient.connect();
+    // connectedToMQTT = mqttClient.connected();
+    // long startTime = millis();
+    // while(!connectedToMQTT && startTime + 10000 != millis()) {
+    //     connectedToMQTT = mqttClient.connected();
+    // }
 }
 
 
 void MqttConnection::onMQTTMessage(char* topic, char* payload, const AsyncMqttClientMessageProperties& properties, const size_t& len, const size_t& index, const size_t& total) {
+    String message = String(payload, len);
+
+    Serial.print("Message Recieved from: ");
+    Serial.println(topic);
+    Serial.println(message);
+
     for (int i = 0; i < currentSubscriptionAmount; i++) {
-        if (subscriptions[i].getSubscriptionRoute().equals(topic)) {
-            subscriptions->invoke(String(payload));
+        String subscriptionRoute = subscriptions[i]->getSubscriptionRoute();
+        String subscriptionRouteStripped = subscriptionRoute.substring(0, subscriptionRoute.length() - 1);
+
+        if (String(topic).startsWith(subscriptionRouteStripped)) {
+            subscriptions[i]->invoke(message);
             break;
         }
     }
