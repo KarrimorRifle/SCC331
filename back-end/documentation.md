@@ -213,10 +213,311 @@ The warning system will utilise the MQTT server to communicate and will send mes
 ## Authorisation and Topics utilised
 \# will be used as the warning ID
 - Staff admins only: `warning/admin/#`
+- Staff security only: `warning/security/#`
 - Staff only: `warning/staff/#`
+- Users only: `warning/users/#`'
 - Everyone: `warning/everyone/#`
 
 Warnings can range from telling staff there is a lack of people in a room, too many people in a room, or fires are going etc.
+## Editor (Port: 5004)
+This service will allow admins of the page to add new rules that will activate messages
+
+### Endpoints
+
+#### Get warnings
+- **GET**: `/warnings`
+- **Cookies:**
+  - `session_id`: Valid Admin session
+- **Responses**:
+  - `200`:
+    -
+    ```json
+    [
+      {
+        "id": 38, //id of the rule
+        "name": "string",
+        "rooms": ["12dawd", "42afwafaw"], // All room id's involved with this rule
+        "messages": [
+          {
+            "title": "string",
+            "authority": "admin" // ONE OF admin, security, staff, users, everyone
+          }
+          // ... More message summaries
+        ],
+        "last_test": {
+          "type": "full | messages | none",
+          "status": "success | failure" // if none status will be failure
+        }
+      }
+      // ... More warning rule summaries
+    ]
+    ```
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Get warning
+- **GET**: `/warnings/<id>`
+- **Cookies:**
+  - `session_id`: Valid Admin session
+- **Responses:**
+  - `200`: Warning details.
+    - 
+    ```json
+    {
+      "name": "string", // needs to be a unique name
+      "id": 20,
+      "conditions": [
+        {
+          "roomID": "valid room id",
+          "conditions": [
+            {
+              "variable": "temperature | UAQ | light etc...", //valid room variable
+              "lower_bound": 19, //lower bound number for activation (inclusive)
+              "upper_bound": 50, //upper bound number for activation (inclusive)
+            },
+            // ... additional variables to check, will work as "AND"
+          ]
+        }
+        // ... additional variables to check in each room, will work as "AND"
+      ],
+      "messages": [
+        {
+          "Authority": "admin | security | staff | users | everyone", // Sends message to respective channel
+          "Title": "A string with the name of the warning",
+          "Location": "RoomID",
+          "Severity": "ENUM['doomed','danger','warning','notification']",
+          "Summary": "String with summary"
+        }
+        // ... Additional messages to send out at the same time
+      ],
+      "last_test": {
+        "type": "full | messages | none",
+        "status": "success | failure" // if none status will be failure
+      }
+    }
+    ```
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Create Warning
+- **POST:** `/warnings`
+- **Cookies:**
+  - `session_id`: Valid Admin session
+- **Request Body (JSON)**
+  ```json
+  {
+    "name": "name of the warning", // has to be a unique name
+  }
+  ```
+- **Responses:**
+  - `201`: Warning created.
+    - ```json
+      {
+        "message": "Successfully created rule",
+        "id": 29 //ID of the newly created warning
+      }
+      ```
+  - `400`: Invalid warning data.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Update Warning
+- **PATCH:** `/warnings/<id>`
+  - `id`: id of the warning rule you want to change
+- **Cookies:**
+  - `session_id`: Valid Admin session
+- **Request Body (JSON)**
+  ```json
+  {
+    "name": "string", // needs to be a unique name
+    "conditions": [
+      {
+        "roomID": "valid room id",
+        "conditions": [
+          {
+            "variable": "temperature | UAQ | light etc...", //valid room variable
+            "lower_bound": 19, //lower bound number for activation (inclusive)
+            "upper_bound": 50, //upper bound number for activation (inclusive)
+          },
+          // ... additional variables to check, will work as "AND"
+        ]
+      }
+      // ... additional variables to check in each room, will work as "AND"
+    ],
+    "messages": [
+      {
+        "Authority": "admin | security | staff | users | everyone", // Sends message to respective channel
+        "Title": "A string with the name of the warning",
+        "Location": "RoomID",
+        "Severity": "ENUM['doomed','danger','warning','notification']",
+        "Summary": "String with summary"
+      }
+      // ... Additional messages to send out at the same time
+    ]
+  }
+  ```
+- **Responses:**
+  - `200`: Warning updated.
+    - ```json
+      {
+        "message": "Successfully updated rule",
+      }
+      ```
+  - `400`: Invalid warning data.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Delete Warning
+- **DELETE**: `/warnings/<id>`
+  - `id`: id of the warning rule you want to delete
+- **Cookies:**
+  - `session_id`: Valid Admin session
+- **Responses:**
+  - `200`: Warning deleted.
+    - ```json
+      {
+        "message": "Successfully deleted rule",
+      }
+      ```
+  - `400`: Invalid rule id.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Test Warning
+- **POST:** `/warnings/test`
+- **Cookies:**
+  - `session_id`: Valid Admin session
+- **Request Body (JSON):**
+  ```json
+  {
+    "id": 29, // ID of the warning rule to test
+    "mode": "full | messages" // How you want the test to occur, test everything including the environment variables or just message sending
+  }
+  ```
+- **Responses:**
+  - `200`: Test successfully queued.
+    ```json
+    {
+      "message": "Test queued successfully",
+      "test_id": 39 //ID of the test queued
+    }
+    ```
+  - `400`: Invalid warning ID.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Get Test Results
+- **GET:** `/warnings/test/result/<id>`
+  - `id`: id of the test you want to grab
+- **Cookies:**
+  - `session_id`: Valid Admin session
+- **Responses:**
+  - `200`: Returns the result of the last test.
+    ```json
+    {
+      "id": 29, // ID of the warning rule
+      "type": "full | messages",
+      "status": "success | failure",
+      "result": "Conditions met | Conditions not met | Messages sent",
+      "environment": {
+        "ifhawifw": [// The room ID
+          {
+            "variable": "name of the variable", // For counts, just use the name for the count e.g. "users", "luggage"
+            "value_read": 30, //what we read at the time
+            "upper_bound": 40, // Upper bound activation
+            "lower_bound": 35, // lower bound activation
+          },
+          // ... other variables read for that room
+        ]
+      },
+      "messages": [
+        {
+          "Authority": "admin | security | staff | staff | everyone", // Sends message to respective channel
+          "Title": "A string with the name of the warning",
+          "Location": "RoomID",
+          "Severity": "ENUM['doomed','danger','warning','notification']",
+          "Summary": "String with summary"
+        }
+        // ... Additional messages to send out at the same time
+      ]
+    }
+    ```
+  - `400`: Invalid warning ID.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Get Logs
+- **GET:** `/warnings/logs`
+- **Cookies:**
+  - `session_id`: Valid Admin session
+- **Responses:**
+  - `200`: Returns a list of logs.
+    ```json
+    [
+      {
+        "id": 39, //Rule id,
+        "name": "ruleSet name",
+        "timestamp": "2023-10-01T12:00:00Z",
+        "variables": {
+          "temperature": {
+            "value": 20,
+            "upper_bound": 25,
+            "lower_bound": 19,
+          },
+          "users": {
+            "value": 50,
+            "lower_bound": 50,
+            "upper_bound": 900,
+          },
+          // ... more environment variables
+        }, 
+        "messages": [
+          {
+            "Authority": "admin | security | staff | staff | everyone", // Sends message to respective channel
+            "Title": "A string with the name of the warning",
+            "Location": "RoomID",
+            "Severity": "ENUM['doomed','danger','warning','notification']",
+            "Summary": "String with summary"
+          }
+          // ... Additional messages to send out at the same time
+        ]
+      }
+      // ... more logs ...
+    ]
+    ```
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
+#### Acknowledge Warning
+- **POST:** `/warnings/<id>/acknowledge`
+  - `id`: id of the warning rule to acknowledge
+- **Cookies:**
+  - `session_id`: Valid session
+- **Request Body (JSON)**
+  ```json
+  {
+    "response": "acknowledged | denied | ignored"
+  }
+  ```
+- **Responses:**
+  - `200`: Response sent.
+    ```json
+    {
+      "message": "Response sent"
+    }
+    ```
+  - `400`: Invalid warning ID.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+- **Message:**
+  - MQTT response on channel `response/#` where # is the ruleID
+    ```json
+    {
+      "response": "acknowledged | denied | ignored",
+      "name": "Lissandra Winter", // Name of user responding
+      "medium": "Web" // response method
+    }
+    ```
 
 # Assets
 

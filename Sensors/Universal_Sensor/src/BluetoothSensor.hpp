@@ -13,8 +13,8 @@
 #define SCAN_DURATION 9500
 #define WAIT_DURATION 500
 #define BUZZER 7
-#define REDButton 12     
-#define BLACKButton 13
+#define RED_BUTTON 13    
+#define BLACK_BUTTON 12
 
 class BluetoothSensor : public SensorType {
     public:
@@ -27,10 +27,6 @@ class BluetoothSensor : public SensorType {
         void setSensorType(int PicoType);
         // Bluetooth Receiver Methods:
         static void advertisementCallback(BLEAdvertisement *adv);
-        void ledSetup();
-        void warningRecieved(String message);
-        void warningAcknowledged();
-        void warningOver();
 
     private:
         Adafruit_SSD1306* display;
@@ -44,8 +40,20 @@ class BluetoothSensor : public SensorType {
         int picoType;
         int majorID; // The room the user / luggage is currently in, according to the majorID picked up
         uint8_t minorID;
+
+        MqttSubscription huh; //For some reason without having this here the program crashes, despite it not being used at all (what in the actual fuck)
+        MqttSubscription globalWarningSubscription;
+        MqttSubscription warningSubscription;
+
         bool warningLive;
-        String warningMessage;
         
         void sendToServer(String data);
+
+        void setWarningSubscriptions();
+        void unsetWarningSubscriptions();
+        void handleWarning(String message, String source);
+        void checkForAcknowledgement();
+        void warningOver();
+
+        void ledSetup();
 };

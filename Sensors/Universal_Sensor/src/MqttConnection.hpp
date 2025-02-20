@@ -12,14 +12,14 @@ class MqttConnection {
         String getHardwareIdentifier();
         bool publishDataWithIdentifier(String data, String topic);
         bool publishHardwareData(String data);
-        bool addSubscription(MqttSubscription sub);
-        bool removeSubscription(MqttSubscription sub);
+        bool addSubscription(MqttSubscription* sub);
+        bool removeSubscription(MqttSubscription* sub);
 
 
     private:
         static AsyncMqttClient mqttClient;
         static bool connectedToMQTT;
-        static MqttSubscription subscriptions[5];
+        static MqttSubscription* subscriptions[5];
         static const int maxSubscriptions;
         static int currentSubscriptionAmount;
 

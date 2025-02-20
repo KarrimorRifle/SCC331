@@ -79,6 +79,7 @@ const toggleMenu = () => {
       <RouterLink to="/" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
       <RouterLink to="/map" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
       <RouterLink to="/summary" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
+      <RouterLink to="/admin" class="mobile-link" exact-active-class="active" v-if="props.loggedIn">Admin</RouterLink>
       <RouterLink to="/login" class="mobile-link" exact-active-class="active" v-if="!props.loggedIn">Login</RouterLink>
       <RouterLink to="#" class="mobile-link" v-if="props.loggedIn" @click.prevent="handleLogout">
         Log out
