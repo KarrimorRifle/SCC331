@@ -38,9 +38,13 @@ const minMaxTimestamps = computed(() => {
   const timestamps: number[] = [];
 
   Object.values(props.updates).forEach(userUpdates => {
-    userUpdates.forEach(({ logged_at }) => {
-      timestamps.push(new Date(logged_at).getTime());
-    });
+    try {
+      userUpdates.forEach(({ logged_at }) => {
+        timestamps.push(new Date(logged_at).getTime());
+      });
+    }catch(error){
+      console.log(error)
+    }
   });
 
   if (timestamps.length === 0) return { min: null, max: null };
@@ -101,37 +105,41 @@ const groupedUsersByRoom = computed(() => {
   console.log("area to show: ", areasToShow);
   // Populate roomMap **only for the filtered users of the area**
   Object.entries(props.updates).forEach(([userId, userUpdates]) => {
-    userUpdates.forEach(({ logged_at, roomID }) => {
-      const date = new Date(logged_at);
-      const timestamp = date.getTime();
+    try{
+      userUpdates.forEach(({ logged_at, roomID }) => {
+        const date = new Date(logged_at);
+        const timestamp = date.getTime();
 
-      // ✅ **Apply time filtering**
-      if (start !== null && end !== null && (timestamp < start || timestamp > end)) {
-        return; // Skip entries outside the selected time range
-      }
+        // ✅ **Apply time filtering**
+        if (start !== null && end !== null && (timestamp < start || timestamp > end)) {
+          return; // Skip entries outside the selected time range
+        }
 
-      const hour = date.toLocaleTimeString([], { hour: 'numeric', hour12: true });
-      const hourNumeric = date.getHours();
-      const fullTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        const hour = date.toLocaleTimeString([], { hour: 'numeric', hour12: true });
+        const hourNumeric = date.getHours();
+        const fullTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-      const formattedRoomLabel = String(roomID);
+        const formattedRoomLabel = String(roomID);
 
-      // ✅ **Ensure only selected areas are displayed**
-      if (!areasToShow.some(area => area.label === formattedRoomLabel)) return;
+        // ✅ **Ensure only selected areas are displayed**
+        if (!areasToShow.some(area => area.label === formattedRoomLabel)) return;
 
-      if (!roomMap.has(formattedRoomLabel)) {
-        roomMap.set(formattedRoomLabel, []);
-      }
+        if (!roomMap.has(formattedRoomLabel)) {
+          roomMap.set(formattedRoomLabel, []);
+        }
 
-      const roomEntry = roomMap.get(formattedRoomLabel);
-      const existingHourEntry = roomEntry?.find(entry => entry.hour === hour);
+        const roomEntry = roomMap.get(formattedRoomLabel);
+        const existingHourEntry = roomEntry?.find(entry => entry.hour === hour);
 
-      if (existingHourEntry) {
-        existingHourEntry.users.push({ userId: Number(userId), loggedAt: fullTime });
-      } else {
-        roomEntry?.push({ hour, hourNumeric, users: [{ userId: Number(userId), loggedAt: fullTime }] });
-      }
-    });
+        if (existingHourEntry) {
+          existingHourEntry.users.push({ userId: Number(userId), loggedAt: fullTime });
+        } else {
+          roomEntry?.push({ hour, hourNumeric, users: [{ userId: Number(userId), loggedAt: fullTime }] });
+        }
+      });
+    }catch(error){
+      console.log(error)
+    }
   });
 
   // ✅ **Ensure correct area list is used (Summary = all, Dashboard = filtered)**
