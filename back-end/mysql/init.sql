@@ -202,6 +202,7 @@ FLUSH PRIVILEGES;
 -- Account Messaging Service (Read and Write)
 CREATE USER IF NOT EXISTS 'account_messages'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'message_password';
 GRANT SELECT, INSERT, UPDATE, DELETE ON accounts.messages TO 'account_messages'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON accounts.users TO 'account_messages'@'%';
 ALTER USER 'account_messages'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
