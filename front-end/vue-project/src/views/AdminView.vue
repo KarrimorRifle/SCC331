@@ -164,6 +164,43 @@ export default {
 			</table>
 		</div>
 	</div>
+	
+			<!-- ✅ Reset Password Modal -->
+			<div v-if="showResetPasswordModal" class="modal">
+			<div class="modal-content">
+				<h2>Reset Password</h2>
+				<p>Reset password for {{ users[resetPasswordUserIndex]?.fullName }}</p>
+				<input 
+					v-model="newPassword" 
+					type="password" 
+					placeholder="New Password" 
+					class="input password-input" 
+				/>
+				<input 
+					v-model="confirmPassword" 
+					type="password" 
+					placeholder="Confirm Password" 
+					class="input password-input" 
+				/>
+				<div class="modal-actions">
+					<button @click="resetPassword" class="button send">Reset</button>
+					<button @click="showResetPasswordModal = false" class="button cancel">Cancel</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- ✅ Send Message Modal -->
+		<div v-if="showMessageModal" class="modal">
+			<div class="modal-content">
+				<h2>Send Message</h2>
+				<p>Send a message to {{ users[messageUserIndex]?.fullName }}</p>
+				<textarea v-model="userMessage" class="textarea" placeholder="Type your message..."></textarea>
+				<div class="modal-actions">
+					<button @click="sendMessage" class="button send">Send</button>
+					<button @click="showMessageModal = false" class="button cancel">Cancel</button>
+				</div>
+			</div>
+		</div>
 </template>
 
 
@@ -234,6 +271,7 @@ export default {
 	text-align: left;
 	border-bottom: 1px solid #ddd;
 }
+/* Modal Background */
 .modal {
 	position: fixed;
 	inset: 0;
@@ -241,13 +279,95 @@ export default {
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	z-index: 1000;
 }
+
+/* Modal Title */
+.modal-title {
+	font-size: 24px;
+	font-weight: 600;
+	color: #333;
+	margin-bottom: 10px;
+}
+
+/* Modal Description */
+.modal-description {
+	font-size: 16px;
+	color: #555;
+	margin-bottom: 20px;
+}
+
+/* Modal Input Fields */
+.password-input {
+  width: 90%;            /* Make the input fields take up 90% of the available space */
+  max-width: 350px;      /* Limiting the maximum width of the input fields */
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 15px;
+  font-size: 16px;
+  box-sizing: border-box;
+  display: block;
+  margin: 0 auto;        /* Center the inputs */
+}
+
+/* Adjusting the modal content for better alignment */
 .modal-content {
-	background: white;
-	padding: 20px;
-	border-radius: 10px;
-	width: 30%;
+  padding: 20px;
+  background: #fff;
+  border-radius: 10px;
+  width: 350px;          /* Modal width set to 350px */
+  text-align: center;
+  max-width: 100%;
+  box-sizing: border-box;
 }
+
+/* Modal Action Buttons */
+.modal-actions {
+	display: flex;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+/* Buttons */
+.button {
+	padding: 10px 15px;
+	border-radius: 5px;
+	font-size: 16px;
+	cursor: pointer;
+	transition: background-color 0.3s;
+}
+
+.send {
+	background-color: #38a169;
+	color: white;
+}
+
+.cancel {
+	background-color: #e53e3e;
+	color: white;
+}
+
+.send:hover {
+	background-color: #2f855a;
+}
+
+.cancel:hover {
+	background-color: #c53030;
+}
+
+/* Animation for the modal */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
 .textarea {
 	width: 100%;
 	padding: 8px;
