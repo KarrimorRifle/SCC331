@@ -7,10 +7,10 @@ const LOCAL_STORAGE_KEY = 'overlayAreas';
 const loadOverlayAreas = () => {
   const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
   return storedData ? JSON.parse(storedData) : [
-    { label: "Area 1", color: "#F18C8E", position: { top: 50, left: 50, width: 150, height: 150 } },
-    { label: "Area 2", color: "#F0B7A4", position: { top: 200, left: 100, width: 150, height: 150 } },
-    { label: "Area 3", color: "#F1D1B5", position: { top: 400, left: 50, width: 150, height: 150 } },
-    { label: "Area 4", color: "#568EA6", position: { top: 300, left: 300, width: 150, height: 150 } }
+    { label: "Area 1", color: "#F18C8E"},
+    { label: "Area 2", color: "#F0B7A4"},
+    { label: "Area 3", color: "#F1D1B5"},
+    { label: "Area 4", color: "#568EA6"}
   ];
 };
 
@@ -24,10 +24,18 @@ export function useFetchData(picoIds) {
   let pollingInterval = null;
   let warningInterval = null;
 
-  // Watch for overlay area changes and save to localStorage
-  watch(overlayAreasConstant, (newValue) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newValue));
-  }, { deep: true });
+  const updateOverlayAreaColor = (roomID: string, newColor: string) => {
+    const area = overlayAreasConstant.find(area => area.label === `Area ${roomID}`);
+    if (area) {
+      area.color = newColor; // Update color in the reactive state
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(overlayAreasConstant)); // Save to localStorage
+    }
+  };
+  
+  const updateAllOverlayAreas = (newOverlayAreas) => {
+    overlayAreasConstant.splice(0, overlayAreasConstant.length, ...newOverlayAreas); // Update reactive state
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newOverlayAreas)); // Persist changes
+  };
 
   // Function to track environment data
   const trackEnvironmentData = (label, data) => {
@@ -62,7 +70,6 @@ export function useFetchData(picoIds) {
       console.error("Error fetching warnings:", error);
     }
   };
-
 
   // Function to fetch data
   const fetchData = async () => {
@@ -120,9 +127,16 @@ export function useFetchData(picoIds) {
     if (warningInterval) clearInterval(warningInterval);
   });
 
+  // Watch for overlay area changes and save to localStorage
+  watch(overlayAreasConstant, (newValue) => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newValue));
+  }, { deep: true });
+
   return {
     overlayAreasConstant,
     overlayAreasData,
+    updateOverlayAreaColor,
+    updateAllOverlayAreas,
     updates,
     environmentHistory,
     warnings,

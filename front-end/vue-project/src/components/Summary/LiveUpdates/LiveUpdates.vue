@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { PropType, ref, computed } from 'vue';
+import { getTextColour } from '../../../utils/helper/colorUtils';
 import UserMovementModal from './UserMovementModal.vue'; 
 
 // Props
@@ -166,7 +167,7 @@ const groupedUsersByRoom = computed(() => {
           :key="roomLabel"
           class="room-card"
         >
-          <h3 :style="{ backgroundColor: roomColor }">{{ roomLabel }}</h3>
+          <h3 :style="{ backgroundColor: roomColor, color: getTextColour(roomColor) }">{{ roomLabel }}</h3>
           <template v-if="entries.length">
             <div v-for="{ hour, users } in entries" :key="hour" class="hour-group">
               <h4 class="hour-title">{{ hour }}</h4>

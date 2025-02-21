@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { PropType, computed, ref } from "vue";
+import { getTextColour } from '../../../utils/helper/colorUtils';
 import { getCardBackgroundColor } from "@/utils/helper/warningUtils";
 import WarningSystemFilterBar from "./WarningSystemFilterBar.vue"; // Import filter bar
 
@@ -73,7 +74,8 @@ const updateFilter = (severity: string) => {
     <div class="grid-container">
       <!-- Loop through all areas, ensuring they appear even if no warnings -->
       <div v-for="(warnings, area) in groupedWarnings" :key="area" class="area-group">
-        <h3 class="area-title" :style="{ backgroundColor: getAreaColor(area), color: 'white' }">
+        <h3 class="area-title" 
+            :style="{ backgroundColor: getAreaColor(area), color: getTextColour(getAreaColor(area)) }">
           {{ area }}
         </h3>
 

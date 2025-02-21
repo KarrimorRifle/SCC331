@@ -9,6 +9,7 @@ import { Sketch } from '@ckpack/vue-color';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 import LiveUpdates from './Summary/LiveUpdates/LiveUpdates.vue';
+import LoadingSpinner from "@/components/LoadingSpinner/LoadingSpinner.vue";
 
 const props = defineProps({
   modelValue: {
@@ -39,8 +40,10 @@ const props = defineProps({
     type: Boolean,
     required: true
   },
+  isLoading: Boolean,
   
 });
+console.log(props.warnings);
 const emit = defineEmits(["update:modelValue", "newBox","colourChange", "removeBox"]);
 
 const colourPickerVisible = ref<string | null>(null);
@@ -95,7 +98,7 @@ const getUpdatesForArea = (areaKey) => {
 
 const warningsByArea = computed(() => {
   return props.overlayAreasConstant.reduce((acc, area) => {
-    acc[area.label] = props.warnings.filter(warning => warning.Location === area.label);
+    acc[area.label] = props.warnings.filter(warning => `Area ${warning.Location}` === area.label);
     return acc;
   }, {} as Record<string, { Title: string; Location: string; Severity: string; Summary: string }[]>);
 });
@@ -141,6 +144,8 @@ onUnmounted(() => {
       minHeight: `calc(100vh - ${bottomTabHeight + 65}px)`
     }"
   >
+    <LoadingSpinner v-if="isLoading" message="Loading dashboard..." />
+    <div v-else>
       <!-- Dashboard Header -->
     <div class="dashboard-header">
       <h2 v-if="!isExpanded">Dashboard</h2>
@@ -164,14 +169,6 @@ onUnmounted(() => {
         class="dashboard-area"
         :style="{ backgroundColor: data.box?.colour ?? '#FFFFFF', color: getTextColour(data.box?.colour) }"
       >
-        <button 
-          v-if="warningsByArea[`Area ${key}`]?.length"
-          class="warning-btn"
-          @click="onWarningButtonClick(`Area ${key}`)"
-        >
-          <font-awesome-icon :icon="faExclamationTriangle" />
-        </button>
-
         <!-- Colour Picker Popover -->
         <div v-if="colourPickerVisible === key" class="colour-picker-popover">
           <Sketch v-model="selectedColour" />
@@ -212,6 +209,14 @@ onUnmounted(() => {
               <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
             </button>
           </template>
+
+          <button 
+            v-if="warningsByArea[`Area ${key}`]?.length && !editMode"
+            class="warning-btn"
+            @click="onWarningButtonClick(`Area ${key}`)"
+          >
+            <font-awesome-icon :icon="faExclamationTriangle" />
+          </button>
         </div>
 
         <!-- Luggage Count -->
@@ -219,7 +224,7 @@ onUnmounted(() => {
           <div class="marker-container">
             <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
           </div>
-          <p>Luggage Count: {{  data.tracker?.luggage?.count|| 0 }}</p>
+          <p>Luggage: {{  data.tracker?.luggage?.count|| 0 }}</p>
         </div>
 
         <!-- People Count -->
@@ -227,7 +232,7 @@ onUnmounted(() => {
           <div class="marker-container">
             <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
           </div>
-          <p>People Count: {{  data.tracker?.users?.count || 0 }}</p>
+          <p>People: {{  data.tracker?.users?.count || 0 }}</p>
         </div>
 
 
@@ -265,10 +270,12 @@ onUnmounted(() => {
             :userIds="userIds" 
             :areaKey="key"
             :updates="getUpdatesForArea(key)" 
+            :fullUpdates="updates"
             :overlayAreasConstant="overlayAreasConstant"
           />
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -278,8 +285,8 @@ onUnmounted(() => {
 .dashboard {
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  background-color: #f8f8ff;
+  padding: 0 20px;
+  background-color: white;
   border-left: 1px solid #ccc;
   overflow-y: auto;
   transition: all 0.8s ease-in-out;
@@ -291,7 +298,11 @@ onUnmounted(() => {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  margin: 20px 0;
+  padding: 20px 0;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 888;
 }
 
 .expand-btn {
@@ -317,7 +328,6 @@ onUnmounted(() => {
   flex: 5;
   background-color: white;
   z-index: 888;
-  padding: 20px;
 }
 
 /* Compact Dashboard Layout */
@@ -325,6 +335,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 20px;
 }
 
 /* Expanded Layout - Two Areas Per Row */
@@ -368,6 +379,7 @@ onUnmounted(() => {
   color: white;
   border: none;
   padding: 5px 8px;
+  margin: 0 5px;
   border-radius: 5px;
   cursor: pointer;
   animation: bounce 0.5s infinite alternate ease-in-out;

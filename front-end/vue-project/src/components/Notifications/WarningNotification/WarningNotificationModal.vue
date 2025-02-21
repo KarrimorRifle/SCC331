@@ -75,7 +75,7 @@ const switchMode = (newMode: string) => {
 /* Notification Modal */
 .notification-modal {
   position: fixed;
-  bottom: 80px;
+  bottom: 8px;
   right: 20px;
   width: 340px;
   z-index: 888;

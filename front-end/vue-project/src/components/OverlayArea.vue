@@ -172,6 +172,7 @@ const endResize = () => {
     @touchmove="drag"
     @touchend="endDrag"
   >
+  <!--
     <button 
       v-if="hasWarnings"
       class="warning-btn"
@@ -179,6 +180,7 @@ const endResize = () => {
     >
       <font-awesome-icon :icon="faExclamationTriangle" />
     </button>
+  -->
     <span class="overlay-area-label">{{ label }}</span>
 
     <PersonMarker

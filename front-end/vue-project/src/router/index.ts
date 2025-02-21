@@ -19,6 +19,18 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/create-warning',
+      name: 'create-warning',
+      component: () => import('../views/WarningCreationView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../views/AdminView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
@@ -28,6 +40,11 @@ const router = createRouter({
       name: 'register',
       component: () => import('../views/RegisterView.vue'),
     },
+    {
+			path: '/admin',
+			name: 'admin',
+			component: () => import('../views/AdminView.vue'),
+		},
     {
       path: '/',
       name: 'home',

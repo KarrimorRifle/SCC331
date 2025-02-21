@@ -1,0 +1,363 @@
+<script setup lang="ts">
+import axios from "axios";
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { ref, onMounted, computed, warn } from "vue";
+import { usePresetStore } from "../utils/useFetchPresets";
+import RoomSelection from "@/components/WarningCreation/RoomSelection.vue";
+import WarningConditions from "@/components/WarningCreation/WarningConditions.vue";
+// import CustomWarningMessage from "@/components/WarningCreation/CustomWarningMessage.vue";
+
+const presetStore = usePresetStore();
+const selectedRooms = ref<string[]>([]);
+// wait for the presets data to populate
+const presetData = computed(() => presetStore.presetData);
+const isPresetDataAvailable = computed(() => presetData.value && Object.keys(presetData.value).length > 0);
+
+import { 
+  warningsList, 
+  selectedWarningId, 
+  selectedWarning, 
+  newWarningName, 
+  warningConditions, 
+  warningMessages,
+  isRoomSelectionVisible,
+  activeSection,
+  fetchWarnings, 
+  fetchWarningById, 
+  createWarning, 
+  updateWarning, 
+  deleteWarning, 
+  resetWarningSelection 
+} from '../stores/warningStore';
+
+const toggleRoomSelection = (room: Object) => {
+  const existingIndex = selectedRooms.value.findIndex((r) => r.roomID === room.roomID);
+  if (existingIndex !== -1) {
+    selectedRooms.value.splice(existingIndex, 1); // Remove if already selected
+  } else {
+    selectedRooms.value.push(room); // Add new room
+  }
+};
+
+const updateWarningConditions = (updatedConditions: Record<string, any>) => {
+  Object.entries(updatedConditions).forEach(([roomID, newData]) => {
+    if (!warningConditions.value[roomID]) {
+      warningConditions.value[roomID] = { conditions: [], messages: [] };
+    }
+
+    // Add new conditions while keeping the old ones
+    newData.conditions.forEach(newCond => {
+      const existingCondition = warningConditions.value[roomID].conditions.find(
+        (c) => c.variable === newCond.variable
+      );
+
+      if (existingCondition) {
+        existingCondition.lower_bound = newCond.lower_bound;
+        existingCondition.upper_bound = newCond.upper_bound;
+      } else {
+        warningConditions.value[roomID].conditions.push(newCond);
+      }
+    });
+
+    // Add new messages if they don't exist
+    newData.messages.forEach(newMsg => {
+      const existingMessage = warningConditions.value[roomID].messages.find(
+        (m) => m.Title === newMsg.Title
+      );
+
+      if (!existingMessage) {
+        warningConditions.value[roomID].messages.push(newMsg);
+      }
+    });
+  });
+  updateWarning();
+};
+
+const updateWarningMessages = (updatedMessages: any[]) => {
+  updatedMessages.forEach((msg) => {
+    const roomID = msg.Location.trim(); // Ensure correct roomID format
+
+    if (!warningConditions.value[roomID]) {
+      warningConditions.value[roomID] = { conditions: [], messages: [] };
+    }
+
+    // Ensure messages array exists
+    if (!Array.isArray(warningConditions.value[roomID].messages)) {
+      warningConditions.value[roomID].messages = [];
+    }
+
+    // Find existing message index
+    const existingMessageIndex = warningConditions.value[roomID].messages.findIndex(
+      (m) => m.Title.trim() === msg.Title.trim()
+    );
+    if (existingMessageIndex !== -1) {
+      // Update existing message
+      warningConditions.value[roomID].messages[existingMessageIndex].Summary = msg.Summary;
+    } else {
+      // Add only if it does NOT exist
+      warningConditions.value[roomID].messages.push(msg);
+    }
+  });
+};
+
+const setActiveSection = (section: string) => {
+  activeSection.value = section;
+};
+
+const getSidebarClass = (section: string) => {
+  return { active: activeSection.value === section };
+};
+
+onMounted(fetchWarnings);
+</script>
+
+<template>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <button @click="setActiveSection('warnings')" :class="{ active: activeSection === 'warnings' }">⚠️ Warnings</button>
+      <button @click="setActiveSection('rooms')" :class="{ active: activeSection === 'rooms' }">📌 Room Selection</button>
+      <button @click="setActiveSection('conditions')" :class="{ active: activeSection === 'conditions' }">🔧 Conditions</button>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="warning-creation-content">
+      <!-- Existing Warnings List -->
+      <div 
+        :class="['section', { dimmed: activeSection !== 'warnings' }]"
+        @click="setActiveSection('warnings')"
+      >
+        <div class="existing-warning-header">
+          <h3>Existing Warnings</h3>
+          <div class="add-warning-container">
+            <input v-model="newWarningName" placeholder="Enter warning name" />
+            <button @click="createWarning(newWarningName)">Create Warning</button>
+          </div>
+        </div>
+        <ul class="existing-warning-list">
+          <li v-for="warning in warningsList" 
+              :key="warning.id" 
+              :class="['warning-item', { selected: selectedWarningId === warning.id }]"
+              @click="fetchWarningById(warning.id)"
+               >
+            <div class="warning-content">
+              <div class="warning-details">
+                <h5>Warning Name</h5>
+                <p>{{ warning.name }}</p>
+              </div>
+              <button @click.stop="deleteWarning(warning.id)" class="delete-button">
+                <FontAwesomeIcon :icon="faTrash" />
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Room Selection -->
+      <RoomSelection 
+        v-if="isPresetDataAvailable" 
+        :isRoomSelectionVisible="isRoomSelectionVisible"
+        :presetData="presetData"
+        :class="['section', { dimmed: activeSection !== 'rooms' }]"
+        @updateRooms="toggleRoomSelection"
+        @click="setActiveSection('rooms')"
+      />
+
+      <!-- Warning Conditions -->
+      <WarningConditions 
+        v-if="selectedWarning" 
+        :selectedWarning="selectedWarning"
+        :selectedRooms="selectedRooms" 
+        :conditions="warningConditions"
+        :class="['section', { dimmed: activeSection !== 'conditions' }]"
+        @updateConditions="updateWarningConditions" 
+        @click="setActiveSection('conditions')"
+      />
+
+      <!-- Custom Warning Messages 
+      <CustomWarningMessage 
+        :conditions="warningConditions" 
+        :class="['section', { dimmed: activeSection !== 'messages' }]"
+        @updateMessages="updateWarningMessages" 
+      />
+      
+
+      <button @click="resetWarningSelection">Clear Selection</button>
+      -->
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.app-container {
+  display: flex;
+  background: #f8f8ff;
+}
+
+.sidebar h3 {
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+.sidebar {
+  width: 200px;
+  padding: 20px;
+  background-color: #305F72;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 10px;
+  text-align: left;
+  transition: background 0.3s;
+  border-radius: 5px;
+}
+
+.sidebar button:hover,
+.sidebar button.active {
+  background: #568EA6;
+}
+
+.warning-creation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.section {
+  padding: 20px;
+  border-radius: 8px;
+  background: white;
+  color: black;
+  transition: opacity 0.3s;
+  border: 2px solid #568EA6;
+}
+
+.dimmed {
+  opacity: 0.4;
+}
+
+.existing-warning-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.existing-warning-list {
+  padding: 0;
+}
+
+.warning-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #305F72;
+  padding: 5px;
+  margin: 10px 0;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.warning-item:hover {
+  background: lightgray;
+  transform: scale(1.01);
+}
+
+.warning-item.selected {
+  background: #F18C8E;
+  transform: scale(1.01);
+}
+
+.warning-content {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.warning-details {
+  text-align: left;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #FF6B6B;
+  font-size: 18px;
+  transition: color 0.3s ease-in-out;
+}
+
+.delete-button:hover {
+  color: #D94A4A !important;
+  z-index: 999;
+}
+
+.add-warning-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #568EA6;
+}
+
+.add-warning-container input {
+  padding: 10px;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-size: 16px;
+  outline: none;
+  transition: border 0.2s ease-in-out;
+}
+
+.add-warning-container input:focus {
+  border-color: #568EA6;
+}
+
+.add-warning-container button {
+  background: #568EA6;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+}
+
+.add-warning-container button:hover {
+  background: #305F72;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    width: 100%;
+  }
+  .existing-warning-header{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+</style>
