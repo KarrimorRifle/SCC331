@@ -52,7 +52,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="(type, picoID) in movementData[selectedTime][roomID]" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
-                    <td>{{ picoID }}</td>
+                    <td @click="userID = picoID + ''; showModal = true" style="color: blue; text-decoration: underline; cursor: pointer;">{{ picoID }}</td>
                     <td>{{ type }}</td>
                     <td :style="{backgroundColor: boxes[previousLocation[selectedTime][picoID]]?.colour}">{{ boxes[previousLocation[selectedTime][picoID]]?.label || previousLocation[selectedTime][picoID] }}</td>
                   </tr>
@@ -93,23 +93,13 @@
       </div>
     </div>
   </div>
-  <div class="modal fade" id="userMovementModal" tabindex="-1" aria-labelledby="userMovementModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="userMovementModalLabel">User Movement</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <user-movement-modal :show-modal="showModal" :selected-user-id="userID" :overlay-areas-constant="[]" :user-room-history="userMovementHistory"/>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Modal -->
+
+  <user-movement-modal class="text-dark" :show-modal="showModal" :selected-user-id="userID" :overlay-areas-constant="boxData" :user-room-history="userMovementHistory" @close="showModal = false"/>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import type { Record } from 'vue';
 import type { presetListType, preset, boxType } from '@/utils/mapTypes';
@@ -122,6 +112,7 @@ const boxes = ref<Record<string, { label: string; colour: string }>>({});
 
 const userID = ref<string>("");
 const userMovementHistory = ref<{ roomLabel: string; loggedAt: string }[]>([]);
+const boxData = ref<{ label: string; color: string; position: object }[]>([]);
 
 const hideHeader = ref(false);
 let lastScrollTop = 0;
@@ -261,9 +252,34 @@ onMounted(async () => {
     }
   });
 
+  boxData.value = [...presetData.boxes.map(box => ({
+    label: box.label,
+    color: box.colour,
+    position: {
+      ...box
+    }
+  }))]
+
   console.log(boxes.value);
   isLoading.value = false;
 });
+
+const fetchUserMovementData = async () => {
+  if (userID.value && selectedTime.value) {
+    try {
+      const response = await axios.get(`http://localhost:5003/pico/${userID.value}`, { data: {time: selectedTime.value},withCredentials: true });
+      const picoMovementData = response.data.movement;
+      userMovementHistory.value = Object.entries(picoMovementData).map(([timestamp, roomID]) => ({
+        roomLabel: roomID as string,
+        loggedAt: timestamp,
+      }));
+    } catch (error) {
+      console.error('Error fetching user movement data:', error);
+    }
+  }
+};
+
+watch([selectedTime, userID], fetchUserMovementData);
 </script>
 
 <style scoped>

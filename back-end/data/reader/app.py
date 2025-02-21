@@ -14,6 +14,8 @@ db_connection = None
 
 def get_db_connection():
     global db_connection
+    if db_connection not None and db_connection.isConnected():
+        return db_connection
     try:
         db_connection = mysql.connector.connect(
             host=os.getenv('DB_HOST'),
