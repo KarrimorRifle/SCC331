@@ -6,6 +6,7 @@ import { handleWarningButtonPressed } from '@/utils/helper/warningUtils';
 import { updateTabHeight } from '@/utils/helper/domUtils';
 import { boxAndData } from '@/utils/mapTypes';
 import { Sketch } from '@ckpack/vue-color';
+import { usePresetStore } from '../utils/useFetchPresets';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 import LiveUpdates from './Summary/LiveUpdates/LiveUpdates.vue';
@@ -43,9 +44,10 @@ const props = defineProps({
   isLoading: Boolean,
   
 });
-console.log(props.warnings);
 const emit = defineEmits(["update:modelValue", "newBox","colourChange", "removeBox"]);
 
+const presetStore = usePresetStore();
+const presetData = computed(() => Object.values(presetStore.presetData));
 const colourPickerVisible = ref<string | null>(null);
 const selectedColour = ref({});
 const isExpanded = ref(false);
@@ -97,8 +99,11 @@ const getUpdatesForArea = (areaKey) => {
 };
 
 const warningsByArea = computed(() => {
-  return props.overlayAreasConstant.reduce((acc, area) => {
-    acc[area.label] = props.warnings.filter(warning => `Area ${warning.Location}` === area.label);
+  console.log(presetData.value[0])
+  console.log(props.warnings)
+  return presetData.value[0].reduce((acc, area) => {
+    acc[area.label] = props.warnings.filter(warning => warning.Location === area.roomID);
+    console.log(acc);
     return acc;
   }, {} as Record<string, { Title: string; Location: string; Severity: string; Summary: string }[]>);
 });
@@ -209,11 +214,10 @@ onUnmounted(() => {
               <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
             </button>
           </template>
-
           <button 
-            v-if="warningsByArea[`Area ${key}`]?.length && !editMode"
+            v-if="warningsByArea[key]?.length && !editMode"
             class="warning-btn"
-            @click="onWarningButtonClick(`Area ${key}`)"
+            @click="onWarningButtonClick(key)"
           >
             <font-awesome-icon :icon="faExclamationTriangle" />
           </button>

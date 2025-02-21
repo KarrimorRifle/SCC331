@@ -244,7 +244,7 @@ watch(
             <font-awesome-icon 
               :icon="faTrash" 
               class="delete-icon" 
-              @click="removeCondition(room.roomID, index)"
+              @click.stop.prevent="removeCondition(room.roomID, index)" 
             />
           </li>
         </ul>
