@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, make_response
 import mysql.connector
 from flask_cors import CORS
-from mysql.connector import Error
+from mysql.connector import Error, pooling  # add this import
 from datetime import datetime, timedelta
 import os
 import requests
@@ -10,28 +10,23 @@ import time
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-# Establish a persistent connection to the database
-db_connection = None
+# Create a connection pool at startup with an appropriate pool size; adjust parameters as needed.
+connection_pool = pooling.MySQLConnectionPool(
+    pool_name="mypool",
+    pool_size=10,  # set pool size based on load
+    pool_reset_session=True,
+    host=os.getenv('DB_HOST'),
+    user=os.getenv('DB_USER'),
+    password=os.getenv('DB_PASSWORD'),
+    database=os.getenv('DB_NAME')
+)
 
-def get_db_connection(retries=5, delay=1):
-    global db_connection
-    for _ in range(retries):
-        try:
-            if db_connection != None and db_connection.is_connected():
-                return db_connection
-            db_connection = mysql.connector.connect(
-                host=os.getenv('DB_HOST'),
-                user=os.getenv('DB_USER'),
-                password=os.getenv('DB_PASSWORD'),
-                database=os.getenv('DB_NAME')
-            )
-        except Error as e:
-            print(f"Error connecting to MySQL: {e}")
-            db_connection = None
-            time.sleep(delay)
-    
-    print("Failed to establish database connection after retries")
-    return None
+def get_db_connection():
+    try:
+        return connection_pool.get_connection()
+    except Error as e:
+        print(f"Error getting connection from pool: {e}")
+        return None
 
 # Make A path per data type, and make sure the cookie is valid beither getting summary data
 

@@ -1,6 +1,6 @@
 <template>
   <div class="inspection bg-light text-dark mt-0 p-0" style="flex-grow: 1;">
-    <div :class="['row', 'bg-theme', 'p-3', 'pt-0', 'rounded', 'sticky-top', { 'd-none': hideHeader }]">
+    <div :class="['row', 'bg-theme', 'p-3', 'pt-0', 'rounded', 'sticky-top', { 'd-none': hideHeader }]" style="z-index: 1;">
       <div class="row g-3 align-items-end col-lg-7 mt-0 col-12">
         <div class="col-5">
           <label for="start-time" class="form-label">Start Time:</label>
@@ -95,7 +95,7 @@
   </div>
   <!-- Modal -->
 
-  <user-movement-modal class="text-dark" :show-modal="showModal" :selected-user-id="userID" :overlay-areas-constant="boxData" :user-room-history="userMovementHistory" @close="showModal = false"/>
+  <user-movement-modal class="text-dark" :show-modal="showModal" :selected-user-id="Number.parseInt(userID)" :overlay-areas-constant="boxData" :user-room-history="userMovementHistory" @close="showModal = false"/>
 </template>
 
 <script setup lang="ts">
@@ -253,8 +253,8 @@ onMounted(async () => {
   });
 
   boxData.value = [...presetData.boxes.map(box => ({
-    label: box.label,
-    color: box.colour,
+    label: boxes.value.label,
+    color: boxes.value.colour,
     position: {
       ...box
     }
@@ -270,7 +270,7 @@ const fetchUserMovementData = async () => {
       const response = await axios.get(`http://localhost:5003/pico/${userID.value}`, { data: {time: selectedTime.value},withCredentials: true });
       const picoMovementData = response.data.movement;
       userMovementHistory.value = Object.entries(picoMovementData).map(([timestamp, roomID]) => ({
-        roomLabel: roomID as string,
+        roomLabel: roomID as string, // he hard coded the area names... bad coding practice- will bring this up
         loggedAt: timestamp,
       }));
     } catch (error) {
