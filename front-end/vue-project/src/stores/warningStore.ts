@@ -78,8 +78,7 @@ export const createWarning = async () => {
 
   try {
     await axios.post(`${API_BASE_URL}/warnings`, payload, { withCredentials: true });
-    console.log("Warning created:", response.data);
-    fetchWarnings(); 
+    await fetchWarnings(); 
   } catch (error) {
     console.error("Error creating warning:", error);
   }
