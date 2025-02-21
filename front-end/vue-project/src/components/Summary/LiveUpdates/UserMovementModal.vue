@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { defineProps, defineEmits, ref, watch, computed, PropType } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
+import { usePresetStore } from "../../../utils/useFetchPresets";
 
 const props = defineProps({
   showModal: { type: Boolean, required: true },
@@ -17,9 +18,11 @@ const props = defineProps({
     required: true,
   },
 });
-
+console.log(props.userRoomHistory);
 const emit = defineEmits(['close']);
 
+const presetStore = usePresetStore();
+const presetData = computed(() => Object.values(presetStore.boxes_and_data));
 /* HELPERS */
 const convertToTimestamp = (date: string | Date | null): number => {
   if (!date) return 0;
@@ -35,8 +38,10 @@ const convertToTimestamp = (date: string | Date | null): number => {
 };
 
 const getRoomColor = (roomLabel: string): string => {
+  console.log(roomLabel);
+  console.log(currentRoom.value)
   return currentRoom.value === roomLabel
-    ? props.overlayAreasConstant.find(area => area.label === roomLabel)?.color || 'lightgray'
+    ? presetData.value.find(area => area.label === roomLabel)?.box?.colour || 'lightgray'
     : 'lightgray';
 };
 
@@ -64,12 +69,25 @@ const currentTime = ref(timestamps.value[Math.floor(replayIndex.value / 10)] || 
 let replayInterval: ReturnType<typeof setInterval> | null = null;
 
 /* AREA POSITIONS */
-const areaPositions = computed(() => ({
-  "Area 1": { x: 50, y: 50 },   // Top-left
-  "Area 2": { x: 250, y: 50 },  // Top-right
-  "Area 3": { x: 50, y: 250 },  // Bottom-left
-  "Area 4": { x: 250, y: 250 }, // Bottom-right
-}));
+
+const areaPositions = computed(() => {
+  const positions = [
+    { x: 50, y: 50 },   // Top-left
+    { x: 250, y: 50 },  // Top-right
+    { x: 50, y: 250 },  // Bottom-left
+    { x: 250, y: 250 }, // Bottom-right
+  ];
+
+  const mappedPositions: Record<string, { x: number; y: number }> = {};
+
+  presetData.value.forEach((area, index) => {
+    if (positions[index]) {
+      mappedPositions[area.label] = positions[index]; 
+    }
+  });
+
+  return mappedPositions;
+});
 
 /* TIMELINE & PLAYBACK */
 const updateReplayIndex = (event: Event) => {
@@ -181,12 +199,12 @@ watch(() => props.showModal, (newValue) => {
             :moveYPositionBy=20
           />
           <div
-            v-for="area in ['Area 1', 'Area 2', 'Area 3', 'Area 4']"
-            :key="area"
+            v-for="area in presetData" 
+            :key="area.label"
             :class="['grid-item', { active: currentRoom === area }]"
-            :style="{ backgroundColor: getRoomColor(area), color: getTextColour(getRoomColor(area)) }"
+            :style="{ backgroundColor: getRoomColor(area.label), color: getTextColour(getRoomColor(area.label)) }"
           >
-            {{ area }}
+            {{ area.label }}
           </div>
           <!-- Display Time -->
         </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
+import { usePresetStore } from '../../../utils/useFetchPresets';
 import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
 import LuggageMarker from '../../ObjectMarker/LuggageMarker.vue';
 import EnvironmentDataGraph from '../EnvironmentDataGraph.vue';
@@ -21,6 +22,8 @@ const props = defineProps({
   },
 });
 
+const presetStore = usePresetStore();
+const presetData = computed(() => Object.values(presetStore.boxes_and_data)); 
 // Multi-selection state (stores selected areas)
 const selectedAreas = ref([]);
 const activeGraphArea = ref(null);
@@ -48,9 +51,10 @@ const getAreaKey = (label: string): string | null => {
 
 // Computed property for filtered areas
 const filteredAreas = computed(() => {
-  if (selectedAreas.value.length === 0) return props.overlayAreasConstant;
-  return props.overlayAreasConstant.filter(area => selectedAreas.value.includes(area.label));
+  if (selectedAreas.value.length === 0) return presetData.value;
+  return presetData.value.filter(area => selectedAreas.value.includes(area.label));
 });
+
 </script>
 
 <template>
@@ -67,14 +71,14 @@ const filteredAreas = computed(() => {
     <!-- Import Filter Bar -->
     <SummaryTableFilterBar 
       v-if="showFilterBar"
-      :overlayAreasConstant="overlayAreasConstant" 
+      :overlayAreasConstant="presetData" 
       @update:selectedAreas="selectedAreas = $event"
     />
 
     <!-- Cards Layout -->
     <div class="summary-grid">
       <div v-for="(area, index) in filteredAreas" :key="index" class="summary-card">
-        <div class="card-header" :style="{ backgroundColor: area.color, color: getTextColour(area.color) }">
+        <div class="card-header" :style="{ backgroundColor: area.box?.colour, color: getTextColour(area.box?.colour) }">
           <h3>{{ area.label }}</h3>
         </div>
         <div class="card-body">
