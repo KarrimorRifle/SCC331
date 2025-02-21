@@ -2,7 +2,6 @@
 import { computed } from "vue";
 import { isWarningModalOpen, warningModalData } from "@/utils/helper/warningUtils";
 import { getCardBackgroundColor } from "@/utils/helper/warningUtils"; // Import background color function
-import { usePresetStore } from "../../../utils/useFetchPresets";
 
 const props = defineProps({
   overlayAreasConstant: {
@@ -10,17 +9,15 @@ const props = defineProps({
     required: true,
   },
 });
+
 const closeModal = () => {
   isWarningModalOpen.value = false;
 };
-const presetStore = usePresetStore();
-const presetData = computed(() => Object.values(presetStore.boxes_and_data));
-// **Get Area Color Based on `overlayAreasConstant`**
 
+// **Get Area Color Based on `overlayAreasConstant`**
 const getAreaColor = computed(() => {
-  if (!Array.isArray(presetData.value)) return "#ccc"; 
-  const area = presetData.value.find(area => area.label === warningModalData.value.areaLabel);
-  return area?.box?.colour || "#ccc"; 
+  const area = props.overlayAreasConstant.find(area => area.label === warningModalData.value.areaLabel);
+  return area ? area.color : "#ccc"; // Default gray if not found
 });
 </script>
 

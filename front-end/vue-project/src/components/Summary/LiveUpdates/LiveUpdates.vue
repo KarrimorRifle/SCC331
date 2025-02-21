@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { PropType, ref, computed } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
-import { usePresetStore } from '../../../utils/useFetchPresets';
 import UserMovementModal from './UserMovementModal.vue'; 
 
 // Props
@@ -26,8 +25,6 @@ const props = defineProps({
     required: true,
   },
 });
-const presetStore = usePresetStore();
-const presetData = computed(() => Object.values(presetStore.boxes_and_data));
 // Modal state
 const showModal = ref(false);
 const selectedUserId = ref<number | null>(null);
@@ -71,7 +68,7 @@ const openUserModal = (userId: number) => {
   // Retrieve **full history** of the selected user across all areas
   userRoomHistory.value = userData.map(({ logged_at, roomID }) => {
     return {
-      roomLabel: String(roomID),
+      roomLabel: `Area ${roomID}`,
       loggedAt: new Date(logged_at).toLocaleString(),
     };
   }) || [];
@@ -95,8 +92,8 @@ const groupedUsersByRoom = computed(() => {
   // ✅ **Determine Which Area Filter to Use**
   const areasToShow = 
     props.areaKey ? 
-    presetData.value.filter(area => area.label === `${props.areaKey}`) : 
-    presetData.value;
+    props.overlayAreasConstant.filter(area => area.label === `Area ${props.areaKey}`) : 
+    props.overlayAreasConstant;
 
   console.log("area to show: ", areasToShow);
   // Populate roomMap **only for the filtered users of the area**
@@ -114,7 +111,7 @@ const groupedUsersByRoom = computed(() => {
       const hourNumeric = date.getHours();
       const fullTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-      const formattedRoomLabel = String(roomID);
+      const formattedRoomLabel = `Area ${roomID}`;
 
       // ✅ **Ensure only selected areas are displayed**
       if (!areasToShow.some(area => area.label === formattedRoomLabel)) return;
@@ -137,7 +134,7 @@ const groupedUsersByRoom = computed(() => {
   // ✅ **Ensure correct area list is used (Summary = all, Dashboard = filtered)**
   return areasToShow.map((area) => ({
     roomLabel: area.label,
-    roomColor: area.box?.colour, // Use box.colour for color
+    roomColor: area.color,
     entries: (roomMap.get(area.label) || []).sort((a, b) => a.hourNumeric - b.hourNumeric),
   }));
 });
