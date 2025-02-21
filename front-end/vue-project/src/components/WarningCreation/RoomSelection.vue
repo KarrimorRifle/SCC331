@@ -45,7 +45,7 @@ const toggleRoomSelection = (room: any) => {
             v-model="selectedRooms"
             @click.stop="toggleRoomSelection(room)"
           />
-          Area {{ room.label }}
+          {{ room.label }}
         </label>
       </div>
     </div>
