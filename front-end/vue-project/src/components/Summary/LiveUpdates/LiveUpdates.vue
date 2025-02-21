@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PropType, ref, computed } from 'vue';
+import { PropType, ref, computed, watch } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
 import UserMovementModal from './UserMovementModal.vue'; 
@@ -150,6 +150,17 @@ const groupedUsersByRoom = computed(() => {
   }));
 });
 
+const isLoading = ref(true);
+
+// Watch for updates and set loading state
+watch(
+  () => props.updates,
+  (newUpdates) => {
+    isLoading.value = !newUpdates || Object.keys(newUpdates).length === 0;
+  },
+  { immediate: true }
+);
+
 </script>
 
 <template>
@@ -158,8 +169,14 @@ const groupedUsersByRoom = computed(() => {
       <h1>Live Updates</h1>
     </div>
 
+    <!-- Throbber for loading state -->
+    <div v-if="isLoading" class="loading-throbber">
+      <div class="spinner"></div>
+      <p>Loading updates...</p>
+    </div>
+
     <!-- Time Filter Inputs -->
-    <div class="date-time-filter">
+    <div v-else class="date-time-filter">
       <div>
         <label for="start-time">Start Time:</label>
         <input id="start-time" type="datetime-local" v-model="startTime">
@@ -171,7 +188,7 @@ const groupedUsersByRoom = computed(() => {
     </div>
 
     <!-- Room List -->
-    <div class="room-list">
+    <div v-else class="room-list">
       <template v-if="groupedUsersByRoom.length">
         <div
           v-for="{ roomLabel, roomColor, entries } in groupedUsersByRoom"
@@ -216,6 +233,28 @@ const groupedUsersByRoom = computed(() => {
   background-color: #f8f8ff;
   border-top: 1px solid #ccc;
   color: black;
+}
+
+.loading-throbber {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top: 4px solid #568EA6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .date-time-filter {

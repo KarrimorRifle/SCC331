@@ -11,8 +11,8 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/summary',
-      name: 'summary',
+      path: '/summaries',
+      name: 'summaries',
       component: () => import('../views/SummaryView.vue'),
       meta: { requiresAuth: true }
     },

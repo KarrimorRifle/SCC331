@@ -83,7 +83,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 			<!-- normal links -->
       <RouterLink to="/" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
       <RouterLink to="/map" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
-      <RouterLink to="/summary" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
+      <RouterLink to="/summaries" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
 
 			<!-- Admins -->
 			<template v-if="authStore.userAuthority === 'Admin'">
@@ -105,7 +105,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 			<!-- normal links -->
       <RouterLink to="/" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Home</RouterLink>
       <RouterLink to="/map" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Map</RouterLink>
-      <RouterLink to="/summary" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Summary</RouterLink>
+      <RouterLink to="/summaries" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Summary</RouterLink>
 
 			<!-- Admin links -->
 			<template v-if="authStore.userAuthority === 'Admin'">
