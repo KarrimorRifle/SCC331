@@ -127,7 +127,7 @@ export default {
 	<div v-if="loading" class="loading-container">Checking authorization...</div>
 	<div v-else-if="!userIsAdmin" class="not-authorized">Not Authorized</div>
 	<div v-else class="container">
-		<h1 class="title">User List</h1>
+		<h1 class="title">Administration</h1>
 		<div class="input-section">
 			<input v-model="newUser.fullName" type="text" placeholder="Full Name" class="input">
 			<input v-model="newUser.email" type="email" placeholder="Email" class="input">
@@ -205,6 +205,7 @@ export default {
 
 
 <style scoped>
+
 .loading-container,
 .not-authorized {
 	display: flex;
@@ -220,8 +221,7 @@ export default {
 	max-width: 900px;
 	margin: 0 auto;
 	padding: 20px;
-	background: linear-gradient(to right, #ebf8ff, #90cdf4);
-	border-radius: 10px;
+	background: #90cdf4;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 .title {
@@ -236,8 +236,8 @@ export default {
 	gap: 10px;
 	background: white;
 	padding: 10px;
-	border-radius: 10px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	align-items: center; /* Vertically center the items inside the container */
 }
 .input {
 	border: 1px solid #ccc;
@@ -260,7 +260,6 @@ export default {
 .table-container {
 	background: white;
 	padding: 10px;
-	border-radius: 10px;
 }
 .user-table {
 	width: 100%;
