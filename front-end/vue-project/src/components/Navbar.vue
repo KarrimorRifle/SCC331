@@ -3,10 +3,11 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faXmark, faBars} from '@fortawesome/free-solid-svg-icons';
 import { RouterLink } from 'vue-router';
 import { useCookies } from 'vue3-cookies';
-import { ref, defineProps, defineEmits } from 'vue';
+import { ref, defineProps, defineEmits, onMounted, watch } from 'vue';
 import NotificationIcon from './Notifications/NotificationIcon.vue';
 import axios from "axios"
 import router from '@/router';
+import { useAuthStore } from '@/stores/authStore';
 
 const props = defineProps({
 	isMobile: Boolean,
@@ -17,6 +18,7 @@ const props = defineProps({
 		type: Boolean,
 		default: null
 	}, 
+	isAdmin: Boolean,
 });
 
 const { cookies } = useCookies();
@@ -24,12 +26,15 @@ const sessionId = cookies.get('session_id');
 const isMenuOpen = ref(false);
 const emit = defineEmits(["logout", "toggleWarningModal"]);
 
+const authStore = useAuthStore();
+
 const handleLogout = async() => {
 	try {
 		await axios.post("http://localhost:5002/logout", {}, {
 			withCredentials: true
 		})
 		cookies.remove('session_id');
+		authStore.logout();
 		emit("logout");
 		router.push("/");
 	}catch(err) {
@@ -46,6 +51,14 @@ const closeMenu = () =>{
   isMenuOpen.value = false;
 }
 
+onMounted(async() => {
+	await authStore.checkUserAuthority();
+	console.log(authStore.userAuthority)
+});
+
+watch(() => authStore.userAuthority, (newVal) => {
+	console.log("User authority changed:", newVal);
+});
 </script>
 
 <template>
@@ -67,13 +80,19 @@ const closeMenu = () =>{
 
     <!-- Desktop Navigation -->
     <div class="nav-links">
+			<!-- normal links -->
       <RouterLink to="/" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
       <RouterLink to="/map" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
-      <RouterLink to="/summary" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
-      <RouterLink to="/create-warning" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Create Warning</RouterLink>
-      <RouterLink to="/admin" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Admin</RouterLink>
+      <RouterLink to="/summary" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
+
+			<!-- Admins -->
+			<template v-if="authStore.userAuthority === 'Admin'">
+				<RouterLink to="/create-warning" class="nav-link ms-4" exact-active-class="active" >Warnings</RouterLink>
+				<RouterLink to="/admin" class="nav-link" exact-active-class="active" >Users</RouterLink>
+				<RouterLink to="/inspection" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" >Inspection</RouterLink>
+			</template>
       <RouterLink to="/login" class="nav-link" exact-active-class="active" v-if="!props.loggedIn">Login</RouterLink>
-      <RouterLink to="#" class="nav-link" v-if="props.loggedIn" @click.prevent="handleLogout">
+      <RouterLink to="#" class="nav-link ms-4" v-if="props.loggedIn" @click.prevent="handleLogout">
         Log out
       </RouterLink>
     </div>
@@ -83,11 +102,18 @@ const closeMenu = () =>{
       <button class="close-btn" @click="toggleMenu">
         <font-awesome-icon :icon="faXmark" />
       </button>
+			<!-- normal links -->
       <RouterLink to="/" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Home</RouterLink>
       <RouterLink to="/map" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Map</RouterLink>
       <RouterLink to="/summary" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Summary</RouterLink>
-      <RouterLink to="/create-warning" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Create Warning</RouterLink>
-      <RouterLink to="/admin" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Admin</RouterLink>
+
+			<!-- Admin links -->
+			<template v-if="authStore.userAuthority === 'Admin'">
+				<RouterLink to="/create-warning" class="mobile-link" exact-active-class="active" @click="closeMenu">Create Warning</RouterLink>
+				<RouterLink to="/admin" class="mobile-link" exact-active-class="active" @click="closeMenu">Admin</RouterLink>
+				<RouterLink to="/inspection" class="mobile-link" exact-active-class="active" @click="closeMenu">Inspection</RouterLink>
+			</template>
+
       <RouterLink to="/login" class="mobile-link" exact-active-class="active" v-if="!props.loggedIn" @click="closeMenu">Login</RouterLink>
       <RouterLink to="#" class="mobile-link" v-if="props.loggedIn" @click.prevent="handleLogout" @click="closeMenu">
         Log out
@@ -120,7 +146,7 @@ const closeMenu = () =>{
 
 .nav-link {
 	margin: 0 15px;
-	color: rgb(196, 196, 196);
+	color: #FFFFFF;
 	text-decoration: none;
 	font-size: 16px;
 	font-weight: bold;
@@ -131,7 +157,7 @@ const closeMenu = () =>{
 }
 
 .active {
-	color: #ffffff;
+	color: rgb(196, 196, 196);
 }
 
 /* Hamburger Button (Visible on Mobile) */

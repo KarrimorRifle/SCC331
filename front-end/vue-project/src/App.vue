@@ -11,6 +11,7 @@ import { fetchWarnings, fetchFullWarningConditions, warningsList, fullWarningCon
 import { usePresetStore } from './utils/useFetchPresets';
 import { checkWarningAreas } from './utils/warningChecker';
 import axios from 'axios';
+import { useAuthStore } from '@/stores/authStore';
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
 const { overlayAreasConstant, overlayAreasData, updateOverlayAreaColor, updateAllOverlayAreas, updates, environmentHistory, warnings } = useFetchData(picoIds);
@@ -22,6 +23,7 @@ const showSeverePopup = ref(false);
 const summary = presetStore.summary;
 const safeWarnings = computed(() => Array.isArray(warnings.value) ? warnings.value : []);
 const warningCount = computed(() => notificationQueue.value.length);
+const authStore = useAuthStore();
 
 // first time loading for the warnings
 let firstTime = true;
@@ -74,6 +76,10 @@ onMounted(() => {
 onMounted(async () => {
   await fetchWarnings(); 
   await fetchFullWarningConditions(); 
+});
+
+onMounted(() => {
+  authStore.checkUserAuthority();
 });
 
 onUnmounted(() => {
@@ -144,9 +150,10 @@ watch(
       :isWarningModalOpen="isWarningModalOpen" 
       :warnings="notificationQueue"
       :warningCount="warningCount"
-      :loggedIn="isLoggedIn"
+      :loggedIn="authStore.isLoggedIn"
+      :isAdmin="authStore.userAuthority === 'Admin'"
       @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
-      @logout="isLoggedIn = false"
+      @logout="authStore.logout"
     />
     <router-view
       class="flex-grow-1 app"
@@ -157,15 +164,15 @@ watch(
       :isMobile="isMobile"
       :overlayAreasConstant="overlayAreasConstant"
       :overlayAreasData="overlayAreasData"
-      :loggedIn="isLoggedIn"
-      @login="isLoggedIn = true"
+      :loggedIn="authStore.isLoggedIn"
+      @login="authStore.login"
       @updateOverlayAreaColor="handleUpdateOverlayAreaColor"
       @updateOverlayAreas="handleUpdateAllOverlayAreas"
     />
     
     <!-- Notification Icon Component -->
     <NotificationIcon 
-      v-if="!isMobile && isLoggedIn" 
+      v-if="!isMobile && authStore.isLoggedIn" 
       :warnings="notificationQueue" 
       :warningCount="warningCount"
       :isWarningModalOpen="isWarningModalOpen"
