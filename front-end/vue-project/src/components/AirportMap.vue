@@ -326,7 +326,7 @@ const updateMode = ref<boolean>(false);
         />
       </div>
     </div>
-    <NewPreset :presetData="presetData" :updateMode="updateMode" @new-preset="emit('newPreset')"/>
+    <NewPreset :presetList="presetList" :presetData="presetData" :updateMode="updateMode" @new-preset="emit('newPreset')"/>
     <ImageUpload :currentPresetId="props.currentPreset" @new-image="emit('newImage')"/>
     </div>
   </div>
@@ -369,7 +369,6 @@ const updateMode = ref<boolean>(false);
   width: 100%;
   height: 100%;
   cursor: grab;
-  overflow: hidden; /* Ensure the map doesn't go out of bounds */
 }
 
 .airport-map-wrapper:active {

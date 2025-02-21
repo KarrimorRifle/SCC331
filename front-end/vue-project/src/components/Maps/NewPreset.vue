@@ -120,7 +120,7 @@ const searchUsers = () => {
 
       const matchesQuery = userEmail.includes(query) || userName.includes(query);
       const isNotSelected = !selectedUsers.value.some(selected => selected.uid === user.uid);
-      const isNotCurrentUser = currentUser.value?.uid == user.uid; 
+      const isNotCurrentUser = currentUser.value?.uid != user.uid; 
 
       return matchesQuery && isNotSelected && isNotCurrentUser;
     });

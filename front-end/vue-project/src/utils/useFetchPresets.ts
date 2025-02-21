@@ -332,6 +332,22 @@ export const usePresetStore = defineStore("presetStore", () => {
       create_data();
       editMode.value = false;
     }
+
+    const reloadPresets = async () => {
+      try {
+        await fetchPresets(); // Fetch the updated list of presets
+        if (presetList.value.presets.length > 0) {
+          // Ensure current preset is valid
+          if (!presetList.value.presets.some(p => p.id === currentPreset.value)) {
+            currentPreset.value = presetList.value.default || presetList.value.presets[0].id;
+          }
+        }
+        await fetchPreset();
+        window.location.reload();
+      } catch (error) {
+        console.error("Error reloading presets:", error);
+      }
+    };
     
     const updateOverlayAreaColor = (roomID: string, newColor: string) => {
       const area = overlayAreasConstant.value.find(area => area.label === `Area ${roomID}`);
@@ -410,6 +426,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         canDelete,
         settable,
         editMode, 
+        reloadPresets,
         fetchPresets,
         fetchPreset,
         processPresetImage,

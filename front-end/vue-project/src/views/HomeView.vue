@@ -17,7 +17,7 @@ const scrollToSection = (id: string) => {
 </script>
 
 <template>
-  <div>
+  <div class="home-page-container">
     <!-- Hero Section -->
     <header class="hero">
       <div class="overlay"></div>
@@ -93,6 +93,16 @@ const scrollToSection = (id: string) => {
 </template>
 
 <style scoped>
+.home-page-container {
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none; 
+  -ms-overflow-style: none;
+}
+.page-container::-webkit-scrollbar {
+  display: none; 
+}
 /* Hero Section */
 .hero {
   width: 100%;
@@ -103,6 +113,7 @@ const scrollToSection = (id: string) => {
   position: relative;
   color: white;
   padding: 2rem;
+  scroll-snap-align: start;
 }
 
 .hero .overlay {
@@ -148,6 +159,15 @@ const scrollToSection = (id: string) => {
 .hero p {
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+section {
+  height: 100vh !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: start;
 }
 
 .cta-button {
