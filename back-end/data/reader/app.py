@@ -586,13 +586,8 @@ def movement():
                     if room_id not in bucket_data:
                         bucket_data[room_id] = {}
                     bucket_data[room_id][pico_id] = pico_type
-                # Flatten each room's dictionary into a comma-separated string.
-                flat_rooms = {}
-                for room, picos in bucket_data.items():
-                    flat_str = ", ".join(f"{pid}:{ptype}" for pid, ptype in picos.items())
-                    flat_rooms[room] = flat_str
                 bucket_key = bucket.isoformat() + "Z"
-                movement_summary[bucket_key] = flat_rooms
+                movement_summary[bucket_key] = bucket_data
 
         return jsonify(movement_summary)
     except Error as e:
