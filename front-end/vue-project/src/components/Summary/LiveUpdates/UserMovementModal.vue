@@ -12,7 +12,7 @@ const props = defineProps({
     type: Array as PropType<{ label: string; color: string; position: object }[]>,
     required: true,
   },
-  selectedUserId: { type: Number, default: null },
+  selectedUserId: { type: [Number, String], default: null },
   userRoomHistory: {
     type: Array as PropType<{ roomLabel: string; loggedAt: string }[]>,
     required: true,

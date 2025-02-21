@@ -1,17 +1,17 @@
 <template>
-  <div class="inspection bg-light text-dark mt-0 p-0">
-    <div class="row bg-theme p-3 rounded">
+  <div class="inspection bg-light text-dark mt-0 p-0" style="flex-grow: 1;">
+    <div :class="['row', 'bg-theme', 'p-3', 'pt-0', 'rounded', 'sticky-top', { 'd-none': hideHeader }]">
       <div class="row g-3 align-items-end col-lg-7 mt-0 col-12">
-        <div class="col-md-5">
+        <div class="col-5">
           <label for="start-time" class="form-label">Start Time:</label>
           <input id="start-time" type="datetime-local" v-model="startTime" class="form-control">
         </div>
-        <div class="col-md-5">
+        <div class="col-5">
           <label for="end-time" class="form-label">End Time:</label>
           <input id="end-time" type="datetime-local" v-model="endTime" class="form-control">
         </div>
-        <div class="col-md-2">
-          <button @click="fetchMovementData" class="btn btn-primary w-100">Fetch Data</button>
+        <div class="col-2">
+          <button @click="fetchMovementData" class="btn btn-primary w-100">Fetch</button>
         </div>
       </div>
       <div class="row g-3 col-lg-5 col-12">
@@ -33,7 +33,7 @@
       <p>No data selected</p>
     </div>
 
-    <div v-else class="movement-data p-3">
+    <div v-else class="movement-data p-3" style="flex-grow: 1; overflow: auto;" @scroll="handleScroll">
       <h4 class="current-time">{{ formatTime(timeKeys[selectedTimeIndex]) }}</h4>
       <div class="row">
         <div v-for="(box, roomID) in boxes" :key="roomID" class="col-md-4 mb-4">
@@ -93,6 +93,19 @@
       </div>
     </div>
   </div>
+  <div class="modal fade" id="userMovementModal" tabindex="-1" aria-labelledby="userMovementModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="userMovementModalLabel">User Movement</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <user-movement-modal :show-modal="showModal" :selected-user-id="userID" :overlay-areas-constant="[]" :user-room-history="userMovementHistory"/>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -100,11 +113,25 @@ import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import type { Record } from 'vue';
 import type { presetListType, preset, boxType } from '@/utils/mapTypes';
+import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModal.vue';
 
 const showModal = ref(false);
 const isLoading = ref(false);
 const movementData = ref<Record<string, Record<string, Record<string, string>>>>({});
 const boxes = ref<Record<string, { label: string; colour: string }>>({});
+
+const userID = ref<string>("");
+const userMovementHistory = ref<{ roomLabel: string; loggedAt: string }[]>([]);
+
+const hideHeader = ref(false);
+let lastScrollTop = 0;
+
+const handleScroll = (event: Event) => {
+  const target = event.target as HTMLElement;
+  const scrollTop = target.scrollTop;
+  hideHeader.value = scrollTop > lastScrollTop;
+  lastScrollTop = scrollTop;
+};
 
 // Default start time to 3 hours before now and end time to now
 const startTime = ref(new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 16));
@@ -191,7 +218,7 @@ const deactivated = computed(() => {
 
 const formatTime = (time: string) => {
   const date = new Date(time);
-  return date.toLocaleString();
+  return window.innerWidth <= 768 ? date.toLocaleTimeString() : date.toLocaleString();
 };
 
 let labelIndex = 0;
@@ -242,6 +269,8 @@ onMounted(async () => {
 <style scoped>
 .inspection {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .bg-theme {
@@ -287,6 +316,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  flex-grow: 1;
 }
 
 .current-time {
