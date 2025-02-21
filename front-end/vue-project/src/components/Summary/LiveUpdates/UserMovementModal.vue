@@ -25,12 +25,15 @@ const convertToTimestamp = (date: string | Date | null): number => {
   if (!date) return 0;
 
   if (typeof date === "string") {
+    // If in ISO format, parse directly
+      if (date.includes('T'))
+        return new Date(date).getTime();
+
     // Convert "17/02/2025, 05:55:32" → "2025-02-17T05:55:32"
     const [day, month, year, time] = date.split(/[/, ]+/);
     const formattedDate = `${year}-${month}-${day}T${time}`;
     return new Date(formattedDate).getTime();
   }
-
   return new Date(date).getTime();
 };
 
