@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { useCookies } from 'vue3-cookies';
-
-const { cookies } = useCookies();
+import { useAuthStore } from '@/stores/authStore';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -13,8 +11,8 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/summary',
-      name: 'summary',
+      path: '/summaries',
+      name: 'summaries',
       component: () => import('../views/SummaryView.vue'),
       meta: { requiresAuth: true }
     },
@@ -28,7 +26,7 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: () => import('../views/AdminView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
       path: '/login',
@@ -41,23 +39,28 @@ const router = createRouter({
       component: () => import('../views/RegisterView.vue'),
     },
     {
-			path: '/admin',
-			name: 'admin',
-			component: () => import('../views/AdminView.vue'),
-		},
-    {
       path: '/',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
     },
+    {
+      path: '/inspection',
+      name: 'inspection',
+      component: () => import('../views/InspectionView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    }
   ],
-})
+});
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore();
+  await authStore.checkUserAuthority();
+
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    const isLoggedIn = !!cookies.get("session_id");
-    if (!isLoggedIn) {
+    if (!authStore.isLoggedIn) {
       next({ path: '/login' });
+    } else if (to.matched.some(record => record.meta.requiresAdmin) && authStore.userAuthority !== 'Admin') {
+      next({ path: '/' }); // Redirect to home if not admin
     } else {
       next();
     }

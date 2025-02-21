@@ -80,7 +80,7 @@ def on_message(client, user_data, message):
             cursor.execute(
                 "INSERT INTO environment (picoID, roomID, logged_at, sound, light, temperature, IAQ, pressure, humidity) "
                 "VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s, %s)",
-                (data.PicoID, data.RoomID, env_data[0], env_data[1], env_data[2], env_data[3], env_data[4], env_data[5])
+                (str(data.PicoID), str(data.RoomID), env_data[0], env_data[1], env_data[2], env_data[3], env_data[4], env_data[5])
             )
             db_connection.commit()
         except Error as e:
@@ -95,7 +95,7 @@ def on_message(client, user_data, message):
             table_name = get_table_name(data.PicoType)
             if table_name:
                 query = f"INSERT INTO {table_name} (picoID, roomID, logged_at) VALUES (%s, %s, NOW())"
-                cursor.execute(query, (data.PicoID, data.RoomID))
+                cursor.execute(query, (str(data.PicoID), str(data.RoomID)))
                 db_connection.commit()
             else:
                 print(f"Invalid PicoType {data.PicoType}")

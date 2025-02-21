@@ -100,7 +100,14 @@ export function useFetchData(picoIds) {
           continue;
         }
 
-        const picoData = await picoResponse.data;
+        // Convert new API format to old format
+        // New format: { type: "...", movement: { "timestamp": "RoomID", ... } }
+        // Old format: [ { roomID: <number>, logged_at: <timestamp> }, ... ]
+        const picoMovementData = picoResponse.data.movement;
+        const picoData = Object.entries(picoMovementData).map(([timestamp, roomID]) => ({
+          roomID,
+          logged_at: timestamp,
+        }));
         //console.log(`Pico ${PICO_ID} data:`, picoData);
 
         if (JSON.stringify(picoData) !== JSON.stringify(updates.value[PICO_ID])) {

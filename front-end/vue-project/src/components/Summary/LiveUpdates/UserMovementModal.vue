@@ -11,7 +11,7 @@ const props = defineProps({
     type: Array as PropType<{ label: string; color: string; position: object }[]>,
     required: true,
   },
-  selectedUserId: { type: Number, default: null },
+  selectedUserId: { type: [Number, String], default: null },
   userRoomHistory: {
     type: Array as PropType<{ roomLabel: string; loggedAt: string }[]>,
     required: true,
@@ -25,12 +25,15 @@ const convertToTimestamp = (date: string | Date | null): number => {
   if (!date) return 0;
 
   if (typeof date === "string") {
+    // If in ISO format, parse directly
+      if (date.includes('T'))
+        return new Date(date).getTime();
+
     // Convert "17/02/2025, 05:55:32" → "2025-02-17T05:55:32"
     const [day, month, year, time] = date.split(/[/, ]+/);
     const formattedDate = `${year}-${month}-${day}T${time}`;
     return new Date(formattedDate).getTime();
   }
-
   return new Date(date).getTime();
 };
 

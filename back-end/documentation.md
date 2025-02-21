@@ -112,23 +112,23 @@ For PicoType 4 (staff) & 5 (guard):
 ## Reader
 port: 5003
 
-### GET: `/pico/<int:PICO>`
+### GET: `/pico/<string:PICO>`
+- **Description:** Gets session of Pico ID where the time is in ISO 8601 format.
 - **Headers:**
   - `session-id`: Session ID cookie (required)
+- **Request:**
+  - `time`: Select time in which the period covers
 - **Responses:**
   - `200`: Returns the most recent session logs for the specified PicoID
     - **Example:**
       ```json
-      [
-        {
-          "roomID": 1,
-          "logged_at": "2023-10-01T12:00:00Z"
-        },
-        {
-          "roomID": 2,
-          "logged_at": "2023-10-01T12:05:00Z"
+      {
+        "type": "guard | staff | user | luggage",
+        "movement": {
+          "2023-10-01T12:00:00Z": "RoomID",
+          // ... More entries
         }
-      ]
+      }
       ```
   - `401`: Invalid cookie
   - `404`: No session found for the specified PicoID
@@ -137,6 +137,9 @@ port: 5003
 ### GET: `/summary`
 - **Headers:**
   - `session-id`: Session ID cookie (required)
+- **Request:**
+  - `time`: Time in which you want to get the exact data for (optional)
+  - `mode`: ENUM: "all" | "picos" | "environment": grabd either all the data, pico data or environment data (optional)
 - **Responses:**
   - `200`: Returns a summary of the current state of all rooms
     - **Example:**
@@ -197,6 +200,116 @@ port: 5003
       }
       ```
   - `401`: Invalid cookie
+  - `500`: Database connection failed or other server error
+
+### GET: `/summary/average`
+- **Headers:**
+  - `session-id`: Session ID cookie (required)
+  - `time_start`: Start time for the summary (optional)
+  - `time_end`: End time for the summary (optional)
+- **Request:**
+  ```json
+  {
+    "start_time": "startTime", // if not provided past 24 hours will be given
+    "end_time": "endtime", // if not provided will provide up to present
+    "time_periods": "1hr", // defaults to one hour, will select the times to average
+    "rooms": ["20", "49"] // IF NOTHING or EMPTY will send everything
+  }
+  ```
+- **Responses:**
+  - `200`: Returns a summary of the average state of all rooms
+    - **Example:**
+      ```json
+      {
+        "2023-01-01T20:20:20Z": {
+          "roomID": { // Room ID
+            "users": {
+              "average": 20,
+              "peak": 45,
+              "trough": 10
+            },
+            "luggage": {
+              "average": 20,
+              "peak": 45,
+              "trough": 10
+            },
+            "guards": {
+              "average": 20,
+              "peak": 45,
+              "trough": 10
+            },
+            "staff": {
+              "average": 20,
+              "peak": 45,
+              "trough": 10
+            },
+            "light": {
+              "average": 20,
+              "peak": 45,
+              "trough": 10
+            },
+            "IAQ": {
+              "average": 20,
+              "peak": 45,
+              "trough": 10
+            },
+            "temperature": {
+              "average": 20,
+              "peak": 45,
+              "trough": 10
+            },
+            "sound": {
+              "average": 20,
+              "peak": 45,
+              "trough": 10
+            },
+            "pressure": {
+              "average": 20,
+              "peak": 45,
+              "trough": 10
+            },
+            "humidity": {
+              "average": 20,
+              "peak": 45,
+              "trough": 10
+            }
+          }
+          // ... More room IDs
+        }
+        // ... More Times
+      }
+      ```
+  - `400`: Invalid request parameters
+  - `401`: Unauthorized
+  - `500`: Database connection failed or other server error
+
+### GET: `/movement`
+- **Headers:**
+  - `session-id`: Session ID cookie (required)
+  - `time_start`: Start time for the movement data (optional) // will give past 3 hours if not given
+  - `time_end`: End time for the movement data (optional)
+- **Responses:**
+  - `200`: Returns a list of movements
+    - Time data will be per minute
+    - **Example:**
+      ```json
+      {
+        "2023-01-01T20:20:20Z": {
+          "roomID1": {
+            "PicoID1": "Staff",
+            "PicoID2": "Luggage"
+          },
+          "roomID2": {
+            "PicoID3": "User",
+            "PicoID4": "Guard"
+          }
+          // ... More room IDs
+        }
+        // ... More Times
+      }
+      ```
+  - `400`: Invalid request parameters
+  - `401`: Unauthorized
   - `500`: Database connection failed or other server error
 
 # Warning System
