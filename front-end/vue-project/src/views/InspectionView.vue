@@ -18,7 +18,8 @@
         <div class="range-selector">
           <label for="time-range" class="form-label">Select Time:</label>
           <input id="time-range" type="range" :min="0" :max="timeKeys.length - 1" v-model="selectedTimeIndex" class="form-range mb-3">
-          <span>{{ timeKeys[0] }} - {{ timeKeys[timeKeys.length - 1] }}</span>
+          <span v-if="timeKeys.length">{{ formatTime(timeKeys[0]) }} - {{ formatTime(timeKeys[timeKeys.length - 1]) }}</span>
+          <span v-else>No time data available</span>
         </div>
       </div>
     </div>
@@ -33,12 +34,12 @@
     </div>
 
     <div v-else class="movement-data p-3">
-      <h4 class="current-time">{{ timeKeys[selectedTimeIndex] }}</h4>
+      <h4 class="current-time">{{ formatTime(timeKeys[selectedTimeIndex]) }}</h4>
       <div class="row">
-        <div v-for="(rooms, roomID) in movementData[selectedTime]" :key="roomID" class="col-md-4 mb-4">
+        <div v-for="(box, roomID) in boxes" :key="roomID" class="col-md-4 mb-4">
           <div class="card">
-            <div class="card-header">
-              Room {{ roomID }}
+            <div class="card-header text-dark" :style="{backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor()}" :title="box.label.startsWith('%') ? 'Temporary value as no label available' : ''">
+              {{ box.label || generateTempLabel() }}
             </div>
             <div class="card-body">
               <table class="table">
@@ -50,10 +51,10 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(type, picoID) in rooms" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
+                  <tr v-for="(type, picoID) in movementData[selectedTime][roomID]" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
                     <td>{{ picoID }}</td>
                     <td>{{ type }}</td>
-                    <td>{{ previousLocation[selectedTime][picoID] }}</td>
+                    <td :style="{backgroundColor: boxes[previousLocation[selectedTime][picoID]]?.colour}">{{ boxes[previousLocation[selectedTime][picoID]]?.label || previousLocation[selectedTime][picoID] }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -74,13 +75,15 @@
                     <th>picoID</th>
                     <th>Type</th>
                     <th>Last Seen</th>
+                    <th>Last Room</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="picoID in deactivated[selectedTime]" :key="picoID">
+                  <tr v-for="(lastRoom, picoID) in deactivated[selectedTime]" :key="picoID">
                     <td>{{ picoID }}</td>
                     <td>{{ movementData[selectedTime][picoID]?.type || 'Unknown' }}</td>
-                    <td>{{ selectedTime }}</td>
+                    <td>{{ formatTime(selectedTime) }}</td>
+                    <td :style="{backgroundColor: boxes[lastRoom].colour || '#FFFFFF'}">{{ boxes[lastRoom].label }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -93,20 +96,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import type { Record } from 'vue'; // Add this line
+import type { Record } from 'vue';
+import type { presetListType, preset, boxType } from '@/utils/mapTypes';
 
 const showModal = ref(false);
 const isLoading = ref(false);
 const movementData = ref<Record<string, Record<string, Record<string, string>>>>({});
+const boxes = ref<Record<string, { label: string; colour: string }>>({});
 
 // Default start time to 3 hours before now and end time to now
 const startTime = ref(new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 16));
 const endTime = ref(new Date().toISOString().slice(0, 16));
 
 const fetchMovementData = async () => {
-  isLoading.value = true;
   try {
     const response = await axios.get('http://localhost:5003/movement', {
       withCredentials: true
@@ -115,13 +119,8 @@ const fetchMovementData = async () => {
     console.log(response)
   } catch (error) {
     console.error('Error fetching movement data:', error);
-  } finally {
-    isLoading.value = false;
   }
 };
-
-// Fetch initial data on mount
-fetchMovementData();
 
 const timeKeys = computed(() => Object.keys(movementData.value));
 const selectedTimeIndex = ref(0);
@@ -164,7 +163,7 @@ const previousLocation = computed(() => {
 });
 
 const deactivated = computed(() => {
-  const deactivated: Record<string, string[]> = {};
+  const deactivated: Record<string, Record<string, string>> = {};
   timeKeys.value.forEach((time, index) => {
     const IDsInRooms: string[] = [];
     for (const room in movementData.value[time]) {
@@ -173,13 +172,70 @@ const deactivated = computed(() => {
 
     const previousTime = timeKeys.value[index - 1];
     if (previousTime) {
-      const previousIDs = Object.keys(previousLocation.value[previousTime]);
-      deactivated[time] = previousIDs.filter(id => !IDsInRooms.includes(id));
+      const previousData = movementData.value[previousTime];
+      deactivated[time] = Object.keys(previousData).reduce((acc, roomID) => {
+        const occupants = previousData[roomID];
+        for (const picoID in occupants) {
+          if (!IDsInRooms.includes(picoID)) {
+            acc[picoID] = roomID;
+          }
+        }
+        return acc;
+      }, {} as Record<string, string>);
     } else {
-      deactivated[time] = [];
+      deactivated[time] = {};
     }
   });
   return deactivated;
+});
+
+const formatTime = (time: string) => {
+  const date = new Date(time);
+  return date.toLocaleString();
+};
+
+let labelIndex = 0;
+const generateTempLabel = () => {
+  const callsigns = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"];
+  return `%${callsigns[labelIndex++]}`;
+};
+
+let colorIndex = 0;
+const generateMutedColor = () => {
+  const mutedColors = ["#b0c4de", "#d3d3d3", "#add8e6", "#e0ffff", "#f0e68c", "#dda0dd", "#ffb6c1"];
+  return mutedColors[colorIndex++];
+};
+
+onMounted(async () => {
+  isLoading.value = true;
+  // Fetch initial data on mount
+  await fetchMovementData();
+  const presetListData = (await axios.get<presetListType>("http://localhost:5010/presets", { withCredentials: true })).data;
+  const defaultID = presetListData.default;
+  const presetData = (await axios.get<preset>(`http://localhost:5010/presets/${defaultID}`, { withCredentials: true })).data;
+
+  presetData.boxes.forEach((box: boxType) => {
+    boxes.value[box.roomID] = {
+      label: box.label,
+      colour: box.colour
+    };
+  });
+
+  // Generate temporary labels and colors for missing room IDs
+  timeKeys.value.forEach(time => {
+    const currentData = movementData.value[time];
+    for (const roomID in currentData) {
+      if (!boxes.value[roomID + ""]) {
+        boxes.value[roomID + ""] = {
+          label: generateTempLabel(),
+          colour: generateMutedColor()
+        };
+      }
+    }
+  });
+
+  console.log(boxes.value);
+  isLoading.value = false;
 });
 </script>
 
