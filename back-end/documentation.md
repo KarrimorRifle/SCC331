@@ -286,7 +286,7 @@ port: 5003
 ### GET: `/movement`
 - **Headers:**
   - `session-id`: Session ID cookie (required)
-  - `time_start`: Start time for the movement data (optional) // will give past 24 hours if not given
+  - `time_start`: Start time for the movement data (optional) // will give past 3 hours if not given
   - `time_end`: End time for the movement data (optional)
 - **Responses:**
   - `200`: Returns a list of movements

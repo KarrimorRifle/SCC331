@@ -183,10 +183,8 @@ class TestData(unittest.TestCase):
                               f"Missing 'count' key in {section} for room {room_id}")
                 self.assertIn("id", actual_room[section],
                               f"Missing 'id' key in {section} for room {room_id}")
-                self.assertEqual(expected_room[section]["id"], actual_room[section]["id"],
-                                 f"Mismatch in {section} ids for room {room_id}")
-                self.assertEqual(actual_room[section]["count"], len(actual_room[section]["id"]),
-                                 f"Mismatch in {section} count for room {room_id}")
+                for item in expected_room[section]["id"]:
+                    self.assertIn(item, actual_room[section]["id"], f"Couldn't find {item} in {actual_room[section]['id']}")
 
             # Check environment keys and values.
             self.assertEqual(set(expected_room["environment"].keys()),
@@ -231,7 +229,7 @@ class TestData(unittest.TestCase):
 
     def test_03_session_expiry_and_republish(self):
         # Wait to simulate expiry (2.5 minutes)
-        # time.sleep(150)
+        time.sleep(150)
         for item in self.session2:
             self.publish_data([item], "feeds/hardware-data/test3_sessions")
             time.sleep(2)

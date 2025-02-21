@@ -331,7 +331,7 @@ def summary_average():
     start_time_str = req_data.get("start_time")
     end_time_str = req_data.get("end_time")
     period_str = req_data.get("time_periods", "1hr")
-    rooms = req_data.get("rooms")
+    rooms = req_data.get("rooms")  # Optional room filter
 
     try:
         period_seconds = parse_period(period_str)
@@ -363,10 +363,13 @@ def summary_average():
 
     cursor = connection.cursor(dictionary=True)
     try:
-        # Flexible grouping using period_seconds
+        average_summary = {}
+
+        # Updated Environment Query:
+        # Map roomID '694904231' to '3' (adjust or extend this mapping as needed).
         env_query = f"""
         SELECT 
-            roomID,
+            CASE WHEN roomID = '694904231' THEN '3' ELSE roomID END as roomID,
             FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(logged_at)/%s)*%s) as bucket,
             AVG(temperature) as avg_temperature, MAX(temperature) as peak_temperature, MIN(temperature) as trough_temperature,
             AVG(sound) as avg_sound, MAX(sound) as peak_sound, MIN(sound) as trough_sound,
@@ -385,9 +388,8 @@ def summary_average():
         cursor.execute(env_query, params)
         env_results = cursor.fetchall()
 
-        average_summary = {}
+        # Process environment results.
         for row in env_results:
-            # Convert bucket to ISO string if it is a datetime
             bucket = row['bucket']
             if isinstance(bucket, datetime):
                 bucket = bucket.isoformat() + "Z"
@@ -396,15 +398,28 @@ def summary_average():
             room_id = str(row['roomID'])
             if bucket not in average_summary:
                 average_summary[bucket] = {}
-            average_summary[bucket][room_id] = {
-                "temperature": {"average": row["avg_temperature"], "peak": row["peak_temperature"], "trough": row["trough_temperature"]},
-                "sound": {"average": row["avg_sound"], "peak": row["peak_sound"], "trough": row["trough_sound"]},
-                "light": {"average": row["avg_light"], "peak": row["peak_light"], "trough": row["trough_light"]},
-                "IAQ": {"average": row["avg_IAQ"], "peak": row["peak_IAQ"], "trough": row["trough_IAQ"]},
-                "pressure": {"average": row["avg_pressure"], "peak": row["peak_pressure"], "trough": row["trough_pressure"]},
-                "humidity": {"average": row["avg_humidity"], "peak": row["peak_humidity"], "trough": row["trough_humidity"]}
+            if room_id not in average_summary[bucket]:
+                average_summary[bucket][room_id] = {}
+            average_summary[bucket][room_id]["temperature"] = {
+                "average": row["avg_temperature"], "peak": row["peak_temperature"], "trough": row["trough_temperature"]
+            }
+            average_summary[bucket][room_id]["sound"] = {
+                "average": row["avg_sound"], "peak": row["peak_sound"], "trough": row["trough_sound"]
+            }
+            average_summary[bucket][room_id]["light"] = {
+                "average": row["avg_light"], "peak": row["peak_light"], "trough": row["trough_light"]
+            }
+            average_summary[bucket][room_id]["IAQ"] = {
+                "average": row["avg_IAQ"], "peak": row["peak_IAQ"], "trough": row["trough_IAQ"]
+            }
+            average_summary[bucket][room_id]["pressure"] = {
+                "average": row["avg_pressure"], "peak": row["peak_pressure"], "trough": row["trough_pressure"]
+            }
+            average_summary[bucket][room_id]["humidity"] = {
+                "average": row["avg_humidity"], "peak": row["peak_humidity"], "trough": row["trough_humidity"]
             }
 
+        # Query occupancy data.
         occupancy_types = ["users", "luggage", "staff", "guard"]
         for occ in occupancy_types:
             occ_query = f"""
@@ -429,16 +444,38 @@ def summary_average():
                 else:
                     bucket = str(bucket)
                 room_id = str(row['roomID'])
+                count = row["occ_count"]
                 if bucket not in average_summary:
                     average_summary[bucket] = {}
                 if room_id not in average_summary[bucket]:
-                    average_summary[bucket][room_id] = {}
-                count = row["occ_count"]
+                    # Initialize environment metrics to zeros.
+                    average_summary[bucket][room_id] = {
+                        "temperature": {"average": 0, "peak": 0, "trough": 0},
+                        "sound": {"average": 0, "peak": 0, "trough": 0},
+                        "light": {"average": 0, "peak": 0, "trough": 0},
+                        "IAQ": {"average": 0, "peak": 0, "trough": 0},
+                        "pressure": {"average": 0, "peak": 0, "trough": 0},
+                        "humidity": {"average": 0, "peak": 0, "trough": 0}
+                    }
                 average_summary[bucket][room_id][occ] = {
                     "average": count,
                     "peak": count,
                     "trough": count
                 }
+        
+        # Ensure that for each bucket and each room, every occupancy type and environment metric is present.
+        default_occ = {"average": 0, "peak": 0, "trough": 0}
+        default_env = {"average": 0, "peak": 0, "trough": 0}
+        env_keys = ["temperature", "sound", "light", "IAQ", "pressure", "humidity"]
+        for bucket in average_summary:
+            for room in average_summary[bucket]:
+                for occ in occupancy_types:
+                    if occ not in average_summary[bucket][room]:
+                        average_summary[bucket][room][occ] = default_occ.copy()
+                for key in env_keys:
+                    if key not in average_summary[bucket][room]:
+                        average_summary[bucket][room][key] = default_env.copy()
+        
         return jsonify(average_summary)
     except Error as e:
         print(f"Error querying data: {e}")
@@ -447,6 +484,123 @@ def summary_average():
         cursor.close()
         connection.close()
 
+@app.route('/movement', methods=['GET'])
+def movement():
+    # Validate session cookie.
+    cookie_validation_error = validate_session_cookie(request)
+    if cookie_validation_error:
+        return jsonify(cookie_validation_error[0]), cookie_validation_error[1]
+    
+    # Get time_start and time_end from query parameters; default to past 24 hours.
+    time_start_str = request.args.get("time_start")
+    time_end_str = request.args.get("time_end")
+    now = datetime.utcnow()
+    if time_start_str:
+        try:
+            time_start = datetime.fromisoformat(time_start_str.replace("Z", ""))
+        except ValueError:
+            return jsonify({"error": "Invalid time_start format"}), 400
+    else:
+        time_start = now - timedelta(hours=24)
+    if time_end_str:
+        try:
+            time_end = datetime.fromisoformat(time_end_str.replace("Z", ""))
+        except ValueError:
+            return jsonify({"error": "Invalid time_end format"}), 400
+    else:
+        time_end = now
+
+    if time_start >= time_end:
+        return jsonify({"error": "time_start must be before time_end"}), 400
+
+    # Round start and end off to the minute.
+    time_start = time_start.replace(second=0, microsecond=0)
+    time_end = time_end.replace(second=0, microsecond=0)
+
+    # Build a list of minute buckets (inclusive).
+    buckets = []
+    current_bucket = time_start
+    while current_bucket <= time_end:
+        buckets.append(current_bucket)
+        current_bucket += timedelta(minutes=1)
+
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "MySQL connection unavailable"}), 500
+
+    cursor = connection.cursor(dictionary=True)
+    movement_summary = {}
+    try:
+        # For each minute bucket, query the occupancy data.
+        for bucket in buckets:
+            bucket_end = bucket + timedelta(minutes=1)
+            # Use a JOIN to select only the latest record per PicoID in this bucket.
+            query = """
+            SELECT c.roomID, c.PicoID, c.type, c.logged_at as latest_log,
+                   DATE_FORMAT(c.logged_at, '%%Y-%%m-%%dT%%H:%%i:00Z') as bucket
+            FROM (
+                SELECT roomID, logged_at, PicoID, 'User' as type
+                FROM users
+                WHERE logged_at >= %s AND logged_at < %s
+                UNION ALL
+                SELECT roomID, logged_at, PicoID, 'Luggage' as type
+                FROM luggage
+                WHERE logged_at >= %s AND logged_at < %s
+                UNION ALL
+                SELECT roomID, logged_at, PicoID, 'Staff' as type
+                FROM staff
+                WHERE logged_at >= %s AND logged_at < %s
+                UNION ALL
+                SELECT roomID, logged_at, PicoID, 'Guard' as type
+                FROM guard
+                WHERE logged_at >= %s AND logged_at < %s
+            ) AS c
+            JOIN (
+                SELECT PicoID, MAX(logged_at) as max_time
+                FROM (
+                    SELECT PicoID, logged_at FROM users WHERE logged_at >= %s AND logged_at < %s
+                    UNION ALL
+                    SELECT PicoID, logged_at FROM luggage WHERE logged_at >= %s AND logged_at < %s
+                    UNION ALL
+                    SELECT PicoID, logged_at FROM staff WHERE logged_at >= %s AND logged_at < %s
+                    UNION ALL
+                    SELECT PicoID, logged_at FROM guard WHERE logged_at >= %s AND logged_at < %s
+                ) AS all_logs
+                GROUP BY PicoID
+            ) AS sub ON c.PicoID = sub.PicoID AND c.logged_at = sub.max_time
+            ORDER BY c.logged_at DESC;
+            """
+            # We need to pass bucket and bucket_end for each occurrence.
+            params = [bucket, bucket_end, bucket, bucket_end, bucket, bucket_end, bucket, bucket_end,
+                      bucket, bucket_end, bucket, bucket_end, bucket, bucket_end, bucket, bucket_end]
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            
+            if results:
+                # Group results by room.
+                bucket_data = {}
+                for row in results:
+                    room_id = str(row['roomID'])
+                    pico_id = str(row['PicoID'])
+                    pico_type = row['type']
+                    if room_id not in bucket_data:
+                        bucket_data[room_id] = {}
+                    bucket_data[room_id][pico_id] = pico_type
+                # Flatten each room's dictionary into a comma-separated string.
+                flat_rooms = {}
+                for room, picos in bucket_data.items():
+                    flat_str = ", ".join(f"{pid}:{ptype}" for pid, ptype in picos.items())
+                    flat_rooms[room] = flat_str
+                bucket_key = bucket.isoformat() + "Z"
+                movement_summary[bucket_key] = flat_rooms
+
+        return jsonify(movement_summary)
+    except Error as e:
+        print(f"Error querying movement data: {e}")
+        return jsonify({"error": "Error querying movement data", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
 
 if __name__ == '__main__':
     get_db_connection()  # Ensure the connection is established at startup
