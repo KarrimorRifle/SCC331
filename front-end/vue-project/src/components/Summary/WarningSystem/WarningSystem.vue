@@ -2,6 +2,7 @@
 import { PropType, computed, ref } from "vue";
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { getCardBackgroundColor } from "@/utils/helper/warningUtils";
+import { usePresetStore } from '../../../utils/useFetchPresets';
 import WarningSystemFilterBar from "./WarningSystemFilterBar.vue"; // Import filter bar
 
 // Define props
@@ -15,7 +16,9 @@ const props = defineProps({
     required: true,
   },
 });
-
+const presetStore = usePresetStore();
+const presetData = presetStore.boxes_and_data;
+console.log(presetData);
 // **Reactive filter state**
 const selectedSeverity = ref("all");
 
@@ -73,16 +76,18 @@ const updateFilter = (severity: string) => {
 
     <div class="grid-container">
       <!-- Loop through all areas, ensuring they appear even if no warnings -->
-      <div v-for="(warnings, area) in groupedWarnings" :key="area" class="area-group">
-        <h3 class="area-title" 
-            :style="{ backgroundColor: getAreaColor(area), color: getTextColour(getAreaColor(area)) }">
-          {{ area }}
+      <div v-for="(areaData, areaKey) in presetData" :key="areaKey" class="area-group">
+        <h3 
+          class="area-title"
+          :style="{ backgroundColor: areaData.box?.colour, color: getTextColour(areaData.box?.colour) }"
+        >
+          {{ areaData.label }} 
         </h3>
 
         <!-- Grid Layout for Warnings -->
         <div class="warning-grid">
           <div 
-            v-for="(warning, index) in warnings" 
+            v-for="(warning, index) in groupedWarnings[areaKey]" 
             :key="index" 
             class="warning-card" 
             :style="{ backgroundColor: getCardBackgroundColor(warning.Severity), borderColor: getAreaColor(warning.Location) }"
