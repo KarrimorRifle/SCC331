@@ -5,6 +5,7 @@ from mysql.connector import Error
 from datetime import datetime, timedelta
 import os
 import requests
+import time
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -12,21 +13,25 @@ CORS(app, supports_credentials=True)
 # Establish a persistent connection to the database
 db_connection = None
 
-def get_db_connection():
+def get_db_connection(retries=5, delay=1):
     global db_connection
-    if db_connection not None and db_connection.isConnected():
-        return db_connection
-    try:
-        db_connection = mysql.connector.connect(
-            host=os.getenv('DB_HOST'),
-            user=os.getenv('DB_USER'),
-            password=os.getenv('DB_PASSWORD'),
-            database=os.getenv('DB_NAME')
-        )
-    except Error as e:
-        print(f"Error connecting to MySQL: {e}")
-        db_connection = None
-    return db_connection
+    for _ in range(retries):
+        try:
+            if db_connection != None and db_connection.is_connected():
+                return db_connection
+            db_connection = mysql.connector.connect(
+                host=os.getenv('DB_HOST'),
+                user=os.getenv('DB_USER'),
+                password=os.getenv('DB_PASSWORD'),
+                database=os.getenv('DB_NAME')
+            )
+        except Error as e:
+            print(f"Error connecting to MySQL: {e}")
+            db_connection = None
+            time.sleep(delay)
+    
+    print("Failed to establish database connection after retries")
+    return None
 
 # Make A path per data type, and make sure the cookie is valid beither getting summary data
 

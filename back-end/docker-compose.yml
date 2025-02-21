@@ -94,6 +94,7 @@ services:
   data_reader:
     build: ./data/reader
     container_name: data_reader
+    restart: unless-stopped
     environment:
       DB_HOST: mysql
       DB_USER: data_reader
