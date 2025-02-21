@@ -59,10 +59,6 @@ def login():
 		response = make_response(jsonify({"message": "Login successful"}), 200)
 		response.set_cookie("session_id", new_cookie, max_age=1*60*60)
 		
-		# TODO GET MESSAGES
-		get_message()
-		# TODO DISPLAY MESSAGES
-		
 		return response
 	else:
 		cursor.close()
@@ -131,47 +127,6 @@ def get_users():
 	connection.close()
 
 	return jsonify({"users": users}), 200
-
-# Getting the messages at each user's login
-def get_message():
-	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
-	if not session_id:
-		return jsonify({"error": "No session cookie or header provided"}), 400
-	
-	connection = get_db_connection()
-	if connection is None:
-		return jsonify({"error": "Database connection failed"}), 500
-	
-	cursor = connection.cursor(dictionary=True)
-	
-	# Get user_id from session
-	cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
-	user = cursor.fetchone()
-	
-	if user is None:
-		cursor.close()
-		connection.close()
-		return jsonify({"error": "No user found!"}), 400
-	
-	user_id = user["user_id"]
-
-	# Get messages
-	cursor.execute("""
-		SELECT 
-			u.full_name AS sender_name, 
-			m.left_message AS message, 
-			m.time_sent 
-		FROM messages m 
-		JOIN users u ON m.sender_id = u.user_id 
-		WHERE receiver_id = %s
-	""", (user_id,))
-	
-	messages = cursor.fetchall()
-	
-	cursor.close()
-	connection.close()
-	
-	return jsonify(messages), 200
 
 if __name__ == '__main__':
 	get_db_connection()  # Ensure the connection is established at startup

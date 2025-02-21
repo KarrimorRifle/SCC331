@@ -226,30 +226,80 @@ def add_user():
 
 @app.route('/check_admin', methods=['GET'])
 def check_admin():
-    session_id = request.headers.get('session-id') or request.cookies.get('session_id')
-    if not session_id:
-        return jsonify({"error": "No session cookie or header provided"}), 400
+	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+	if not session_id:
+		return jsonify({"error": "No session cookie or header provided"}), 400
 
-    connection = get_db_connection()
-    if connection is None:
-        return jsonify({"error": "Database connection failed"}), 500
+	connection = get_db_connection()
+	if connection is None:
+		return jsonify({"error": "Database connection failed"}), 500
 
-    cursor = connection.cursor(dictionary=True)
+	cursor = connection.cursor(dictionary=True)
 
-    # Get user role from session
-    cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
-    user = cursor.fetchone()
-    
-    cursor.close()
-    connection.close()
+	# Get user role from session
+	cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
+	user = cursor.fetchone()
+	
+	cursor.close()
+	connection.close()
 
-    if user is None:
-        return jsonify({"error": "User not found!"}), 404
+	if user is None:
+		return jsonify({"error": "User not found!"}), 404
 
-    if user["authority"] != "Admin":
-        return jsonify({"error": "Not authorized"}), 403
+	if user["authority"] != "Admin":
+		return jsonify({"error": "Not authorized"}), 403
 
-    return jsonify({"message": "Authorized"}), 200
+	return jsonify({"message": "Authorized"}), 200
+
+
+@app.route('/get_messages', methods=['GET'])
+def get_messages():
+	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+	if not session_id:
+		return jsonify({"error": "No session cookie or header provided"}), 400
+
+	connection = get_db_connection()
+	if connection is None:
+		return jsonify({"error": "Database connection failed"}), 500
+
+	cursor = connection.cursor(dictionary=True)
+
+	cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
+	user = cursor.fetchone()
+
+	if user is None:
+		cursor.close()
+		connection.close()
+		return jsonify({"error": "User not found!"}), 404
+
+	user_id = user["user_id"]
+
+	# Retrieve messages where the logged-in user is the receiver
+	cursor.execute("""
+		SELECT m.message_id, u.email AS sender_email, m.left_message, m.time_sent
+		FROM messages m
+		JOIN users u ON m.sender_id = u.user_id
+		WHERE m.receiver_id = %s
+		ORDER BY m.time_sent DESC
+	""", (user_id,))
+
+	messages = cursor.fetchall()
+	
+	if messages:
+		# Delete the fetched messages
+		message_ids = [message["message_id"] for message in messages]
+		cursor.execute("""
+			DELETE FROM messages
+			WHERE message_id IN (%s)
+		""", (','.join(map(str, message_ids)),))  # Safely join message_ids for SQL query
+
+		connection.commit()
+	
+	cursor.close()
+	connection.close()
+
+	return jsonify({"messages": messages}), 200
+
 
 
 
