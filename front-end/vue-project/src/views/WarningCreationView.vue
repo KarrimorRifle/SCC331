@@ -148,7 +148,7 @@ onMounted(fetchWarnings);
           </h3>
           <div class="add-warning-container">
             <input v-model="newWarningName" placeholder="Enter warning name" />
-            <button @click="createWarning(newWarningName)">Create Warning</button>
+            <button @click="createWarning(newWarningName)">Create</button>
           </div>
         </div>
         <div v-if="selectedWarningName" class="selected-warning">
@@ -162,7 +162,7 @@ onMounted(fetchWarnings);
                >
             <div class="warning-content">
               <div class="warning-details">
-                <h5>Warning Name</h5>
+                <h5>Name</h5>
                 <p>{{ warning.name }}</p>
               </div>
               <button @click.stop="deleteWarning(warning.id)" class="delete-button">

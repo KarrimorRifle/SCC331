@@ -316,7 +316,7 @@ watch(
         ⚠️ Max value cannot be less than Min value.
       </p>
 
-      <button @click="setCondition(room.roomID)" :disabled="!isConditionValid(room.roomID)">Set Condition</button>
+      <button @click="setCondition(room.roomID)" :disabled="!isConditionValid(room.roomID)">Set</button>
     </div>
 
     <ConditionEditModal 
@@ -463,6 +463,7 @@ button {
   transition: background 0.3s ease-in-out;
   display: block;
   margin-top: 10px;
+  width: 20%;
 }
 
 button:hover {
