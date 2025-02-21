@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import axios from "axios";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faChevronRight, faChevronDown} from '@fortawesome/free-solid-svg-icons';
 import { ref, onMounted, computed, warn } from "vue";
 import { usePresetStore } from "../utils/useFetchPresets";
 import RoomSelection from "@/components/WarningCreation/RoomSelection.vue";
@@ -14,6 +14,11 @@ const selectedRooms = ref<string[]>([]);
 const presetData = computed(() => presetStore.presetData);
 const isPresetDataAvailable = computed(() => presetData.value && Object.keys(presetData.value).length > 0);
 
+const isWarningListCollapsed = ref(false);
+const selectedWarningName = computed(() => {
+  const selected = warningsList.value.find(warning => warning.id === selectedWarningId.value);
+  return selected ? selected.name : null;
+});
 import { 
   warningsList, 
   selectedWarningId, 
@@ -30,6 +35,10 @@ import {
   deleteWarning, 
   resetWarningSelection 
 } from '../stores/warningStore';
+
+const toggleWarningList = () => {
+  isWarningListCollapsed.value = !isWarningListCollapsed.value;
+};
 
 const toggleRoomSelection = (room: Object) => {
   const existingIndex = selectedRooms.value.findIndex((r) => r.roomID === room.roomID);
@@ -129,13 +138,23 @@ onMounted(fetchWarnings);
         @click="setActiveSection('warnings')"
       >
         <div class="existing-warning-header">
-          <h3>Existing Warnings</h3>
+          <h3>
+            Existing Warnings
+            <FontAwesomeIcon 
+              :icon="isWarningListCollapsed ? faChevronRight : faChevronDown" 
+              class="toggle-icon"
+              @click.stop="toggleWarningList"
+            />
+          </h3>
           <div class="add-warning-container">
             <input v-model="newWarningName" placeholder="Enter warning name" />
             <button @click="createWarning(newWarningName)">Create Warning</button>
           </div>
         </div>
-        <ul class="existing-warning-list">
+        <div v-if="selectedWarningName" class="selected-warning">
+          <strong>Selected Warning:</strong> {{ selectedWarningName }}
+        </div>
+        <ul v-show="!isWarningListCollapsed" class="existing-warning-list">
           <li v-for="warning in warningsList" 
               :key="warning.id" 
               :class="['warning-item', { selected: selectedWarningId === warning.id }]"
@@ -255,7 +274,16 @@ onMounted(fetchWarnings);
   justify-content: space-between;
   align-items: center;
 }
-
+.toggle-icon {
+  margin-left: 10px;  
+  font-size: 18px;    
+  transition: transform 0.2s ease-in-out, color 0.2s ease-in-out;
+  cursor: pointer;   
+  color: #568EA6;   
+}
+.is-collapsed .toggle-icon {
+  transform: rotate(90deg);
+}
 .existing-warning-list {
   padding: 0;
 }

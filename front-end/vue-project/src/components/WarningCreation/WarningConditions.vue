@@ -2,6 +2,7 @@
 import { defineProps, defineEmits, ref, watch, computed } from "vue";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import ConditionEditModal from "./ConditionEditModal.vue";
 
 const props = defineProps({
   selectedWarning: Object, 
@@ -16,6 +17,11 @@ const emit = defineEmits(["updateConditions"]);
 const conditionTypes = ["Temperature", "Person", "Luggage", "Light Level"];
 const authorities = ["admin", "security", "staff", "users", "everyone"];
 const severities = ["danger", "warning", "notification"];
+
+const isEditModalOpen = ref(false);
+const editRoomID = ref<string | null>(null);
+const editCondition = ref<any>(null);
+const editConditionIndex = ref<number | null>(null);
 
 const selectedAuthority = ref<{ [key: string]: string }>({});
 const selectedSeverity = ref<{ [key: string]: string }>({});
@@ -68,7 +74,6 @@ const updatePendingCondition = (roomID: string, conditionType: string, key: "min
   }
   pendingConditions.value = { ...pendingConditions.value };
 };
-
 
 const updatePendingMessage = (roomID: string, key: "Authority" | "Severity" | "Title" | "Summary", value: string) => {
   if (!pendingConditions.value[roomID]) {
@@ -169,6 +174,21 @@ const removeCondition = (roomID: string, conditionIndex: number) => {
   }
 };
 
+const openEditModal = (roomID: string, condition: any, index: number) => {
+  editRoomID.value = roomID;
+  editCondition.value = { ...condition }; 
+  editConditionIndex.value = index;
+  isEditModalOpen.value = true;
+};
+
+const updateCondition = ({ roomID, index, updatedCondition }) => {
+  if (!props.conditions[roomID]) return;
+  props.conditions[roomID].conditions[index] = updatedCondition;
+  
+  emit("updateConditions", { ...props.conditions });
+  isEditModalOpen.value = false;
+};
+
 watch(
   () => props.selectedRooms,
   (newRooms) => {
@@ -216,6 +236,7 @@ watch(
             v-for="(condition, index) in filteredConditions[room.roomID]"
             :key="index" 
             class="condition-item"
+            @click="openEditModal(room.roomID, condition, index)" 
           >
             <div>
             <strong>{{ condition.variable }} </strong> {{ condition.lower_bound }} to {{ condition.upper_bound }}
@@ -297,6 +318,16 @@ watch(
 
       <button @click="setCondition(room.roomID)" :disabled="!isConditionValid(room.roomID)">Set Condition</button>
     </div>
+
+    <ConditionEditModal 
+      v-if="isEditModalOpen"
+      :roomID="editRoomID"
+      :condition="editCondition"
+      :conditionTypes="conditionTypes"
+      :index="editConditionIndex"
+      @update-condition="updateCondition"
+      @close="isEditModalOpen = false"
+    />
   </div>
 </template>
 
