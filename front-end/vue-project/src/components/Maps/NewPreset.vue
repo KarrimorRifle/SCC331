@@ -54,7 +54,7 @@
 import { ref, onMounted, nextTick, watch, defineEmits, defineProps, warn } from "vue";
 import axios from "axios";
 import type { preset, presetListType } from "@/utils/mapTypes";
-
+import { Modal } from "bootstrap";
 const emit = defineEmits(["newPreset"]);
 
 const props = defineProps({
@@ -175,6 +175,7 @@ const scrollToHighlighted = () => {
 };
 
 const createPreset = async () => {
+  console.log("creating preset here");
   if (!name.value.trim()) {
     setWarning("Preset name cannot be empty.");
     return;
@@ -217,8 +218,12 @@ const createPreset = async () => {
       selectedUsers.value = [];
     }
 
+    console.log("Creating preset")
+    console.log(response.status);
     if (response.status === 201 || response.status === 200) {
+      console.log("OK")
       setSuccess(`Preset ${response.status == 201 ? 'created' : 'updated'} successfully`);
+      closeModal();
     } else {
       setWarning(`ERR ${response.status}: something went wrong please try again later`);
     }
@@ -229,6 +234,18 @@ const createPreset = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const closeModal = () => {
+  console.log("Closing modal...");
+  const modalElement = document.getElementById("newPresetModal");
+  if (modalElement) {
+    const modalInstance = Modal.getInstance(modalElement); // Use Modal from Bootstrap
+    if (modalInstance) {
+      modalInstance.hide();
+    }
+  }
+  document.querySelectorAll(".modal-backdrop").forEach(backdrop => backdrop.remove());
 };
 
 const clearMessages = () => {

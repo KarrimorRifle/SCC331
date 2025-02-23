@@ -343,7 +343,6 @@ export const usePresetStore = defineStore("presetStore", () => {
           }
         }
         await fetchPreset();
-        window.location.reload();
       } catch (error) {
         console.error("Error reloading presets:", error);
       }
@@ -378,6 +377,7 @@ export const usePresetStore = defineStore("presetStore", () => {
     };
     
     watch(currentPreset, async () => {
+      console.log("Preset changed to: ", currentPreset.value);
       await fetchPreset();
       create_data();
       validateUser();
