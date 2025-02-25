@@ -9,7 +9,7 @@
 
 
 int picoType = PASSENGER_PICO; // The Type of methods this Pico will be utilising 
-
+uint16_t bluetoothID = 6;
 
 // WiFi Stuff:
 const char* ssid = "grp3"; // CHANGE THIS FOR DIFFERENT NETWORKS (FIND ON ROUTERS) 
@@ -28,8 +28,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
 SensorType *currentSensorConfig;
-RoomSensor roomSensorConfig = RoomSensor(&display, &mqtt);
-BluetoothSensor bluetoothSensorConfig = BluetoothSensor(&display, &mqtt, &led);
+RoomSensor roomSensorConfig = RoomSensor(&display, &mqtt, bluetoothID);
+BluetoothSensor bluetoothSensorConfig = BluetoothSensor(&display, &mqtt, &led, bluetoothID);
 
 
 void setupDisplay() {
