@@ -36,6 +36,10 @@ import {
   resetWarningSelection 
 } from '../stores/warningStore';
 
+const warningSectionRef = ref<HTMLElement| null>(null);
+const roomSelectionRef = ref<HTMLElement| null>(null);
+const conditionsRef = ref<HTMLElement| null>(null);
+
 const toggleWarningList = () => {
   isWarningListCollapsed.value = !isWarningListCollapsed.value;
 };
@@ -112,6 +116,14 @@ const updateWarningMessages = (updatedMessages: any[]) => {
 
 const setActiveSection = (section: string) => {
   activeSection.value = section;
+  if (section === "warnings" && warningSectionRef.value) {
+    warningSectionRef.value.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else if (section === "rooms" && roomSelectionRef.value?.$el) {
+    console.log(roomSelectionRef.value?.$el); // Debugging to check the actual element
+    roomSelectionRef.value.$el.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else if (section === "conditions" && conditionsRef.value?.$el) {
+    conditionsRef.value.$el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 };
 
 const getSidebarClass = (section: string) => {
@@ -134,6 +146,7 @@ onMounted(fetchWarnings);
     <div class="warning-creation-content">
       <!-- Existing Warnings List -->
       <div 
+        ref="warningSectionRef"
         :class="['section', { dimmed: activeSection !== 'warnings' }]"
         @click="setActiveSection('warnings')"
       >
@@ -175,6 +188,7 @@ onMounted(fetchWarnings);
 
       <!-- Room Selection -->
       <RoomSelection 
+        ref="roomSelectionRef"
         v-if="isPresetDataAvailable" 
         :isRoomSelectionVisible="isRoomSelectionVisible"
         :presetData="presetData"
@@ -185,6 +199,7 @@ onMounted(fetchWarnings);
 
       <!-- Warning Conditions -->
       <WarningConditions 
+        ref="conditionsRef"
         v-if="selectedWarning" 
         :selectedWarning="selectedWarning"
         :selectedRooms="selectedRooms" 
