@@ -8,17 +8,12 @@ import { usePresetStore } from "../../../utils/useFetchPresets";
 
 const props = defineProps({
   showModal: { type: Boolean, required: true },
-  overlayAreasConstant: {
-    type: Array as PropType<{ label: string; color: string; position: object }[]>,
-    required: true,
-  },
   selectedUserId: { type: [Number, String], default: null },
   userRoomHistory: {
     type: Array as PropType<{ roomLabel: string; loggedAt: string }[]>,
     required: true,
   },
 });
-console.log(props.userRoomHistory);
 const emit = defineEmits(['close']);
 
 const presetStore = usePresetStore();
@@ -41,8 +36,6 @@ const convertToTimestamp = (date: string | Date | null): number => {
 };
 
 const getRoomColor = (roomLabel: string): string => {
-  console.log(roomLabel);
-  console.log(currentRoom.value)
   return currentRoom.value === roomLabel
     ? presetData.value.find(area => area.label === roomLabel)?.box?.colour || 'lightgray'
     : 'lightgray';

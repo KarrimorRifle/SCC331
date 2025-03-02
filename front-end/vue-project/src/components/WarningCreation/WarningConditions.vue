@@ -159,7 +159,6 @@ const setCondition = (roomID: string) => {
 
   pendingConditions.value = { ...pendingConditions.value };
 
-  console.log(props.conditions);
 };
 
 const removeCondition = (roomID: string, conditionIndex: number) => {

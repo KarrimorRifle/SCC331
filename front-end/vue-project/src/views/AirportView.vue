@@ -15,10 +15,6 @@ import {usePresetStore} from "../utils/useFetchPresets";
 
 // Receive isMobile from App.vue
 const props = defineProps({
-  overlayAreasConstant: {
-    type: Array,
-    required: true,
-  },
   overlayAreasData: {
     type: Object,
     required: true,
@@ -230,21 +226,6 @@ const setDefaultPreset = async () => {
     alert("Default preset set successfully");
     await fetchPresets();
 
-    if (presetData.value.boxes) {
-      console.log("Updating overlay areas with preset colors...");
-
-      // Update overlayAreasConstant with new colors from the preset
-      const updatedOverlayAreas = props.overlayAreasConstant.map(area => {
-        const matchingBox = presetData.value.boxes.find(box => box.roomID === area.label.replace("Area ", ""));
-        return matchingBox ? { ...area, color: matchingBox.colour } : area;
-      });
-
-      console.log("Updated overlayAreasConstant:", updatedOverlayAreas);
-
-      // Emit event to App.vue to update global state & localStorage
-      emit("updateOverlayAreas", updatedOverlayAreas);
-    }
-
   } catch (error) {
     console.error("Error setting default preset:", error);
     alert("Failed to set default preset");
@@ -366,13 +347,6 @@ const cancelBoxEdit = () => {
   editMode.value = false;
 }
 
-const updateOverlayAreaColor = (roomID: string, newColor: string) => {
-  const area = props.overlayAreasConstant.find(area => area.label === `Area ${roomID}`);
-  if (area) {
-    area.color = newColor; 
-  }
-};
-
 const handleColourChange = (roomID: string, newColor: string) => {
   console.log(`Colour change detected for Area ${roomID}: ${newColor}`);
 
@@ -435,13 +409,6 @@ const toggleDashboard = () => {
 const presetStore = usePresetStore();
 
 onMounted(async () => {
-  presetStore.setOverlayAreasConstant(props.overlayAreasConstant);
-  presetStore.setUpdateOverlayAreasCallback((updatedOverlayAreas) => {
-    emit("updateOverlayAreas", updatedOverlayAreas);
-  });
-  presetStore.setUpdateOverlayAreaColorCallback((updatedData) => {
-    emit("updateOverlayAreaColor", updatedData);
-  });
   await presetStore.fetchPresets();
   if (presetStore.presetList.presets.length > 0) {
     await presetStore.fetchPreset();
@@ -457,7 +424,6 @@ onMounted(async () => {
       <AirportMap
         class="flex-grow-1"
         :isLoading="presetStore.isLoading"
-        :overlayAreasConstant="overlayAreasConstant" 
         :overlayAreasData="overlayAreasData" 
         :warnings="warnings"
         v-model="presetStore.boxes_and_data"
@@ -492,7 +458,6 @@ onMounted(async () => {
         @colourChange="presetStore.handleColourChange"
         @removeBox="presetStore.removeBox"
         :overlayAreasData="overlayAreasData" 
-        :overlayAreasConstant="overlayAreasConstant"
         :userIds="picoIds"
         :updates="updates"
         :warnings="warnings"
@@ -505,7 +470,6 @@ onMounted(async () => {
     <AirportMap
       class="flex-grow-1"
       :isLoading="presetStore.isLoading"
-      :overlayAreasConstant="overlayAreasConstant" 
       :overlayAreasData="overlayAreasData" 
       :warnings="warnings"
       v-model="presetStore.boxes_and_data"
@@ -539,7 +503,6 @@ onMounted(async () => {
       @colourChange="presetStore.handleColourChange"
       @removeBox="presetStore.removeBox"
       :overlayAreasData="overlayAreasData" 
-      :overlayAreasConstant="overlayAreasConstant"
       :userIds="picoIds"
       :updates="updates"
       :warnings="warnings"

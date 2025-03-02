@@ -104,7 +104,6 @@ const handleFileChange = (event) => {
 };
 
 const closeModal = () => {
-  console.log("Closing image upload modal...");
   const modalElement = document.getElementById("imageUploadModal");
   if (modalElement) {
     const modalInstance = Modal.getInstance(modalElement);

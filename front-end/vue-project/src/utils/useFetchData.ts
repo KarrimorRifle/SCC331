@@ -1,22 +1,8 @@
-import { ref, reactive, watch, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import axios from "axios";
-
-const LOCAL_STORAGE_KEY = 'overlayAreas';
-
-// Function to load overlay areas from local storage or default values
-const loadOverlayAreas = () => {
-  const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-  return storedData ? JSON.parse(storedData) : [
-    { label: "Area 1", color: "#F18C8E"},
-    { label: "Area 2", color: "#F0B7A4"},
-    { label: "Area 3", color: "#F1D1B5"},
-    { label: "Area 4", color: "#568EA6"}
-  ];
-};
 
 export function useFetchData(picoIds) {
   // Reactive state
-  const overlayAreasConstant = reactive(loadOverlayAreas());
   const overlayAreasData = ref([]);
   const updates = ref({});
   const environmentHistory = ref({});
@@ -24,19 +10,7 @@ export function useFetchData(picoIds) {
   let pollingInterval = null;
   let warningInterval = null;
 
-  const updateOverlayAreaColor = (roomID: string, newColor: string) => {
-    const area = overlayAreasConstant.find(area => area.label === `Area ${roomID}`);
-    if (area) {
-      area.color = newColor; // Update color in the reactive state
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(overlayAreasConstant)); // Save to localStorage
-    }
-  };
   
-  const updateAllOverlayAreas = (newOverlayAreas) => {
-    overlayAreasConstant.splice(0, overlayAreasConstant.length, ...newOverlayAreas); // Update reactive state
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newOverlayAreas)); // Persist changes
-  };
-
   // Function to track environment data
   const trackEnvironmentData = (label, data) => {
     if (!data) return;
@@ -134,16 +108,8 @@ export function useFetchData(picoIds) {
     if (warningInterval) clearInterval(warningInterval);
   });
 
-  // Watch for overlay area changes and save to localStorage
-  watch(overlayAreasConstant, (newValue) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newValue));
-  }, { deep: true });
-
   return {
-    overlayAreasConstant,
     overlayAreasData,
-    updateOverlayAreaColor,
-    updateAllOverlayAreas,
     updates,
     environmentHistory,
     warnings,

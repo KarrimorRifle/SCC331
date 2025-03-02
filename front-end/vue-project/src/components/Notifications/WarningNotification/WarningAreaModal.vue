@@ -5,17 +5,13 @@ import { getCardBackgroundColor } from "@/utils/helper/warningUtils"; // Import 
 import { usePresetStore } from "../../../utils/useFetchPresets";
 
 const props = defineProps({
-  overlayAreasConstant: {
-    type: Array,
-    required: true,
-  },
+
 });
 const closeModal = () => {
   isWarningModalOpen.value = false;
 };
 const presetStore = usePresetStore();
 const presetData = computed(() => Object.values(presetStore.boxes_and_data));
-// **Get Area Color Based on `overlayAreasConstant`**
 
 const getAreaColor = computed(() => {
   if (!Array.isArray(presetData.value)) return "#ccc"; 

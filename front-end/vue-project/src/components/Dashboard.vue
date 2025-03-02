@@ -17,10 +17,6 @@ const props = defineProps({
     type: Object as () => boxAndData,
     required: true,
   },
-  overlayAreasConstant: {
-    type: Array,
-    required: true,
-  },
   overlayAreasData: {
     type: Object,
     required: true,
@@ -99,11 +95,8 @@ const getUpdatesForArea = (areaKey) => {
 };
 
 const warningsByArea = computed(() => {
-  console.log(presetData.value[0])
-  console.log(props.warnings)
   return presetData.value[0].reduce((acc, area) => {
     acc[area.label] = props.warnings.filter(warning => warning.Location === area.roomID);
-    console.log(acc);
     return acc;
   }, {} as Record<string, { Title: string; Location: string; Severity: string; Summary: string }[]>);
 });
@@ -124,7 +117,6 @@ function hideColourPicker() {
 
 function changeColour(key: string) {
   const colour = typeof selectedColour.value.hex === 'string' ? selectedColour.value.hex : '#FFFFFF';
-  console.log(selectedColour.value.hex)
   emit('colourChange', key, colour);
   hideColourPicker();
 }
@@ -275,7 +267,6 @@ onUnmounted(() => {
             :areaKey="key"
             :updates="getUpdatesForArea(key)" 
             :fullUpdates="updates"
-            :overlayAreasConstant="overlayAreasConstant"
           />
         </div>
       </div>

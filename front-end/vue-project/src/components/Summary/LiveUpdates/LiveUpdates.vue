@@ -21,10 +21,6 @@ const props = defineProps({
   fullUpdates: {  // Pass all updates for accurate modal data
     type: Object as PropType<Record<number, { logged_at: string; roomID: number }[]>>,
   },
-  overlayAreasConstant: {
-    type: Array as PropType<{ label: string; color: string; position: object }[]>,
-    required: true,
-  },
 });
 const presetStore = usePresetStore();
 const presetData = computed(() => Object.values(presetStore.boxes_and_data));
@@ -102,7 +98,6 @@ const groupedUsersByRoom = computed(() => {
     presetData.value.filter(area => area.label === `${props.areaKey}`) : 
     presetData.value;
 
-  console.log("area to show: ", areasToShow);
   // Populate roomMap **only for the filtered users of the area**
   Object.entries(props.updates).forEach(([userId, userUpdates]) => {
     try{
@@ -218,7 +213,6 @@ watch(
     <!-- User Movement Modal -->
     <UserMovementModal
       :showModal="showModal"
-      :overlayAreasConstant="overlayAreasConstant"
       :selectedUserId="selectedUserId"
       :userRoomHistory="userRoomHistory"
       @close="closeModal"

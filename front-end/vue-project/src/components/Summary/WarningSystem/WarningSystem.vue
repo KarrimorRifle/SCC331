@@ -11,14 +11,9 @@ const props = defineProps({
     type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
     required: true,
   },
-  overlayAreasConstant: {
-    type: Array as PropType<{ label: string; color: string; position: object }[]>,
-    required: true,
-  },
 });
 const presetStore = usePresetStore();
 const presetData = presetStore.boxes_and_data;
-console.log(presetData);
 // **Reactive filter state**
 const selectedSeverity = ref("all");
 
@@ -30,12 +25,12 @@ const filteredWarnings = computed(() => {
   return props.warnings.filter((warning) => warning.Severity.toLowerCase() === selectedSeverity.value);
 });
 
-// **Ensure all areas are displayed, even if they have no warnings**
+// **Ensure all preset areas are displayed, even if they have no warnings**
 const groupedWarnings = computed(() => {
   const grouped: Record<string, typeof props.warnings> = {};
 
-  // Initialize all areas with empty arrays
-  props.overlayAreasConstant.forEach((area) => {
+  // Initialize all preset areas with empty arrays
+  Object.entries(presetData).forEach(([key, area]) => {
     grouped[area.label] = [];
   });
 
@@ -50,11 +45,12 @@ const groupedWarnings = computed(() => {
   return grouped;
 });
 
-// **Get Area Color Based on overlayAreasConstant**
+// **Get Area Color Based on presetData**
 const getAreaColor = (location: string): string => {
-  const area = props.overlayAreasConstant.find(area => area.label === location);
-  return area ? area.color : "#ccc"; // Default gray if not found
+  const area = Object.values(presetData).find(area => area.label === location);
+  return area ? area.box.colour : "#ccc"; // Default gray if not found
 };
+
 
 // **Handle Filter Update**
 const updateFilter = (severity: string) => {
@@ -68,10 +64,6 @@ const updateFilter = (severity: string) => {
     <div class="header-container">
       <h2>⚠️ Warning System</h2>
       <WarningSystemFilterBar @update:filter="updateFilter" />
-    </div>
-
-    <div v-if="props.overlayAreasConstant.length === 0" class="no-warnings">
-      ✅ No active areas available.
     </div>
 
     <div class="grid-container">

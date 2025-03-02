@@ -43,7 +43,6 @@ const conditionsRef = ref<HTMLElement| null>(null);
 const searchQuery = ref("");
 
 const filteredWarnings = computed(() => {
-  console.log("Filtering")
   if (!searchQuery.value) return warningsList.value;
   return warningsList.value.filter(warning =>
     warning.name.toLowerCase().includes(searchQuery.value.toLowerCase())
@@ -129,7 +128,6 @@ const setActiveSection = (section: string) => {
   if (section === "warnings" && warningSectionRef.value) {
     warningSectionRef.value.scrollIntoView({ behavior: "smooth", block: "start" });
   } else if (section === "rooms" && roomSelectionRef.value?.$el) {
-    console.log(roomSelectionRef.value?.$el); // Debugging to check the actual element
     roomSelectionRef.value.$el.scrollIntoView({ behavior: "smooth", block: "start" });
   } else if (section === "conditions" && conditionsRef.value?.$el) {
     conditionsRef.value.$el.scrollIntoView({ behavior: "smooth", block: "start" });

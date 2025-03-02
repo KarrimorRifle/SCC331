@@ -12,10 +12,6 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  overlayAreasConstant: {
-    type: Array,
-    required: true,
-  },
   environmentHistory: {
     type: Object,
     required: true,
@@ -71,7 +67,7 @@ const filteredAreas = computed(() => {
     <!-- Import Filter Bar -->
     <SummaryTableFilterBar 
       v-if="showFilterBar"
-      :overlayAreasConstant="presetData" 
+      :presetData="presetData" 
       @update:selectedAreas="selectedAreas = $event"
     />
 
