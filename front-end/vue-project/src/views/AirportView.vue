@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AirportMap from "@/components/AirportMap.vue";
 import DashBoard from "@/components/Dashboard.vue";
+import FilterBar from "../components/FilterBar.vue";
 import BottomTabNavigator from "@/components/BottomTabNavigator.vue";
 import {onMounted, onUnmounted, ref, watch, computed, PropType, defineEmits,}from "vue"
 import axios from "axios";
@@ -500,6 +501,7 @@ onMounted(async () => {
   </BottomTabNavigator>
 
   <div v-else class="airport-view-container d-flex flex-row">
+    <div class="d-flex flex-column flex-grow-1" style="display: flex; width: 10%;">
     <AirportMap
       class="flex-grow-1"
       :isLoading="presetStore.isLoading"
@@ -526,6 +528,9 @@ onMounted(async () => {
       @save="presetStore.uploadBoxes"
       @cancel="presetStore.cancelBoxEdit"
     />
+    <FilterBar/>
+    </div>
+
     <DashBoard
       v-model="presetStore.boxes_and_data"
       :isLoading="presetStore.isLoading"
