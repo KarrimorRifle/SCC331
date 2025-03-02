@@ -40,6 +40,16 @@ const warningSectionRef = ref<HTMLElement| null>(null);
 const roomSelectionRef = ref<HTMLElement| null>(null);
 const conditionsRef = ref<HTMLElement| null>(null);
 
+const searchQuery = ref("");
+
+const filteredWarnings = computed(() => {
+  console.log("Filtering")
+  if (!searchQuery.value) return warningsList.value;
+  return warningsList.value.filter(warning =>
+    warning.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
 const toggleWarningList = () => {
   isWarningListCollapsed.value = !isWarningListCollapsed.value;
 };
@@ -159,6 +169,15 @@ onMounted(fetchWarnings);
               @click.stop="toggleWarningList"
             />
           </h3>
+
+          <div class="search-input-container">
+            <input 
+              v-model="searchQuery"
+              placeholder="Search warnings..."
+              class="search-input"
+            />
+          </div>
+
           <div class="add-warning-container">
             <input v-model="newWarningName" placeholder="Enter warning name" />
             <button @click="createWarning(newWarningName)">Create</button>
@@ -168,7 +187,7 @@ onMounted(fetchWarnings);
           <strong>Selected Warning:</strong> {{ selectedWarningName }}
         </div>
         <ul v-show="!isWarningListCollapsed" class="existing-warning-list">
-          <li v-for="warning in warningsList" 
+          <li v-for="warning in filteredWarnings" 
               :key="warning.id" 
               :class="['warning-item', { selected: selectedWarningId === warning.id }]"
               @click="fetchWarningById(warning.id)"
@@ -348,6 +367,25 @@ onMounted(fetchWarnings);
 .delete-button:hover {
   color: #D94A4A !important;
   z-index: 999;
+}
+
+.search-input-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #568EA6;
+}
+.search-input {
+  padding: 10px;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-size: 16px;
+  outline: none;
+  transition: border 0.2s ease-in-out;
 }
 
 .add-warning-container {
