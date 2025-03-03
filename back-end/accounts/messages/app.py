@@ -276,7 +276,7 @@ def get_messages():
 
     # Retrieve messages where the logged-in user is the receiver
     cursor.execute("""
-        SELECT m.message_id, u.email AS sender_email, m.left_message, m.time_sent
+        SELECT m.message_id, u.email AS sender_email, m.left_message, m.time_sent, m.isRead
         FROM messages m
         JOIN users u ON m.sender_id = u.user_id
         WHERE m.receiver_id = %s
@@ -285,22 +285,50 @@ def get_messages():
 
     messages = cursor.fetchall()
     
-    if messages:
-        # Delete the fetched messages
-        message_ids = [message["message_id"] for message in messages]
-        # Use placeholders for parameterized query
-        placeholders = ', '.join(['%s'] * len(message_ids))
-        cursor.execute(f"""
-            DELETE FROM messages
-            WHERE message_id IN ({placeholders})
-        """, tuple(message_ids))  # Pass the message IDs as a tuple
-
-        connection.commit()
-
     cursor.close()
     connection.close()
 
     return jsonify({"messages": messages}), 200
+
+
+@app.route('/has_unread_messages', methods=['GET'])
+def has_unread_messages():
+    session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+    if not session_id:
+        return jsonify({"error": "No session cookie or header provided"}), 400
+
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    cursor = connection.cursor(dictionary=True)
+
+    cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
+    user = cursor.fetchone()
+
+    if user is None:
+        cursor.close()
+        connection.close()
+        return jsonify({"error": "User not found!"}), 404
+
+    user_id = user["user_id"]
+
+    # Check if there are any unread messages for the logged-in user
+    cursor.execute("""
+        SELECT COUNT(*) AS unread_count
+        FROM messages
+        WHERE receiver_id = %s AND isRead = 0
+    """, (user_id,))
+
+    unread_count = cursor.fetchone()["unread_count"]
+
+    cursor.close()
+    connection.close()
+
+    if unread_count > 0:
+        return jsonify({"has_unread_messages": True}), 200
+    else:
+        return jsonify({"has_unread_messages": False}), 200
 
 
 

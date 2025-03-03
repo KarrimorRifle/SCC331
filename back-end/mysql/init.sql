@@ -23,12 +23,15 @@ CREATE TABLE IF NOT EXISTS users (
 	INDEX idx_cookie (cookie)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+DROP TABLE IF EXISTS messages;
+
 CREATE TABLE IF NOT EXISTS messages (
 	message_id INT AUTO_INCREMENT PRIMARY KEY,
 	receiver_id INT,
 	sender_id INT,
 	left_message VARCHAR(1000),
 	time_sent TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	is_read BOOLEAN DEFAULT 0,
 	FOREIGN KEY (receiver_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL,
 	FOREIGN KEY (sender_id) REFERENCES accounts.users(user_id) ON DELETE CASCADE
 );
