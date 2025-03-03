@@ -380,7 +380,7 @@ def on_message(client, user_data, message):
     current_time = time.time()  # capture current time once
     for rule in rules:
         # Skip sending if rule was recently published within the past minute.
-        if rule.get("last_sent") is not None and current_time - rule["last_sent"] < 60:
+        if rule.get("last_sent") is not None and current_time - rule["last_sent"] < 180:
             continue
 
         sendMessage = True 
