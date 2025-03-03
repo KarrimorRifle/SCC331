@@ -407,9 +407,9 @@ def on_message(client, user_data, message):
         for message in rule["messages"]:
             prepend = ""
             if rule["test_only"]:
-                prepend = "warning"
-            else:
                 prepend = "test/warning"
+            else:
+                prepend = "warning"
             authority = message.get("Authority")
             client.publish(f"{prepend}/{authority}/{rule['id']}", json.dumps(message))
 
@@ -452,9 +452,9 @@ def on_message(client, user_data, message):
         for message in rule["messages"]:
             prepend = ""
             if rule["test_only"]:
-                prepend = "warning"
-            else:
                 prepend = "test/warning"
+            else:
+                prepend = "warning"
             authority = message.get("Authority")
             client.publish(f"{prepend}/{authority}/Testing-{rule['id']}", json.dumps(message))
 
