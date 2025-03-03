@@ -420,6 +420,7 @@ This service will allow admins of the page to add new rules that will activate m
   ```json
   {
     "name": "name of the warning", // has to be a unique name
+    "test_only": true, //(NOT REQUIRED) Boolean value of whether this is for testing only or not
   }
   ```
 - **Responses:**

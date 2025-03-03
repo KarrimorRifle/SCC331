@@ -21,8 +21,20 @@ class TestWarnings(unittest.TestCase):
     def setUp(self):
         # Register and log in an admin user using the admin bypass header.
         self.admin_session_cookie = self.register_and_login_admin()
+        self.created_warnings = []  # Track created warnings for cleanup
         # Reset any MQTT received message storage.
         self.received_warning_message = None
+
+    def tearDown(self):
+        # Cleanup: delete any warnings created during tests.
+        for warning_id in self.created_warnings:
+            try:
+                requests.delete(
+                    f"{self.WARNINGS_URL}/warnings/{warning_id}",
+                    cookies={"session_id": self.admin_session_cookie}
+                )
+            except Exception as e:
+                print(f"Cleanup failed for warning {warning_id}: {e}")
 
     def random_string(self, length=10):
         return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -83,11 +95,12 @@ class TestWarnings(unittest.TestCase):
         # Create the rule
         create_response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
-            json={"name": name},
+            json={"name": name, "test_only": True},
             cookies={"session_id": self.admin_session_cookie}
         )
         self.assertEqual(create_response.status_code, 201)
         warning_id = create_response.json()["id"]
+        self.created_warnings.append(warning_id)  # Record created warning
         # Update the rule with conditions and messages for validity.
         payload = {
             "name": name,
@@ -120,7 +133,7 @@ class TestWarnings(unittest.TestCase):
     # 1. Create Warning Success
     def test_01_create_warning_success(self):
         unique_name = "TestWarning_" + self.random_string(5)
-        payload = {"name": unique_name}
+        payload = {"name": unique_name, "test_only": True}
         response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
             json=payload,
@@ -128,6 +141,7 @@ class TestWarnings(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 201)
         json_resp = response.json()
+        self.created_warnings.append(json_resp["id"])  # Record created warning
         self.assertIn("message", json_resp)
         self.assertIn("id", json_resp)
         self.assertEqual(json_resp["message"], "Successfully created rule")
@@ -135,7 +149,7 @@ class TestWarnings(unittest.TestCase):
     # 2. Create Warning Unauthorized (missing session cookie)
     def test_02_create_warning_unauthorized(self):
         unique_name = "UnauthorizedWarning_" + self.random_string(5)
-        payload = {"name": unique_name}
+        payload = {"name": unique_name, "test_only": True}
         response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
             json=payload  # No cookies provided
@@ -158,11 +172,12 @@ class TestWarnings(unittest.TestCase):
         unique_name = "ListWarning_" + self.random_string(5)
         create_response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
-            json={"name": unique_name},
+            json={"name": unique_name, "test_only": True},
             cookies={"session_id": self.admin_session_cookie}
         )
         self.assertEqual(create_response.status_code, 201)
         warning_id = create_response.json()["id"]
+        self.created_warnings.append(warning_id)  # Record created warning
 
         response = requests.get(
             f"{self.WARNINGS_URL}/warnings",
@@ -177,11 +192,12 @@ class TestWarnings(unittest.TestCase):
         unique_name = "DetailWarning_" + self.random_string(5)
         create_response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
-            json={"name": unique_name},
+            json={"name": unique_name, "test_only": True},
             cookies={"session_id": self.admin_session_cookie}
         )
         self.assertEqual(create_response.status_code, 201)
         warning_id = create_response.json()["id"]
+        self.created_warnings.append(warning_id)  # Record created warning
 
         response = requests.get(
             f"{self.WARNINGS_URL}/warnings/{warning_id}",
@@ -197,11 +213,12 @@ class TestWarnings(unittest.TestCase):
         unique_name = "UpdateWarning_" + self.random_string(5)
         create_response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
-            json={"name": unique_name},
+            json={"name": unique_name, "test_only": True},
             cookies={"session_id": self.admin_session_cookie}
         )
         self.assertEqual(create_response.status_code, 201)
         warning_id = create_response.json()["id"]
+        self.created_warnings.append(warning_id)  # Record created warning
 
         new_name = "Updated_" + unique_name
         update_payload = {
@@ -244,11 +261,12 @@ class TestWarnings(unittest.TestCase):
         unique_name = "DeleteWarning_" + self.random_string(5)
         create_response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
-            json={"name": unique_name},
+            json={"name": unique_name, "test_only": True},
             cookies={"session_id": self.admin_session_cookie}
         )
         self.assertEqual(create_response.status_code, 201)
         warning_id = create_response.json()["id"]
+        self.created_warnings.append(warning_id)  # Record created warning
 
         delete_response = requests.delete(
             f"{self.WARNINGS_URL}/warnings/{warning_id}",
@@ -277,11 +295,12 @@ class TestWarnings(unittest.TestCase):
         unique_name = "ModeWarning_" + self.random_string(5)
         create_response = requests.post(
             f"{self.WARNINGS_URL}/warnings",
-            json={"name": unique_name},
+            json={"name": unique_name, "test_only": True},
             cookies={"session_id": self.admin_session_cookie}
         )
         self.assertEqual(create_response.status_code, 201)
         warning_id = create_response.json()["id"]
+        self.created_warnings.append(warning_id)  # Record created warning
 
         payload = {"id": warning_id, "mode": "invalid_mode"}
         response = requests.post(
@@ -294,7 +313,7 @@ class TestWarnings(unittest.TestCase):
     # 10. Warning MQTT Publish and Receive (using valid rule & room data)
     def test_10_warning_mqtt_publish_and_receive(self):
         warning_id = self.create_valid_warning_rule("_MQTT")
-        topic = f"warning/everyone/{warning_id}"
+        topic = f"test/warning/everyone/{warning_id}"
         client = self.subscribe_to_warning_topic(topic)
         # Publish room data to trigger the rule.
         # Room data with PicoType 1, RoomID 101, and a temperature of 35 (above the upper_bound 30)
