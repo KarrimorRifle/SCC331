@@ -313,7 +313,7 @@ class TestWarnings(unittest.TestCase):
     # 10. Warning MQTT Publish and Receive (using valid rule & room data)
     def test_10_warning_mqtt_publish_and_receive(self):
         warning_id = self.create_valid_warning_rule("_MQTT")
-        topic = f"test/warning/everyone/{warning_id}"
+        topic = f"test/warnings/everyone/{warning_id}"
         client = self.subscribe_to_warning_topic(topic)
         # Publish room data to trigger the rule.
         # Room data with PicoType 1, RoomID 101, and a temperature of 35 (above the upper_bound 30)
