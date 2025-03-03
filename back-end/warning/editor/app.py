@@ -158,9 +158,13 @@ def make_warning():
     if not name:
         print("Name is required")
         return jsonify({"error": "Name is required"}), 400
+    
+    test_only = data.get("test_only")
+    if not test_only:
+        test_only = False
 
     try:
-        cursor.execute("INSERT INTO rule (name, owner_id) VALUES (%s, %s)", (name, status_code))
+        cursor.execute("INSERT INTO rule (name, owner_id, test_only) VALUES (%s, %s, %s)", (name, status_code, test_only))
         connection.commit()
         warning_id = cursor.lastrowid
         
