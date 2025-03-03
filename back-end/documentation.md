@@ -319,17 +319,18 @@ The warning system will utilise the MQTT server to communicate and will send mes
   "Title": "A string with the name of the warning",
   "Location": "RoomID",
   "Severity": "ENUM['doomed','danger','warning','notification']",
-  "Summary": "String with summary"
+  "Summary": "String with summary",
+  "ID": 302, // ID of the warning
 }
 ```
 
 ## Authorisation and Topics utilised
 \# will be used as the warning ID
-- Staff admins only: `warning/admin/#`
-- Staff security only: `warning/security/#`
-- Staff only: `warning/staff/#`
-- Users only: `warning/users/#`'
-- Everyone: `warning/everyone/#`
+- Staff admins only: `warnings/admin`
+- Staff security only: `warnings/security`
+- Staff only: `warnings/staff`
+- Users only: `warnings/users`'
+- Everyone: `warninsg/everyone`
 
 Warnings can range from telling staff there is a lack of people in a room, too many people in a room, or fires are going etc.
 ## Editor (Port: 5004)

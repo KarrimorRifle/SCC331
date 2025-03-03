@@ -405,13 +405,15 @@ def on_message(client, user_data, message):
 
         # then we continue on to send the messages
         for message in rule["messages"]:
+            message_copy = message.copy()
             prepend = ""
             if rule["test_only"]:
                 prepend = "test/warnings"
             else:
                 prepend = "warnings"
-            authority = message.get("Authority")
-            client.publish(f"{prepend}/{authority}/{rule['id']}", json.dumps(message))
+            authority = message_copy.pop("Authority")
+            message_copy["ID"] = rule['id']
+            client.publish(f"{prepend}/{authority}", json.dumps(message_copy))
 
     if len(tests_to_perform) > 0:
         print("tests", tests_to_perform)
@@ -450,13 +452,15 @@ def on_message(client, user_data, message):
             test_result = "messages_sent"
 
         for message in rule["messages"]:
+            message_copy = message.copy()
             prepend = ""
             if rule["test_only"]:
                 prepend = "test/warnings"
             else:
                 prepend = "warnings"
-            authority = message.get("Authority")
-            client.publish(f"{prepend}/{authority}/Testing-{rule['id']}", json.dumps(message))
+            authority = message_copy.pop("Authority")
+            message_copy["ID"] = rule['id']
+            client.publish(f"{prepend}/{authority}", json.dumps(message_copy))
 
         # Store the test result
         store_test_result(test_id, test_result)
