@@ -71,6 +71,7 @@ const closeMenu = () =>{
       <RouterLink to="/map" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
       <RouterLink to="/summary" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
       <RouterLink to="/create-warning" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Create Warning</RouterLink>
+      <RouterLink to="/messages" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Messages</RouterLink>
       <RouterLink to="/admin" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Admin</RouterLink>
       <RouterLink to="/login" class="nav-link" exact-active-class="active" v-if="!props.loggedIn">Login</RouterLink>
       <RouterLink to="#" class="nav-link" v-if="props.loggedIn" @click.prevent="handleLogout">
@@ -87,6 +88,7 @@ const closeMenu = () =>{
       <RouterLink to="/map" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Map</RouterLink>
       <RouterLink to="/summary" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Summary</RouterLink>
       <RouterLink to="/create-warning" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Create Warning</RouterLink>
+      <RouterLink to="/messages" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Messages</RouterLink>
       <RouterLink to="/admin" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Admin</RouterLink>
       <RouterLink to="/login" class="mobile-link" exact-active-class="active" v-if="!props.loggedIn" @click="closeMenu">Login</RouterLink>
       <RouterLink to="#" class="mobile-link" v-if="props.loggedIn" @click.prevent="handleLogout" @click="closeMenu">

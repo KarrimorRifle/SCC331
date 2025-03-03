@@ -25,9 +25,9 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/admin',
-      name: 'admin',
-      component: () => import('../views/AdminView.vue'),
+      path: '/messages',
+      name: 'messages',
+      component: () => import('../views/MessagesView.vue'),
       meta: { requiresAuth: true }
     },
     {
