@@ -150,7 +150,7 @@ const updateFilters = () => {
   border-radius: 50%;
 }
 input:checked + .slider {
-  background-color: #ffa726;
+  background-color: #F18C8E;
 }
 input:checked + .slider:before {
   transform: translateX(14px);
