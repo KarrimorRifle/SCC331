@@ -24,25 +24,21 @@ const unreadMessagesCount = ref(0);
 // Function to check unread messages
 const checkUnreadMessages = async () => {
   try {
-    const response = await axios.get('http://localhost:5007/get_messages', {
+    const response = await axios.get('http://localhost:5007/unread_messages_count', {
       headers: {
         'session-id': document.cookie.split('; ').find(row => row.startsWith('session_id='))?.split('=')[1] || '',
       },
       withCredentials: true, // Ensures cookies are sent with the request
     });
 
-    // Check if there are any unread messages (assuming isRead is a flag for read/unread messages)
-    const unreadMessages = response.data.messages?.filter((message: any) => message.isRead === 0);
+    // Set the unread messages count
+    unreadMessagesCount.value = response.data.unread_messages_count || 0;
 
-    if (unreadMessages && unreadMessages.length > 0) {
-      unreadMessagesCount.value = unreadMessages.length;
-      showModal.value = true; // Open modal if unread messages exist
-    } else {
-      showModal.value = false; // Close modal if no unread messages
-    }
+    // Show modal only if there are unread messages
+    showModal.value = unreadMessagesCount.value > 0;
   } catch (error) {
-    console.error('Error fetching messages:', error.response?.data || error.message);
-    showModal.value = false; // Ensure the modal is closed in case of an error
+    console.error('Error fetching unread messages count:', error.response?.data || error.message);
+    showModal.value = false; // Ensure modal stays closed on error
   }
 };
 
@@ -132,16 +128,17 @@ const closeModal = () => {
       </div>
     </section>
     
-    <!-- Message Modal -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content">
-        <button class="close-btn" @click="closeModal">
-          <FontAwesomeIcon :icon="faTimes" />
-        </button>
-        <h2>You have {{ unreadMessagesCount }} unread message(s)</h2>
-        <p><RouterLink to="/messages" class="cta-button">Go to Messages</RouterLink></p>
-      </div>
-    </div>
+	<!-- Message Modal -->
+	<div v-if="showModal" class="modal-overlay">
+	<div class="modal-content">
+		<button class="close-btn" @click="closeModal">
+		<FontAwesomeIcon :icon="faTimes" />
+		</button>
+		<h2>You have {{ unreadMessagesCount }} unread message{{ unreadMessagesCount > 1 ? 's' : '' }}</h2>
+		<p><RouterLink to="/messages" class="cta-button">Go to Messages</RouterLink></p>
+	</div>
+	</div>
+
 
   </div>
 </template>
