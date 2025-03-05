@@ -257,7 +257,7 @@ void BluetoothSensor::handleWarning(String message, String source) {
 //for reply - staff/security??
   //buttons used to acknowledge y/n
 void BluetoothSensor::checkForAcknowledgement() {
-  if (digitalRead(RED_BUTTON) == HIGH) {
+  if (digitalRead(RED_BUTTON) == HIGH && warningLive) { //added the use of warningLive boolean to free up red button, will remove if buggy
     warningLive = false;
     leds->clear();
     leds->setPixelColor(1, leds->Color(255, 255, 255));
@@ -300,6 +300,33 @@ void BluetoothSensor::warningOver() {
   display->clearDisplay();
   display->setCursor(0, 0);
   display->display(); 
+}
+
+
+void BluetoothSensor::SOSCall(){
+  //black button to confirm
+  //piggy back off warning system channels
+    //Hard code message
+    //Send in json (base off of sendToServer)
+    //display message (on their way, stay in the room)
+      //could light up an LED to a colour to match customer and staff??? (would have to add method to recieve message and decipher LED config)
+      //OR just shine on customer a known colour
+
+  //both buttons to suggest
+  if(digitalRead(BLACK_BUTTON) == HIGH && digitalRead(RED_BUTTON)){
+    //display message
+    if(digitalRead(BLACK_BUTTON) == HIGH){
+      //confirm
+        //display message (sending)
+        //gather room id and sensor id 
+        //set LEDs
+        //send json
+        //display message
+    }else if(digitalRead(RED_BUTTON) == HIGH){
+      //cancel
+        //display message
+    }
+  }
 }
 
 
