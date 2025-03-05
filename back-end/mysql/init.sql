@@ -34,40 +34,69 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 
 -- pico
+-- USE pico;
+-- CREATE TABLE IF NOT EXISTS users (
+-- 	id INT AUTO_INCREMENT PRIMARY KEY,
+-- 	picoID VARCHAR(50) NOT NULL,
+-- 	roomID VARCHAR(50) NOT NULL,
+-- 	logged_at TIMESTAMP NOT NULL
+-- );
+
+-- CREATE TABLE IF NOT EXISTS luggage ( -- Consider storing it paired up
+-- 	id INT AUTO_INCREMENT PRIMARY KEY,
+-- 	picoID VARCHAR(50) NOT NULL,
+-- 	roomID VARCHAR(50) NOT NULL,
+-- 	logged_at TIMESTAMP NOT NULL
+-- );
+
+
+-- CREATE TABLE IF NOT EXISTS staff(
+--   id INT AUTO_INCREMENT PRIMARY KEY,
+--   picoID VARCHAR(50) NOT NULL,
+--   roomID VARCHAR(50) NOT NULL,
+--   logged_at TIMESTAMP NOT NULL
+-- );
+
+-- CREATE TABLE IF NOT EXISTS guard (
+--   id INT AUTO_INCREMENT PRIMARY KEY,
+--   picoID VARCHAR(50) NOT NULL,
+--   roomID VARCHAR(50) NOT NULL,
+--   logged_at TIMESTAMP NOT NULL
+-- );
+
+-- CREATE TABLE IF NOT EXISTS environment (
+-- 	id INT AUTO_INCREMENT PRIMARY KEY,
+-- 	picoID VARCHAR(50) NOT NULL,
+-- 	roomID VARCHAR(50) NOT NULL,
+-- 	logged_at TIMESTAMP NOT NULL,
+-- 	sound FLOAT NOT NULL,
+-- 	light FLOAT NOT NULL,
+-- 	temperature FLOAT NOT NULL,
+-- 	IAQ FLOAT NOT NULL,
+-- 	pressure FLOAT NOT NULL,
+-- 	humidity FLOAT NOT NULL
+-- );
+
+-- new pico 
 USE pico;
-CREATE TABLE IF NOT EXISTS users (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	picoID VARCHAR(50) NOT NULL,
-	roomID VARCHAR(50) NOT NULL,
+
+CREATE TABLE IF NOT EXISTS picoDevice {
+	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+	readablePicoID VARCHAR(50) NOT NULL UNIQUE,
+	bluetoothID INT NOT NULL UNIQUE,
+	picoType VARCHAR(32),
+}
+
+CREATE TABLE IF NOT EXISTS bluetoothTrackers --1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
+(
+	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+	roomID VARCHAR(17) NOT NULL,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
 	logged_at TIMESTAMP NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS luggage ( -- Consider storing it paired up
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	picoID VARCHAR(50) NOT NULL,
-	roomID VARCHAR(50) NOT NULL,
-	logged_at TIMESTAMP NOT NULL
-);
-
-
-CREATE TABLE IF NOT EXISTS staff(
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  picoID VARCHAR(50) NOT NULL,
-  roomID VARCHAR(50) NOT NULL,
-  logged_at TIMESTAMP NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS guard (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  picoID VARCHAR(50) NOT NULL,
-  roomID VARCHAR(50) NOT NULL,
-  logged_at TIMESTAMP NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS environment (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	picoID VARCHAR(50) NOT NULL,
-	roomID VARCHAR(50) NOT NULL,
+CREATE TABLE IF NOT EXISTS environmentSensors  --1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
+(
+	picoID VARCHAR(17) NOT NULL PRIMARY KEY,
 	logged_at TIMESTAMP NOT NULL,
 	sound FLOAT NOT NULL,
 	light FLOAT NOT NULL,
@@ -76,6 +105,7 @@ CREATE TABLE IF NOT EXISTS environment (
 	pressure FLOAT NOT NULL,
 	humidity FLOAT NOT NULL
 );
+
 
 -- Use the assets database
 USE assets;
