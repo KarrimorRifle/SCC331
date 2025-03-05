@@ -17,10 +17,6 @@ const props = defineProps({
     type: Object as () => boxAndData,
     required: true,
   },
-  overlayAreasData: {
-    type: Object,
-    required: true,
-  },
   userIds: {
     type: Array,
     required: true,

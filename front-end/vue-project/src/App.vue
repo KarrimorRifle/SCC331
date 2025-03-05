@@ -14,7 +14,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
-const { overlayAreasData, updates, environmentHistory, warnings } = useFetchData(picoIds);
+const { updates, warnings } = useFetchData(picoIds);
 const presetStore = usePresetStore();
 const isMobile = ref(window.innerWidth < 768);
 const isWarningModalOpen = ref(false);
@@ -112,7 +112,6 @@ watch(
     
     Object.entries(fullWarningConditions.value).forEach(([warningId, warning]) => {
       const triggeredAreas = checkWarningAreas(newSummary, warning);
-      console.log(`Triggered Areas for Warning ${warningId}:`, triggeredAreas);
       triggeredAreas.forEach(({ roomID, messages }) => {
         messages.forEach(msg => {
           addNotification(msg); // Ensure unique notifications get added
@@ -152,7 +151,6 @@ watch(
       :environmentHistory="environmentHistory"
       :warnings="notificationQueue"
       :isMobile="isMobile"
-      :overlayAreasData="overlayAreasData"
       :loggedIn="authStore.isLoggedIn"
       @login="authStore.login"
     />

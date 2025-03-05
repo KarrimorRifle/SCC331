@@ -15,10 +15,6 @@ import {usePresetStore} from "../utils/useFetchPresets";
 
 // Receive isMobile from App.vue
 const props = defineProps({
-  overlayAreasData: {
-    type: Object,
-    required: true,
-  },
   isMobile: {
     type: Boolean,
     required: true,
@@ -424,7 +420,6 @@ onMounted(async () => {
       <AirportMap
         class="flex-grow-1"
         :isLoading="presetStore.isLoading"
-        :overlayAreasData="overlayAreasData" 
         :warnings="warnings"
         v-model="presetStore.boxes_and_data"
         :presetList="presetStore.presetList"
@@ -457,7 +452,6 @@ onMounted(async () => {
         @newBox="presetStore.createNewBox"
         @colourChange="presetStore.handleColourChange"
         @removeBox="presetStore.removeBox"
-        :overlayAreasData="overlayAreasData" 
         :userIds="picoIds"
         :updates="updates"
         :warnings="warnings"
@@ -470,7 +464,6 @@ onMounted(async () => {
     <AirportMap
       class="flex-grow-1"
       :isLoading="presetStore.isLoading"
-      :overlayAreasData="overlayAreasData" 
       :warnings="warnings"
       v-model="presetStore.boxes_and_data"
       :presetList="presetStore.presetList"
@@ -502,7 +495,6 @@ onMounted(async () => {
       @newBox="presetStore.createNewBox"
       @colourChange="presetStore.handleColourChange"
       @removeBox="presetStore.removeBox"
-      :overlayAreasData="overlayAreasData" 
       :userIds="picoIds"
       :updates="updates"
       :warnings="warnings"

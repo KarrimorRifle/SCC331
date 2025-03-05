@@ -1,33 +1,12 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import axios from "axios";
 
-export function useFetchData(picoIds) {
+export function useFetchData(picoIds: any) {
   // Reactive state
-  const overlayAreasData = ref([]);
   const updates = ref({});
-  const environmentHistory = ref({});
   const warnings = ref([]);
-  let pollingInterval = null;
-  let warningInterval = null;
-
-  
-  // Function to track environment data
-  const trackEnvironmentData = (label, data) => {
-    if (!data) return;
-    const timestamp = Date.now();
-    if (!environmentHistory.value[label]) {
-      environmentHistory.value[label] = [];
-    }
-    environmentHistory.value[label].push({
-      timestamp,
-      temperature: data.temperature,
-      sound: data.sound,
-      light: data.light,
-    });
-    if (environmentHistory.value[label].length > 20) {
-      environmentHistory.value[label].shift();
-    }
-  };
+  let pollingInterval: number | null | undefined = null;
+  let warningInterval: number | null | undefined = null;
 
   const fetchWarnings = async () => {
     try {
@@ -47,25 +26,7 @@ export function useFetchData(picoIds) {
 
   // Function to fetch data
   const fetchData = async () => {
-        try {
-      // Fetch overlay data
-      const summaryResponse = await axios.get("/summary", {withCredentials: true});
-      const summaryData = summaryResponse.data;
-
-      // Track environment data
-      Object.entries(summaryData).forEach(([key, area]) => {
-        if (area.environment && Object.keys(area.environment).length > 0) {
-          trackEnvironmentData(key, area.environment);
-        } else {
-          console.warn(`Empty or missing environment data for Key: ${key}`);
-        }
-      });
-
-      if (JSON.stringify(summaryData) !== JSON.stringify(overlayAreasData.value)) {
-        //console.log('Overlay areas updated:', summaryData);
-        overlayAreasData.value = summaryData;
-      }
-
+    try {
       // Fetch updates from multiple Pico IDs
       for (const PICO_ID of picoIds) {
         const picoResponse = await axios.get(`/pico/${PICO_ID}`, {withCredentials: true});
@@ -109,9 +70,7 @@ export function useFetchData(picoIds) {
   });
 
   return {
-    overlayAreasData,
     updates,
-    environmentHistory,
     warnings,
   };
 }

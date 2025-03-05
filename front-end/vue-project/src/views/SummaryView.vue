@@ -2,7 +2,7 @@
 import SummaryHeader from '../components/Summary/SummaryHeader.vue';
 import SummaryTable from '../components/Summary/SummaryTable/SummaryTable.vue';
 import LiveUpdates from '../components/Summary/LiveUpdates/LiveUpdates.vue';
-import WarningSystem from '../components/Summary/WarningSystem/WarningSystem.vue'; // Import new warning system component
+import WarningSystem from '../components/Summary/WarningSystem/WarningSystem.vue';
 import { ref, PropType } from 'vue';
 
 const props = defineProps({
@@ -10,10 +10,6 @@ const props = defineProps({
     type: Array, 
     required: true,
   }, 
-  overlayAreasData: {
-    type: Object,
-    required: true,
-  },
   updates: {
     type: Object,
     required: true,
@@ -49,7 +45,6 @@ const activeSection = ref("all");
       
       <SummaryTable 
         v-if="activeSection === 'summary' || activeSection === 'all'"
-        :data="overlayAreasData" 
         :environmentHistory="environmentHistory"
       />
       <LiveUpdates 
