@@ -315,6 +315,11 @@ void BluetoothSensor::SOSCall(){
   //both buttons to suggest
   if(digitalRead(BLACK_BUTTON) == HIGH && digitalRead(RED_BUTTON)){
     //display message
+    display->clearDisplay();
+    display->setCursor(0, 0);
+    display->println("Would you like some assisstance?");
+    display->println("Black - Confirm\tRed - Cancel");
+    display->display(); 
     if(digitalRead(BLACK_BUTTON) == HIGH){
       //confirm
         //display message (sending)
@@ -322,9 +327,60 @@ void BluetoothSensor::SOSCall(){
         //set LEDs
         //send json
         //display message
+      display->clearDisplay();
+      display->setCursor(0, 0);
+      display->println("Sending request");
+      display->display(); 
+
+      
+      //loop below until...?
+      pixelInterval = 50;                   //  Delay time (ms)
+      pixelQueue = = 0;
+      pixelCycle = 0;
+      for(int i = 0; i < 3; i += 3) {
+        leds.setPixelColor(i + pixelQueue, Wheel((i + pixelCycle) % 255)); //  Update delay time  
+      }
+
+      leds.show();
+      
+      for(int i = 0; i < 3; i += 3) {
+        leds.setPixelColor(i + pixelQueue, leds.Color(0, 0, 0)); //  Update delay time  
+      }
+
+      pixelQueue++;                           //  Advance current queue  
+      pixelCycle++;                           //  Advance current cycle
+      
+      if(pixelQueue >= 3){
+        pixelQueue = 0;                       //  Loop
+      }if(pixelCycle >= 256){
+        pixelCycle = 0;                       //  Loop
+      }
+
+      //json file
+      StaticJsonDocument<256> json;
+      json["PicoID"] = mqtt->getHardwareIdentifier();
+      json["RoomID"] = majorID;
+      json["PicoType"] = picoType;
+      json["Data"] = "Request for assistance in Room " + String(majorID);
+
+      String jsonString;
+      serializeJson(json, jsonString);
+
+      mqtt->publishDataWithIdentifier(jsonString, "feeds/hardware-data/");
+
+      display->clearDisplay();
+      display->setCursor(0, 0);
+      display->println("Request sent");
+      display->println("An assistant is on their way");
+      display->display(); 
     }else if(digitalRead(RED_BUTTON) == HIGH){
       //cancel
         //display message
+      display->clearDisplay();
+      display->setCursor(0, 0);
+      display->println("Cancelled");
+      display->println("Press both buttons simultaneously to try again");
+      display->display(); 
     }
   }
 }
