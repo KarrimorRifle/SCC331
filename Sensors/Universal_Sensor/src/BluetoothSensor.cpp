@@ -5,23 +5,22 @@
 #include <Adafruit_NeoPixel.h>
 extern "C" void flash_get_unique_id(uint8_t *p);
 
-
+int BluetoothSensor::strongestScanBluetoothID = -1;
 int BluetoothSensor::strongestRSSI = -10000;
 
 
-BluetoothSensor::BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds) {
+BluetoothSensor::BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds, uint16_t BluetoothID ) {
   display = Display;
   mqtt = Mqtt;
   leds = Leds;
-  strongestMajorID = -1;
+  strongestScanBluetoothID = -1;
   strongestRSSI = -10000;
   lastActionTime = 0;
   isScanning = false;
-  majorID = -1;
+  bluetoothID = BluetoothID;
   picoType = 2;
-  // specificWarningSubscription = MqttSubscription();
-  // globalWarningSubscription = MqttSubscription();
-  flash_get_unique_id(&minorID);
+  warningSubscription = MqttSubscription();
+  globalWarningSubscription = MqttSubscription();
 }
 
 
@@ -29,15 +28,15 @@ void BluetoothSensor::setWarningSubscriptions() {
   String specificWarningRoute;
   switch (picoType) {
     case SECURITY_PICO:
-      specificWarningRoute = "warning/security/#";
+      specificWarningRoute = "warnings/security/#";
       break;
 
     case STAFF_PICO:
-      specificWarningRoute = "warning/staff/#";
+      specificWarningRoute = "warnings/staff/#";
       break;
 
     case PASSENGER_PICO:
-      specificWarningRoute = "warning/users/#";
+      specificWarningRoute = "warnings/users/#";
       break;
 
     default:
@@ -46,7 +45,7 @@ void BluetoothSensor::setWarningSubscriptions() {
 
 
   warningSubscription = MqttSubscription(specificWarningRoute);
-  globalWarningSubscription = MqttSubscription("warning/everyone/#");
+  globalWarningSubscription = MqttSubscription("warnings/everyone/#");
 
 
   mqtt->addSubscription(&warningSubscription);
@@ -105,12 +104,9 @@ void BluetoothSensor::loop() {
 
 
     // After scanning, process the strongest signal:
-    if (strongestMajorID != -1 && strongestRSSI != -1) {
-      // Update MajorID:
-      majorID = strongestMajorID;
-
+    if (strongestScanBluetoothID != -1 && strongestRSSI != -1) {
       // Send the new MajorID to the server:
-      sendToServer(String(strongestMajorID));
+      sendToServer(String(strongestScanBluetoothID));
     }
   }
 
@@ -166,14 +162,15 @@ void BluetoothSensor::setSensorType(int PicoType) {
 
 // Bluetooth Receiver Methods:
 void BluetoothSensor::advertisementCallback(BLEAdvertisement *adv) {
-  if (adv->isIBeacon()) {
-	int majorID = adv->getIBeaconMajorID();
-	int rssi = adv->getRssi();
+  if (adv->isIBeacon()) 
+  {
+    int majorID = adv->getIBeaconMajorID();
+    int rssi = adv->getRssi();
 
-	if (rssi > strongestRSSI) {
-	  strongestRSSI = rssi;
-	  majorID = majorID;
-	}
+    if (rssi > strongestRSSI) {
+      strongestRSSI = rssi;
+      strongestScanBluetoothID = majorID;
+    }
   }
 }
 
@@ -232,7 +229,6 @@ void BluetoothSensor::handleWarning(String message, String source) {
 
   display->clearDisplay();
   display->setCursor(0, 0);
-  display->startscrollleft(0x00, 0x0F);
   display->println(warningMessage);
   display->display(); 
 
@@ -266,7 +262,6 @@ void BluetoothSensor::checkForAcknowledgement() {
     noTone(BUZZER);
 
     display->clearDisplay();
-    display->stopscroll();
     display->setCursor(0, 0);
     display->println("Acknowledgement:");
     display->println("Understood");
@@ -391,7 +386,7 @@ void BluetoothSensor::sendToServer(String data) {
     StaticJsonDocument<256> json;
 
     json["PicoID"] = mqtt->getHardwareIdentifier();
-    json["RoomID"] = majorID;
+    json["RoomID"] = String(strongestScanBluetoothID);
     json["PicoType"] = picoType;
     json["Data"] = data;
 

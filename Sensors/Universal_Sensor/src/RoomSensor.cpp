@@ -8,12 +8,11 @@ short RoomSensor::sampleBuffer[512]; // Sound
 volatile int RoomSensor::samplesRead = 0;
 
 
-RoomSensor::RoomSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt) {
+RoomSensor::RoomSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, uint16_t BluetoothID) {
     display = Display;
     mqtt = Mqtt;
     lastActionTime = millis();
-    majorID = 1;
-    flash_get_unique_id(&minorID);
+    bluetoothID = 1;
 }
 
 void RoomSensor::setup() {
@@ -54,7 +53,7 @@ void RoomSensor::setup() {
   }
   
   // Initialise Bluetooth Stuff:
-  BTstack.iBeaconConfigure(&ROOM_UUID, majorID, minorID);
+  BTstack.iBeaconConfigure(&ROOM_UUID, bluetoothID, 0);
   BTstack.startAdvertising();
 }
 
@@ -149,14 +148,14 @@ void RoomSensor::sendToServer(String data) {
   display->setCursor(0, 0);
   display->println("Status: Communicating.");
   display->println("Sending to Server...");
-  display->println("Room ID: " + String(majorID));
+  display->println("Room ID: " + String(bluetoothID));
   display->display(); 
 
   // Create JSON document to send to server:
   StaticJsonDocument<256> json;
 
   json["PicoID"] = mqtt->getHardwareIdentifier();;
-  json["RoomID"] = majorID;
+  json["RoomID"] = bluetoothID;
   json["PicoType"] = ROOM_PICO;
   json["Data"] = data;
 

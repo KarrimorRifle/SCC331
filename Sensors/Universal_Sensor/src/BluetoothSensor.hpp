@@ -18,7 +18,7 @@
 
 class BluetoothSensor : public SensorType {
     public:
-        BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds);
+        BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds, uint16_t BluetoothID);
 
         virtual void setup();
         virtual void loop();
@@ -33,15 +33,13 @@ class BluetoothSensor : public SensorType {
         MqttConnection* mqtt;
         Adafruit_NeoPixel* leds;
         // BLE Scanning Variables:
-        int strongestMajorID;
+        static int strongestScanBluetoothID;
         static int strongestRSSI;
         unsigned long lastActionTime;
         bool isScanning;
         int picoType;
-        int majorID; // The room the user / luggage is currently in, according to the majorID picked up
-        uint8_t minorID;
+        uint16_t bluetoothID; // The room the user / luggage is currently in, according to the majorID picked up
 
-        MqttSubscription huh; //For some reason without having this here the program crashes, despite it not being used at all (what in the actual fuck)
         MqttSubscription globalWarningSubscription;
         MqttSubscription warningSubscription;
 
