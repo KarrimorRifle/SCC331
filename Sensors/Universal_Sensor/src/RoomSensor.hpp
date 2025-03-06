@@ -14,7 +14,7 @@
 
 class RoomSensor : public SensorType {
     public:
-        RoomSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt);
+        RoomSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, uint16_t BluetoothID);
 
         virtual void setup();
         virtual void loop();
@@ -30,8 +30,7 @@ class RoomSensor : public SensorType {
         BH1745NUC bh1745nuc = BH1745NUC();
         UUID ROOM_UUID;		  // The unique Room UUID, for Room Sensors only
         unsigned long lastActionTime;
-        uint8_t minorID;          // The Pico's unique ID
-        int majorID;     // The RoomID, defaulted to -1 for People Sensors
+        uint16_t bluetoothID;     // The RoomID, defaulted to -1 for People Sensors
 
         void environmentalData();
         float readSoundSamples();
