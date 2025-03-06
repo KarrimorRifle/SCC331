@@ -222,6 +222,7 @@ services:
       - account_registration
     networks:
       - my_network
+    profiles: ["test"]
 
 networks:
   my_network:

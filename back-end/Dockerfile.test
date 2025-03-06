@@ -25,5 +25,8 @@ COPY tests/run_tests.sh /run_tests.sh
 # Make the scripts executable
 RUN chmod +x /wait-for-it.sh /run_tests.sh
 
-# Command to run the tests
-CMD ["/run_tests.sh"]
+# Set the entrypoint to run_tests.sh so that any arguments are passed to it
+ENTRYPOINT ["/run_tests.sh"]
+
+# Optionally, set a default argument (can be empty)
+CMD ["all"]

@@ -179,6 +179,7 @@ CREATE TABLE IF NOT EXISTS rule (
   id INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(50) NOT NULL UNIQUE,
   owner_id INT,
+	test_only BOOLEAN NOT NULL DEFAULT false,
   FOREIGN KEY (owner_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL -- if its null it will allow anyone to delete
 );
 
