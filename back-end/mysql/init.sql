@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS pico_device {
 	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
 	readablePicoID VARCHAR(50) NOT NULL UNIQUE,
 	bluetoothID INT UNIQUE,   --may be null for a un-activated pico and in which case it will be sent out as 0
-	picoType VARCHAR(32),  --may be bluetoothTracker or environmentSensor, will be null if the device has not been activated or has been deactivated
+	picoType INT DEFAULT 0,  --may 0 is unassigned, 1 is environment, 2 is bluetooth tracker
 }
 
 CREATE TABLE IF NOT EXISTS tracking_groups {

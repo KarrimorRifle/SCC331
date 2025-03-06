@@ -2,20 +2,23 @@
 #include <WiFi.h> 
 #include <Adafruit_SSD1306.h>
 #include <BTstackLib.h>
+#include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
 #include "MqttConnection.hpp"
 #include "RoomSensor.hpp"
 #include "BluetoothSensor.hpp"
+#include "UnassignedSensor.hpp"
 
 
-int picoType = PASSENGER_PICO; // The Type of methods this Pico will be utilising 
-uint16_t bluetoothID = 6;
+uint16_t bluetoothID = 0;
+String readableID = "";
 
 // WiFi Stuff:
 const char* ssid = "grp3"; // CHANGE THIS FOR DIFFERENT NETWORKS (FIND ON ROUTERS) 
 const char* password = "eqdf2376"; // THIS TOO!
 WiFiClient client;
 MqttConnection mqtt = MqttConnection();
+MqttSubscription configSubscription;
 
 
 // Display Stuff:
@@ -26,10 +29,10 @@ Adafruit_NeoPixel led(3, 6, NEO_GRB + NEO_KHZ800); // LEDs
 #define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-
+UnassignedSensor configUnassigned = UnassignedSensor();
 SensorType *currentSensorConfig;
 RoomSensor roomSensorConfig = RoomSensor(&display, &mqtt, bluetoothID);
-BluetoothSensor bluetoothSensorConfig = BluetoothSensor(&display, &mqtt, &led, bluetoothID);
+BluetoothSensor bluetoothSensorConfig = BluetoothSensor(&display, &mqtt, &led, bluetoothID, "", &readableID);
 
 
 void setupDisplay() {
@@ -88,64 +91,148 @@ void setupMQTT() {
 }
 
 
+void handleConfigMessage(String message) {
+	Serial.print("Message Recieved:");
+	Serial.println(message);
+	String hardwareID = mqtt.getHardwareIdentifier();
+
+	StaticJsonDocument<1000> doc;
+
+	DeserializationError error = deserializeJson(doc, message);
+  
+	if (error) {
+		display.clearDisplay();
+		display.setCursor(0, 0);
+		display.println("Waiting for PicoType from Server");
+		display.println("Invalid Message Recieved.");
+		display.println("Hardware ID: " + hardwareID);
+		display.display(); 
+		return;
+	}
+
+	if (doc.containsKey("PicoType")) {
+		int recievedPicoType = doc["PicoType"].as<int>();
+		Serial.print("Recieved Pico Type: ");
+		Serial.println(recievedPicoType);
+		if (recievedPicoType == UNASSIGNED_PICO) {
+			currentSensorConfig->unsetup();
+			currentSensorConfig = &configUnassigned;
+			display.clearDisplay();
+			display.setCursor(0, 0);
+			display.println("Message recieved.");
+			display.println("Currently unassigned, awaiting assignment.");
+			display.println("Hardware ID: " + hardwareID);
+			display.display(); 
+		}
+
+		else if (currentSensorConfig->getSensorType() != recievedPicoType) {
+			currentSensorConfig->unsetup();
+			switch (recievedPicoType) {
+				case ROOM_PICO:
+					currentSensorConfig = &roomSensorConfig;
+					break;
+				case TRACKER_PICO:
+					currentSensorConfig = &bluetoothSensorConfig;
+					break;
+				default:
+					currentSensorConfig = &configUnassigned;
+					display.clearDisplay();
+					display.setCursor(0, 0);
+					display.println("Message recieved.");
+					display.println("Currently unassigned, awaiting assignment.");
+					display.println("Hardware ID: " + hardwareID);
+					display.display(); 
+					break;
+			}
+			currentSensorConfig->setup();
+		}
+
+		else if (recievedPicoType == UNASSIGNED_PICO) {
+
+		}
+	}
+	else {
+		display.clearDisplay();
+		display.setCursor(0, 0);
+		display.println("Message recieved without PicoType.");
+		display.println("Awaiting further messages.");
+		display.println("Hardware ID: " + hardwareID);
+		display.display(); 
+		return;
+	}
+  
+	if (doc.containsKey("ReadableID")) {
+		  readableID = doc["ReadableID"].as<String>();
+	}
+	else {
+		readableID = "Invalid ID";
+	}
+
+	if (doc.containsKey("BluetoothID")) {
+		bluetoothID = doc["BluetoothID"].as<uint16_t>();
+
+		//TODO - SET BLUETOOTH ID FOR ROOM SENSORS
+
+		String bluetoothTrackerGroup = "";
+
+		if (doc.containsKey("TrackerGroup")) {
+			bluetoothTrackerGroup = doc["TrackerGroup"].as<String>();
+		}
+		
+		if (!bluetoothTrackerGroup.equals(bluetoothSensorConfig.getCurrentTrackerGroup())) {
+			bluetoothSensorConfig.setCurrentTrackerGroup(bluetoothTrackerGroup);
+		}
+	}
+	else {
+		display.clearDisplay();
+		display.setCursor(0, 0);
+		display.println("Invalid BT ID Recieved.");
+		display.println("Irrecoverable Error, exiting.");
+		display.println("Hardware ID: " + hardwareID);
+		display.display(); 
+
+		exit(0);
+	}
+}
+
+
 void getInitialSensorType() {
+	currentSensorConfig = &configUnassigned;
+	String hardwareID = mqtt.getHardwareIdentifier();
+
 	// Update display:
 	display.clearDisplay();
 	display.setCursor(0, 0);
 	display.println("Initial Setup complete.");
 	display.println("Waiting for PicoType from Server");
+	display.println("Hardware ID: " + hardwareID);
 	display.display(); 
 	
-	// TODO WAIT FOR REMOTE SETUP FROM SERVER
+	configSubscription = MqttSubscription("hardware_config/server_message/" + hardwareID);
+	mqtt.addSubscription(&configSubscription);
+	Serial.print("Added subscription to ");
+	Serial.println(configSubscription.getSubscriptionRoute());
+
+	mqtt.publishToMQTT("{\"PicoID\": \"" + hardwareID + "\"}", "hardware_config/hardware_message/" + hardwareID);
+
+	bool sensorTypeNotFound = true;
+	uint32_t last_keep_alive = millis();
+	while(sensorTypeNotFound) {
+		if (last_keep_alive + 30000 < millis()) {
+			mqtt.publishToMQTT("{\"PicoID\": \"" + hardwareID + "\"}", "hardware_config/hardware_message/" + hardwareID);
+			last_keep_alive = millis();
+		}
+		
+		if (configSubscription.hasMessage()) {
+			handleConfigMessage(configSubscription.getMessage());
+			if (currentSensorConfig->getSensorType() != UNASSIGNED_PICO) {
+				sensorTypeNotFound = false;
+			}
+		}
+	}
 
 	display.clearDisplay();
 	display.display();
-}
-
-
-void setSensorType(bool initialSet = false) {
-	if (!initialSet) {
-		currentSensorConfig->unsetup();
-	}
-
-	switch (picoType)
-	{
-		case SERVER_PICO: // Server
-			break;
-		
-		case ROOM_PICO: // Room
-			currentSensorConfig = &roomSensorConfig;
-			currentSensorConfig->setup();
-			break;
-			
-		case LUGGAGE_PICO: // Luggage
-			bluetoothSensorConfig.setSensorType(picoType);
-			currentSensorConfig = &bluetoothSensorConfig;
-			currentSensorConfig->setup();
-			break;
-			
-		case PASSENGER_PICO: // Passenger
-			bluetoothSensorConfig.setSensorType(picoType);
-			currentSensorConfig = &bluetoothSensorConfig;
-			currentSensorConfig->setup();
-			break;
-		
-		case STAFF_PICO: // Staff
-			bluetoothSensorConfig.setSensorType(picoType);
-			currentSensorConfig = &bluetoothSensorConfig;
-			currentSensorConfig->setup();
-			break;
-		
-		case SECURITY_PICO: // Security Guard
-			bluetoothSensorConfig.setSensorType(picoType);
-			currentSensorConfig = &bluetoothSensorConfig;
-			currentSensorConfig->setup();
-			break;
-		
-		default:
-			return;
-			break;
-	}
 }
 
 
@@ -157,14 +244,14 @@ void setup(void)
 
 	setupDisplay();
 	setupWIFI();
+
 	setupMQTT();
-	
+
 	// Bluetooth Setup:
   	BTstack.setup();
 
 	// Now, setup based on the picoType:
 	getInitialSensorType();
-	setSensorType(true);
 }
 
 
@@ -172,4 +259,10 @@ void loop(void)
 {
 	//Loop based on the picoType:
 	currentSensorConfig->loop();
+	if (configSubscription.hasMessage()) {
+		handleConfigMessage(configSubscription.getMessage());
+		if (currentSensorConfig->getSensorType() == UNASSIGNED_PICO) {
+			getInitialSensorType();
+		}
+	}
 }

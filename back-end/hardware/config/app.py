@@ -6,9 +6,11 @@ from pydantic import BaseModel, ValidationError
 import mysql.connector
 from mysql.connector import Error
 
+UNASSIGNED_PICO_TYPE = 0
+ENVIRONMENT_PICO_TYPE = 1
+BT_TRACKER_PICO_TYPE = 2
 
 db_connection = None
-
 
 def get_db_connection():
     global db_connection
@@ -44,27 +46,39 @@ class ConfigRequest(BaseModel):
 
 
 def handle_new_device(client, cursor, pico_id):
+    print("Handling new device with picoid " + pico_id)
+    print("")
     insert_statement = "INSERT INTO pico_device(picoID, readablePicoID) VALUES (%s, %s);"
     cursor.execute(insert_statement, (pico_id, pico_id));
 
-    response = json.dumps({"ReadableID" : pico_id, "BluetoothID" : 0, "PicoType" : "none", "TrackerGroup" : ""})
+    response = json.dumps({"ReadableID" : pico_id, "BluetoothID" : 0, "PicoType" : UNASSIGNED_PICO_TYPE, "TrackerGroup" : ""})
     publish_info = client.publish("hardware_config/server_message/" + pico_id, response, qos=2)
     publish_info.wait_for_publish()
 
+    print("Published msg")
+    print(response)
+    print("")
+
 
 def handle_known_device(client, cursor, pico_id, current_device_data):
+    print("Handling known device with picoid " + pico_id)
+    print("Device data: ", current_device_data)
     readable_id = current_device_data[0]
     bt_id = int(current_device_data[1])
     if bt_id == None:
         bt_id = 0
     pico_type = current_device_data[2]
     
-    if (pico_type == None):
-        response = json.dumps({"ReadableID" : readable_id, "BluetoothID" : bt_id, "PicoType" : "none", "TrackerGroup" : ""})
+    if (pico_type == UNASSIGNED_PICO_TYPE):
+        response = json.dumps({"ReadableID" : readable_id, "BluetoothID" : bt_id, "PicoType" : UNASSIGNED_PICO_TYPE, "TrackerGroup" : ""})
         publish_info = client.publish("hardware_config/server_message/" + pico_id, response, qos=2)
         publish_info.wait_for_publish()
 
-    elif (pico_type == "bluetoothTracker"):
+        print("Published msg")
+        print(response)
+        print("")
+
+    elif (pico_type == BT_TRACKER_PICO_TYPE):
         bt_tracker_select_statement = """SELECT tracking_groups.groupName
                                             FROM tracking_groups
                                             INNER JOIN bluetooth_tracker ON tracking_groups.groupID = bluetooth_tracker.trackingGroupID
@@ -78,14 +92,23 @@ def handle_known_device(client, cursor, pico_id, current_device_data):
         if bt_tracker_data != None:
             tracking_group = bt_tracker_data[0] 
 
-        response = json.dumps({"ReadableID" : readable_id, "BluetoothID" : bt_id, "PicoType" : "bluetoothTracker", "TrackerGroup" : tracking_group})
+        response = json.dumps({"ReadableID" : readable_id, "BluetoothID" : bt_id, "PicoType" : BT_TRACKER_PICO_TYPE, "TrackerGroup" : tracking_group})
         publish_info = client.publish("hardware_config/server_message/" + pico_id, response, qos=2)
         publish_info.wait_for_publish()
 
-    elif(pico_type == "environmentSensor"):
-        response = json.dumps({"ReadableID" : readable_id, "BluetoothID" : bt_id, "PicoType" : "environmentSensor", "TrackerGroup" : ""})
+        
+        print("Published msg")
+        print(response)
+        print("")
+
+    elif(pico_type == ENVIRONMENT_PICO_TYPE):
+        response = json.dumps({"ReadableID" : readable_id, "BluetoothID" : bt_id, "PicoType" : ENVIRONMENT_PICO_TYPE, "TrackerGroup" : ""})
         publish_info = client.publish("hardware_config/server_message/" + pico_id, response, qos=2)
         publish_info.wait_for_publish()
+        
+        print("Published msg")
+        print(response)
+        print("")
 
 
 #whenever a message is recieved from a feed, print it and its details

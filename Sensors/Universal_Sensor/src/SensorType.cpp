@@ -1,7 +1,7 @@
 #include "SensorType.hpp"
 
 int SensorType::getSensorType() {
-    return 0;
+    return UNASSIGNED_PICO;
 }
 
 void SensorType::loop() {
