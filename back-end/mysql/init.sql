@@ -80,23 +80,39 @@ CREATE TABLE IF NOT EXISTS messages (
 -- new pico 
 USE pico;
 
-CREATE TABLE IF NOT EXISTS picoDevice {
+CREATE TABLE IF NOT EXISTS pico_device {
 	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
 	readablePicoID VARCHAR(50) NOT NULL UNIQUE,
-	bluetoothID INT NOT NULL UNIQUE,
-	picoType VARCHAR(32),
+	bluetoothID INT UNIQUE,   --may be null for a un-activated pico and in which case it will be sent out as 0
+	picoType VARCHAR(32),  --may be bluetoothTracker or environmentSensor, will be null if the device has not been activated or has been deactivated
 }
 
-CREATE TABLE IF NOT EXISTS bluetoothTrackers --1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
-(
+CREATE TABLE IF NOT EXISTS tracking_groups {
+	groupID INT AUTO_INCREMENT PRIMARY KEY,
+	groupName VARCHAR(50) NOT NULL UNIQUE
+}
+
+CREATE TABLE IF NOT EXISTS bluetooth_tracker {
 	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+	trackingGroupID INT,
+	logged_at TIMESTAMP NOT NULL,
+	FOREIGN KEY (picoID) REFERENCES picoDevice(picoID) ON DELETE CASCADE,
+	FOREIGN KEY (trackingGroupID) REFERENCES tracking_groups(groupID) ON DELETE SET NULL
+}
+
+CREATE TABLE IF NOT EXISTS bluetooth_tracker_data --1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
+(
+	databaseID INT AUTO_INCREMENT PRIMARY KEY,
+	picoID VARCHAR(17) NOT NULL,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
 	roomID VARCHAR(17) NOT NULL,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
-	logged_at TIMESTAMP NOT NULL
+	logged_at TIMESTAMP NOT NULL,
+	FOREIGN KEY (picoID) REFERENCES picoDevice(picoID) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS environmentSensors  --1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
+CREATE TABLE IF NOT EXISTS environment_sensor_data  --1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
 (
-	picoID VARCHAR(17) NOT NULL PRIMARY KEY,
+	databaseID INT AUTO_INCREMENT PRIMARY KEY,
+	picoID VARCHAR(17) NOT NULL,
 	logged_at TIMESTAMP NOT NULL,
 	sound FLOAT NOT NULL,
 	light FLOAT NOT NULL,
@@ -104,8 +120,14 @@ CREATE TABLE IF NOT EXISTS environmentSensors  --1 to 1 relationship with picoDe
 	IAQ FLOAT NOT NULL,
 	pressure FLOAT NOT NULL,
 	humidity FLOAT NOT NULL
+	FOREIGN KEY (picoID) REFERENCES picoDevice(picoID)
 );
 
+
+-- Test Data 
+INSERT INTO pico_device(picoID, )
+
+--
 
 -- Use the assets database
 USE assets;
@@ -251,6 +273,12 @@ FLUSH PRIVILEGES;
 -- Data Reading Service (pico Read)
 CREATE USER IF NOT EXISTS 'data_reader'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'read_password';
 GRANT SELECT ON pico.* TO 'data_reader'@'%';
+FLUSH PRIVILEGES;
+
+-- Hardware Activation Service (pico Read, Insert, Update and Delete)
+CREATE USER IF NOT EXISTS 'hardware_activator'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'hardware_activator_password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON pico.* TO 'hardware_activator'@'%';
+ALTER USER 'hardware_activator'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 -- Data Deletion Service (pico Delete + Read)

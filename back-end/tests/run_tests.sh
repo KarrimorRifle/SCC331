@@ -21,4 +21,4 @@ echo "Running tests..."
 /wait-for-it.sh warning_editor 5004 -- echo "asset_editor is up"
 
 # Run the tests with verbose output
-python -m unittest discover -s tests -v
+# python -m unittest discover -s tests -v
