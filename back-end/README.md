@@ -1,43 +1,94 @@
 # Back-end
-Welcome to the back end, we are running a micro service architecture with minimum trust, with a container per service and one account per each container with the minimum permissions to run its service.
 
-## Services:
+Welcome to the back end. We are running a micro service architecture with minimum trust—one container per service and one account per container with the minimum permissions required to run its service.
 
-Accounts:
+## Services
+
+**Accounts:**
 - Registration
 - Login / Authentication
+- Messages
 
-## Running the backend
-### Make sure docker is installed
-You will be required to have docker desktop installed. Make an account and make sure docker desktop is running before proceeding
+**Warnings:**
+- Editor (Allows rule creation)
+- Processor (sends messages)
 
-### Run the following commands
-Within `back-end` run:
-- `docker-compose build`: this will build the images so you can run the containers
-- `docker-compose up -d`: this will spin up the containers in detached mode, allowing you to continue using your terminal
+**Data:**
+- Processor (Grabs data from MQTT topic)
+- Reader (Allows user to grab data)
 
-The tests will be ran on boot, first test should fail if this isnt the first time spinning up the containers
+**Assets:**
+- Editor (Allows editing, admin access only)
+- Reader (Allows anyone to read the data with valid cookie)
 
-### Stopping the containers
-To stop the containers, run:
-- `docker-compose down`: this will stop and remove the containers
+## Running the Backend
 
-### Running the tests
-Make sure the shell scripts are all in LF format and not CRLF
+### Prerequisites
 
-If you want to run all tests make sure the containers and volumes are deleted.
-Build the containers then spin up the containers.
+- **Docker**: Make sure Docker Desktop is installed and running. Create an account if needed.
 
-If you want to just test whilst containers are up use:
-- `docker-compose run test`: this will run the tests in the `test` service
+### Build and Run the Containers
 
-The first test on the `test_accounts.py` should fail if the volume wasnt refreshed
+Within the `back-end` directory, run:
 
-## Creating new tests
-Create a new file under format of `test_<service>.py`
-Import `requests` and `unittest` then follow the required format within `test_accounts.py` to test your items
+- **Build the images:**
+  ```bash
+  docker-compose build
+  ```
+- **Spin up the containers in detached mode:**
+  ```bash
+  docker-compose up -d
+  ```
 
-If ordering is important make sure to call the test function `test_<order>_<name>`
-all functions need to start with `test`
+> **Note:** The test service is now configured to not run automatically on boot. It is built along with the rest of the services but will only run when you explicitly invoke it.
 
-within the `run_tests.sh` add your dependent services there, otherwise the test may not go as expected.
+### Stopping the Containers
+
+To stop and remove the containers, run:
+```bash
+docker-compose down
+```
+
+## Running the Tests
+
+Tests will not run automatically when the containers start. Instead, you can run tests on demand using the test service.
+Tests need to be build before running:
+
+```bash
+docker-compose build test
+```
+
+### Running Tests On Demand
+
+The `test` service uses a modular test runner script (`run_tests.sh`) that allows you to select which tests to run. The script accepts a comma-separated list of test targets. Available targets include:
+- `accounts`
+- `assets`
+- `warnings`
+- `data`
+- `all` (to run every test)
+
+For example, to run tests:
+
+- **Run all tests:**
+  ```bash
+  docker-compose run test all
+  ```
+
+- **Run only accounts tests:**
+  ```bash
+  docker-compose run test accounts
+  ```
+
+- **Run multiple test groups (e.g., accounts and assets):**
+  ```bash
+  docker-compose run test accounts,assets
+  ```
+
+The test runner script also includes wait-for-service commands (using `wait-for-it.sh`) to ensure that dependent services (such as MySQL, account registration, account login, assets, and warnings) are up before executing tests.
+
+## Creating New Tests
+
+- Create a new test file following the naming format: `test_<service>.py`.
+- Import `requests` and `unittest` and follow the structure used in `test_accounts.py` for your tests.
+- If test ordering is important, name your test functions using the format: `test_<order>_<name>` (all test function names must start with `test`).
+- **Remember to update the `run_tests.sh` script** with any new targets and their corresponding dependent services to ensure the tests run correctly.

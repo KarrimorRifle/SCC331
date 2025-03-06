@@ -273,9 +273,15 @@ class TestData(unittest.TestCase):
         for timestamp, room_movements in movement_response.items():
             self.assertIsInstance(room_movements, dict,
                                   f"At timestamp {timestamp}, expected room movements as a dict")
-            for room_id, status in room_movements.items():
-                self.assertIsInstance(status, str,
-                                      f"At timestamp {timestamp} for room {room_id}, expected status to be a string")
+            for room_id, movement_detail in room_movements.items():
+                self.assertIsInstance(movement_detail, dict,
+                                      f"At timestamp {timestamp} for room {room_id}, expected movement details as a dict")
+                # Check that every PicoID maps to a role string
+                for pico_id, role in movement_detail.items():
+                    self.assertTrue(isinstance(pico_id, (str, int)),
+                                    f"PicoID should be a string or integer for room {room_id} at {timestamp}")
+                    self.assertIsInstance(role, str,
+                                          f"Expected role string for PicoID {pico_id} in room {room_id} at {timestamp}")
         self.assertGreaterEqual(len(movement_response), 2, "Expected at least 2 distinct timestamps in movement response")
 
     def test_05_summary_average(self):

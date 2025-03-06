@@ -70,7 +70,7 @@ def grabRules():
             return
         
         cursor.execute("""
-            SELECT r.id, r.name, rc.roomID, rc.variable, rc.upper_bound, rc.lower_bound, rm.authority, rm.title, rm.location, rm.severity, rm.summary
+            SELECT r.id, r.name, r.test_only, rc.roomID, rc.variable, rc.upper_bound, rc.lower_bound, rm.authority, rm.title, rm.location, rm.severity, rm.summary
             FROM rule r
             LEFT JOIN rule_conditions rc ON r.id = rc.rule_id
             LEFT JOIN rule_messages rm ON r.id = rm.rule_id
@@ -86,8 +86,10 @@ def grabRules():
                 rule_obj = {
                     "id": rule_id,
                     "name": row["name"],
+                    "test_only": row["test_only"],
                     "conditions": [],
-                    "messages": []
+                    "messages": [],
+                    "last_sent": None  # new field to track last publish time
                 }
                 rules_dict[rule_id] = rule_obj
                 new_rules.append(rule_obj)
@@ -284,6 +286,20 @@ def on_message(client, user_data, message):
     # Grab test rule IDs at the beginning
     store_test_rule_ids()
 
+    # handler for warnings topics
+    if message.topic.startswith("warnings/") or message.topic.startswith("test/warnings/"):
+        try:
+            payload = json.loads(message.payload.decode("utf-8", errors="ignore"))
+            rule_id = payload.get("ID")
+            if rule_id is not None:
+                for rule in rules:
+                    if rule["id"] == rule_id:
+                        rule["last_sent"] = time.time()
+                        break
+        except Exception as e:
+            print("Error processing warnings subscription:", e)
+        return
+
     # Ignore own heartbeat messages
     if message.topic == f"checkingwarnings/{node_id}":
         return
@@ -361,8 +377,12 @@ def on_message(client, user_data, message):
     
 
     print("processing the rules")
-    # Process the rule data
+    current_time = time.time()  # capture current time once
     for rule in rules:
+        # Skip sending if rule was recently published within the past minute.
+        if rule.get("last_sent") is not None and current_time - rule["last_sent"] < 180:
+            continue
+
         sendMessage = True 
         for rooms in rule["conditions"]:
             # print("this is a condition", rooms)
@@ -404,8 +424,18 @@ def on_message(client, user_data, message):
 
         # then we continue on to send the messages
         for message in rule["messages"]:
-            authority = message.get("Authority")
-            client.publish(f"warning/{authority}/{rule['id']}", json.dumps(message))
+            message_copy = message.copy()
+            prepend = ""
+            if rule["test_only"]:
+                prepend = "test/warnings"
+            else:
+                prepend = "warnings"
+            authority = message_copy.pop("Authority")
+            message_copy["ID"] = rule['id']
+            client.publish(f"{prepend}/{authority}", json.dumps(message_copy))
+
+        # After publishing messages, update the rule's last_sent timestamp.
+        rule["last_sent"] = time.time()
 
     if len(tests_to_perform) > 0:
         print("tests", tests_to_perform)
@@ -444,8 +474,15 @@ def on_message(client, user_data, message):
             test_result = "messages_sent"
 
         for message in rule["messages"]:
-            authority = message.get("Authority")
-            client.publish(f"warning/{authority}/Testing-{rule['id']}", json.dumps(message))
+            message_copy = message.copy()
+            prepend = ""
+            if rule["test_only"]:
+                prepend = "test/warnings"
+            else:
+                prepend = "warnings"
+            authority = message_copy.pop("Authority")
+            message_copy["ID"] = rule['id']
+            client.publish(f"{prepend}/{authority}", json.dumps(message_copy))
 
         # Store the test result
         store_test_result(test_id, test_result)
@@ -456,7 +493,9 @@ def on_connect(client, user_data, connect_flags, result_code, properties):
     #subscribe to all hardware data feeds
     client.subscribe("feeds/hardware-data/#")
     client.subscribe("checkingwarnings/#")
-    print("Subscribed to hardware feeds")
+    client.subscribe("warnings/#")          # New subscription
+    client.subscribe("test/warnings/#")      # New subscription
+    print("Subscribed to hardware feeds and warnings topics")
 
 #set up the client to recieve messages
 def main():
