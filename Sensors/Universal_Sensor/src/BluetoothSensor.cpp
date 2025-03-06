@@ -361,12 +361,12 @@ void BluetoothSensor::SOSCall(){
       json["PicoID"] = mqtt->getHardwareIdentifier();
       json["RoomID"] = majorID;
       json["PicoType"] = picoType;
-      json["Data"] = "Request for assistance in Room " + String(majorID);
+      json["Request"] = "Request for assistance in Room " + String(majorID);
 
       String jsonString;
       serializeJson(json, jsonString);
 
-      mqtt->publishDataWithIdentifier(jsonString, "feeds/hardware-data/");
+      mqtt->publishDataWithIdentifier(jsonString, "warning/staff");
 
       display->clearDisplay();
       display->setCursor(0, 0);
