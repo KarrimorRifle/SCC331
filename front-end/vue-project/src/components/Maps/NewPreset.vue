@@ -54,7 +54,7 @@
 import { ref, onMounted, nextTick, watch, defineEmits, defineProps, warn } from "vue";
 import axios from "axios";
 import type { preset, presetListType } from "@/utils/mapTypes";
-
+import { Modal } from "bootstrap";
 const emit = defineEmits(["newPreset"]);
 
 const props = defineProps({
@@ -120,7 +120,7 @@ const searchUsers = () => {
 
       const matchesQuery = userEmail.includes(query) || userName.includes(query);
       const isNotSelected = !selectedUsers.value.some(selected => selected.uid === user.uid);
-      const isNotCurrentUser = currentUser.value?.uid == user.uid; 
+      const isNotCurrentUser = currentUser.value?.uid != user.uid; 
 
       return matchesQuery && isNotSelected && isNotCurrentUser;
     });
@@ -219,6 +219,7 @@ const createPreset = async () => {
 
     if (response.status === 201 || response.status === 200) {
       setSuccess(`Preset ${response.status == 201 ? 'created' : 'updated'} successfully`);
+      closeModal();
     } else {
       setWarning(`ERR ${response.status}: something went wrong please try again later`);
     }
@@ -229,6 +230,17 @@ const createPreset = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const closeModal = () => {
+  const modalElement = document.getElementById("newPresetModal");
+  if (modalElement) {
+    const modalInstance = Modal.getInstance(modalElement); // Use Modal from Bootstrap
+    if (modalInstance) {
+      modalInstance.hide();
+    }
+  }
+  document.querySelectorAll(".modal-backdrop").forEach(backdrop => backdrop.remove());
 };
 
 const clearMessages = () => {

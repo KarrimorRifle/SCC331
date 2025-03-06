@@ -37,7 +37,6 @@ export const checkWarningAreas = (roomData: any, warning: any): { roomID: string
 
                 // Check environmental variables
                 if (!checkEnvironmentCondition(roomInfo, variable, lower_bound, upper_bound)) {
-                    console.log("meet")
                     allConditionsMet = true; 
                 }
 

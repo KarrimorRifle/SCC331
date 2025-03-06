@@ -12,23 +12,25 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  overlayAreasConstant: {
-    type: Array,
-    required: true,
-  },
   environmentHistory: {
     type: Object,
     required: true,
   },
 });
-
 const presetStore = usePresetStore();
-const presetData = computed(() => Object.values(presetStore.boxes_and_data)); 
+const presetData = computed(() =>
+  Object.values(presetStore.boxes_and_data).map(area => ({
+    ...area,
+    tracker: area.tracker || {},
+  }))
+);
+
 // Multi-selection state (stores selected areas)
 const selectedAreas = ref([]);
 const activeGraphArea = ref(null);
 const showModal = ref(false);
 const showFilterBar = ref(true);
+const selectedEnvironmentData = ref({});
 
 const toggleFilterVisibility = () => {
   showFilterBar.value = !showFilterBar.value;
@@ -36,17 +38,19 @@ const toggleFilterVisibility = () => {
 
 // Toggle modal for environment graph
 const openGraph = (areaLabel) => {
+  const selectedArea = presetData.value?.find(area => area.label === areaLabel);
+
+  if (selectedArea) {
+    selectedEnvironmentData.value = selectedArea.tracker.environment;
+  } else {
+    selectedEnvironmentData.value = {}; 
+  }
   activeGraphArea.value = areaLabel;
   showModal.value = true;
 };
 
 const closeGraph = () => {
   showModal.value = false;
-};
-
-const getAreaKey = (label: string): string | null => {
-  const match = label.match(/\d+/);
-  return match ? match[0] : null;
 };
 
 // Computed property for filtered areas
@@ -71,7 +75,7 @@ const filteredAreas = computed(() => {
     <!-- Import Filter Bar -->
     <SummaryTableFilterBar 
       v-if="showFilterBar"
-      :overlayAreasConstant="presetData" 
+      :presetData="presetData" 
       @update:selectedAreas="selectedAreas = $event"
     />
 
@@ -87,7 +91,7 @@ const filteredAreas = computed(() => {
             <div class="marker-wrapper">
               <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
             </div>
-            <p>People Count: {{ props.data[getAreaKey(area.label)]?.users?.count || 0 }}</p>
+            <p>People Count: {{ area.tracker?.users?.count || 0 }}</p>
           </div>
 
           <!-- Luggage Count -->
@@ -95,18 +99,18 @@ const filteredAreas = computed(() => {
             <div class="marker-wrapper">
               <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
             </div>
-            <p>Luggage Count: {{ props.data[getAreaKey(area.label)]?.luggage?.count || 0 }}</p>
+            <p>Luggage Count: {{ area.tracker?.luggage?.count || 0 }}</p>
           </div>
 
           <!-- Environment Data -->
           <div class="environment-data">
-            <p><span class="emoji">🌡️</span> Temperature: {{ props.data[getAreaKey(area.label)]?.environment?.temperature ?? 'N/A' }}°C</p>
-            <p><span class="emoji">🔊</span> Sound Level: {{ props.data[getAreaKey(area.label)]?.environment?.sound ?? 'N/A' }} dB</p>
-            <p><span class="emoji">💡</span> Light Level: {{ props.data[getAreaKey(area.label)]?.environment?.light ?? 'N/A' }} lux</p>
+            <p><span class="emoji">🌡️</span> Temperature: {{ area.tracker?.environment?.temperature ?? 'N/A' }}°C</p>
+            <p><span class="emoji">🔊</span> Sound Level: {{ area.tracker?.environment?.sound ?? 'N/A' }} dB</p>
+            <p><span class="emoji">💡</span> Light Level: {{ area.tracker?.environment?.light ?? 'N/A' }} lux</p>
           </div>
 
           <!-- View Graph Button -->
-          <button @click="openGraph(getAreaKey(area.label))">📊 View Graph</button>
+          <button @click="openGraph(area.label)">📊 View Graph</button>
         </div>
       </div>
     </div>
@@ -115,7 +119,7 @@ const filteredAreas = computed(() => {
     <EnvironmentDataGraph
       v-if="showModal"
       :areaLabel="activeGraphArea"
-      :environmentData="environmentHistory[activeGraphArea] || []"
+      :environmentData="selectedEnvironmentData"
       :showModal="showModal"
       @close="closeGraph"
     />

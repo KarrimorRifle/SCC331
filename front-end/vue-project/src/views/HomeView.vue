@@ -152,6 +152,16 @@ const closeModal = () => {
 </template>
 
 <style scoped>
+.home-page-container {
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none; 
+  -ms-overflow-style: none;
+}
+.page-container::-webkit-scrollbar {
+  display: none; 
+}
 /* Hero Section */
 .hero {
 	width: 100%;
@@ -207,6 +217,15 @@ const closeModal = () => {
 .hero p {
 	font-size: 1.5rem;
 	margin-bottom: 1.5rem;
+}
+
+section {
+  height: 100vh !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: start;
 }
 
 .cta-button {

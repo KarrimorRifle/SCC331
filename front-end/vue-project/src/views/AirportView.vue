@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AirportMap from "@/components/AirportMap.vue";
 import DashBoard from "@/components/Dashboard.vue";
+import FilterBar from "../components/FilterBar.vue";
 import BottomTabNavigator from "@/components/BottomTabNavigator.vue";
 import {onMounted, onUnmounted, ref, watch, computed, PropType, defineEmits,}from "vue"
 import axios from "axios";
@@ -14,14 +15,6 @@ import {usePresetStore} from "../utils/useFetchPresets";
 
 // Receive isMobile from App.vue
 const props = defineProps({
-  overlayAreasConstant: {
-    type: Array,
-    required: true,
-  },
-  overlayAreasData: {
-    type: Object,
-    required: true,
-  },
   isMobile: {
     type: Boolean,
     required: true,
@@ -229,21 +222,6 @@ const setDefaultPreset = async () => {
     alert("Default preset set successfully");
     await fetchPresets();
 
-    if (presetData.value.boxes) {
-      console.log("Updating overlay areas with preset colors...");
-
-      // Update overlayAreasConstant with new colors from the preset
-      const updatedOverlayAreas = props.overlayAreasConstant.map(area => {
-        const matchingBox = presetData.value.boxes.find(box => box.roomID === area.label.replace("Area ", ""));
-        return matchingBox ? { ...area, color: matchingBox.colour } : area;
-      });
-
-      console.log("Updated overlayAreasConstant:", updatedOverlayAreas);
-
-      // Emit event to App.vue to update global state & localStorage
-      emit("updateOverlayAreas", updatedOverlayAreas);
-    }
-
   } catch (error) {
     console.error("Error setting default preset:", error);
     alert("Failed to set default preset");
@@ -365,13 +343,6 @@ const cancelBoxEdit = () => {
   editMode.value = false;
 }
 
-const updateOverlayAreaColor = (roomID: string, newColor: string) => {
-  const area = props.overlayAreasConstant.find(area => area.label === `Area ${roomID}`);
-  if (area) {
-    area.color = newColor; 
-  }
-};
-
 const handleColourChange = (roomID: string, newColor: string) => {
   console.log(`Colour change detected for Area ${roomID}: ${newColor}`);
 
@@ -434,13 +405,6 @@ const toggleDashboard = () => {
 const presetStore = usePresetStore();
 
 onMounted(async () => {
-  presetStore.setOverlayAreasConstant(props.overlayAreasConstant);
-  presetStore.setUpdateOverlayAreasCallback((updatedOverlayAreas) => {
-    emit("updateOverlayAreas", updatedOverlayAreas);
-  });
-  presetStore.setUpdateOverlayAreaColorCallback((updatedData) => {
-    emit("updateOverlayAreaColor", updatedData);
-  });
   await presetStore.fetchPresets();
   if (presetStore.presetList.presets.length > 0) {
     await presetStore.fetchPreset();
@@ -456,8 +420,6 @@ onMounted(async () => {
       <AirportMap
         class="flex-grow-1"
         :isLoading="presetStore.isLoading"
-        :overlayAreasConstant="overlayAreasConstant" 
-        :overlayAreasData="overlayAreasData" 
         :warnings="warnings"
         v-model="presetStore.boxes_and_data"
         :presetList="presetStore.presetList"
@@ -472,8 +434,8 @@ onMounted(async () => {
         :editMode="presetStore.editMode"
         @selectPreset="presetStore.handleSelectPreset"
         @setDefault="presetStore.setDefaultPreset"
-        @newPreset="presetStore.fetchPresets"
-        @newImage="presetStore.fetchPreset"
+        @newPreset="presetStore.reloadPresets"
+        @newImage="presetStore.reloadPresets"
         @delete="presetStore.deletePreset"
         @edit="presetStore.editMode = true"
         @save="presetStore.uploadBoxes"
@@ -490,8 +452,6 @@ onMounted(async () => {
         @newBox="presetStore.createNewBox"
         @colourChange="presetStore.handleColourChange"
         @removeBox="presetStore.removeBox"
-        :overlayAreasData="overlayAreasData" 
-        :overlayAreasConstant="overlayAreasConstant"
         :userIds="picoIds"
         :updates="updates"
         :warnings="warnings"
@@ -500,11 +460,10 @@ onMounted(async () => {
   </BottomTabNavigator>
 
   <div v-else class="airport-view-container d-flex flex-row">
+    <div class="d-flex flex-column flex-grow-1" style="display: flex; width: 10%;">
     <AirportMap
       class="flex-grow-1"
       :isLoading="presetStore.isLoading"
-      :overlayAreasConstant="overlayAreasConstant" 
-      :overlayAreasData="overlayAreasData" 
       :warnings="warnings"
       v-model="presetStore.boxes_and_data"
       :presetList="presetStore.presetList"
@@ -519,13 +478,16 @@ onMounted(async () => {
       :editMode="presetStore.editMode"
       @selectPreset="presetStore.handleSelectPreset"
       @setDefault="presetStore.setDefaultPreset"
-      @newPreset="presetStore.fetchPresets"
-      @newImage="presetStore.fetchPreset"
+      @newPreset="presetStore.reloadPresets"
+      @newImage="presetStore.reloadPresets"
       @delete="presetStore.deletePreset"
       @edit="presetStore.editMode = true"
       @save="presetStore.uploadBoxes"
       @cancel="presetStore.cancelBoxEdit"
     />
+    <FilterBar/>
+    </div>
+
     <DashBoard
       v-model="presetStore.boxes_and_data"
       :isLoading="presetStore.isLoading"
@@ -533,8 +495,6 @@ onMounted(async () => {
       @newBox="presetStore.createNewBox"
       @colourChange="presetStore.handleColourChange"
       @removeBox="presetStore.removeBox"
-      :overlayAreasData="overlayAreasData" 
-      :overlayAreasConstant="overlayAreasConstant"
       :userIds="picoIds"
       :updates="updates"
       :warnings="warnings"

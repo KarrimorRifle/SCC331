@@ -30,6 +30,7 @@
 
 <script setup lang="ts">
 import { ref, defineEmits } from 'vue';
+import { Modal } from 'bootstrap';
 import axios from 'axios';
 
 const emit = defineEmits(["newImage"]);
@@ -81,6 +82,7 @@ const uploadImage = async () => {
       setTimeout(() => {
         successMessage.value = "Image uploaded successfully";
       }, 10);
+      closeModal();
     }
     emit("newImage");
   } catch (error) {
@@ -99,6 +101,17 @@ const handleFileChange = (event) => {
     imageName.value = file.name; // Automatically set the image name to the file name
   };
   reader.readAsDataURL(file);
+};
+
+const closeModal = () => {
+  const modalElement = document.getElementById("imageUploadModal");
+  if (modalElement) {
+    const modalInstance = Modal.getInstance(modalElement);
+    if (modalInstance) {
+      modalInstance.hide();
+    }
+  }
+  document.querySelectorAll(".modal-backdrop").forEach(backdrop => backdrop.remove());
 };
 
 const clearMessages = () => {

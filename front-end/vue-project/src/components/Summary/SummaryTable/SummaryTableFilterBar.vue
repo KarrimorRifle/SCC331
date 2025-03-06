@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 
 const props = defineProps({
-  overlayAreasConstant: {
+  presetData: {
     type: Array,
     required: true,
   },
@@ -11,7 +11,7 @@ const props = defineProps({
 const emit = defineEmits(["update:selectedAreas"]);
 
 // Multi-selection state (stores selected areas) - Select all by default
-const selectedAreas = ref(props.overlayAreasConstant.map(area => area.label));
+const selectedAreas = ref(props.presetData.map(area => area.label));
 
 // Watch for changes and emit updates
 watch(selectedAreas, (newValue) => {
@@ -20,10 +20,10 @@ watch(selectedAreas, (newValue) => {
 
 // Handle Select All functionality
 const toggleAllAreas = () => {
-  if (selectedAreas.value.length === props.overlayAreasConstant.length) {
+  if (selectedAreas.value.length === props.presetData.length) {
     selectedAreas.value = []; // Deselect all
   } else {
-    selectedAreas.value = props.overlayAreasConstant.map(area => area.label); // Select all
+    selectedAreas.value = props.presetData.map(area => area.label); // Select all
   }
 };
 </script>
@@ -34,7 +34,7 @@ const toggleAllAreas = () => {
 
     <!-- Select All Checkbox -->
     <div class="checkbox-group">
-      <input type="checkbox" id="select-all" @change="toggleAllAreas" :checked="selectedAreas.length === overlayAreasConstant.length" />
+      <input type="checkbox" id="select-all" @change="toggleAllAreas" :checked="selectedAreas.length === presetData.length" />
       <label for="select-all">Select All</label>
     </div>
 
@@ -42,7 +42,7 @@ const toggleAllAreas = () => {
 
     <!-- Individual Checkboxes -->
     <div class="area-list">
-      <div v-for="area in overlayAreasConstant" :key="area.label" class="checkbox-group">
+      <div v-for="area in presetData" :key="area.label" class="checkbox-group">
         <input type="checkbox" :id="area.label" v-model="selectedAreas" :value="area.label" />
         <label :for="area.label">{{ area.label }}</label>
       </div>
