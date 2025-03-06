@@ -338,7 +338,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         // Grab default preset and set it to the current one
         if (presetList.value?.default) {
           currentPreset.value = presetList.value.default;
-        } else if (presetList.value.presets.length > 0) {
+        } else if (presetList?.value?.presets?.length > 0) {
           currentPreset.value = presetList.value.presets[0].id;
           await setDefaultPreset();
         }
