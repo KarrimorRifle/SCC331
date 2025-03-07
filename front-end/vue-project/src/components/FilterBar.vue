@@ -79,7 +79,7 @@ const updateFilters = () => {
   const showDisconnected = states.value.find(state => state.name === "Disconnected")?.checked;
 
   const selectedSensors = sensors.value
-    .filter(s => s.checked || (showDisconnected && s.disconnected)) 
+    .filter(s => s.checked) 
     .map(s => s.name);
 
   console.log("Emitting Filters: ", { sensors: selectedSensors, showDisconnected, showAll });

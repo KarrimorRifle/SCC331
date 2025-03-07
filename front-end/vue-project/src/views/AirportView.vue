@@ -13,6 +13,7 @@ import { addNotification } from '@/stores/notificationStore';
 */
 import { usePresetStore } from "../utils/useFetchPresets";
 import { usePresetLocalCache } from '../stores/presetLocalCache';
+import {sensors} from "../stores/sensorTypeStore";
 // Receive isMobile from App.vue
 const props = defineProps({
   isMobile: {
@@ -415,6 +416,7 @@ const toggleDashboard = () => {
 };
 
 onMounted(async () => {
+  enabledSensors.value = sensors.value.map(sensor => sensor.name);
   await presetStore.fetchPresets();
   if (presetStore.presetList.presets.length > 0) {
     await presetStore.fetchPreset();
