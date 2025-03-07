@@ -59,6 +59,15 @@ const props = defineProps({
   editMode: {
     type: Boolean,
     required: true
+  }, 
+  enabledSensors: {
+    type: Array
+  }, 
+  showDisconnected: {
+    type: Boolean,
+  },
+  showAll: {
+    type: Boolean,
   }
 });
 // Zoom level and map position state
@@ -322,6 +331,9 @@ const updateMode = ref<boolean>(false);
           :warnings="getWarningsByArea(data.label)" 
           :data="data.tracker"
           :edit-mode="editMode"
+          :enabledSensors="enabledSensors"
+          :showDisconnected="showDisconnected"
+          :showAll="showAll"
           @update:position="(pos) => updateBox(key, pos)"
         />
       </div>

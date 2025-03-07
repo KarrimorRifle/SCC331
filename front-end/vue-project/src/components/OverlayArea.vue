@@ -3,6 +3,8 @@ import { ref, computed, shallowReactive, PropType} from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faExclamationTriangle} from '@fortawesome/free-solid-svg-icons';
 import { handleWarningButtonPressed } from '@/utils/helper/warningUtils';
+import { usePresetLocalCache } from '../stores/presetLocalCache';
+import {sensorMapping, sensors} from "../stores/sensorTypeStore";
 import PersonMarker from "./ObjectMarker/PersonMarker.vue"
 import LuggageMarker from "./ObjectMarker/LuggageMarker.vue";
 
@@ -30,8 +32,12 @@ const props = defineProps({
     type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
     default: () => [],
   },
+  enabledSensors: Array, 
+  showDisconnected: Boolean, 
+  showAll: Boolean,
 });
-
+console.log(props.enabledSensors);
+const presetCache = usePresetLocalCache();
 const getAreaKey = (label: string): string | null => {
   if (!label || !label.match) {
     return null;
@@ -39,6 +45,48 @@ const getAreaKey = (label: string): string | null => {
   const match = label.match(/\d+/);
   return match ? match[0] : null;
 };
+
+const filteredSensors = computed(() => {
+  const areaKey = getAreaKey(props.label);
+  const connectedAreaSet = presetCache.connectedSensors.get(areaKey) || new Set();
+
+  if (props.showAll) {
+    // When "All" is toggled, show only selected sensor types
+    return sensors.value
+      .filter(sensor => props.enabledSensors.includes(sensor.name)) // Only selected sensors
+      .map(sensor => sensor.name);
+  } else if (props.showDisconnected) {
+    // When "Disconnected" is toggled, show only disconnected sensors of selected types
+    return sensors.value
+      .filter(sensor => !connectedAreaSet.has(sensor.name) && props.enabledSensors.includes(sensor.name))
+      .map(sensor => sensor.name);
+  }
+  
+  // Fallback: return only selected sensor types
+  return sensors.value
+    .filter(sensor => props.enabledSensors.includes(sensor.name))
+    .map(sensor => sensor.name);
+});
+
+/**
+ * Limit the number of displayed sensors based on area size.
+ * If the box is too small, show an ellipsis "..." instead of overflowing icons.
+ */
+const displayedSensors = computed(() => {
+  const maxIcons = Math.floor(props.position.width / 20); // Adjust dynamically based on width
+  const areaKey = getAreaKey(props.label);
+  const connectedAreaSet = presetCache.connectedSensors.get(areaKey) || new Set();
+
+  const sensorsWithState = filteredSensors.value.map(sensor => ({
+    name: sensor,
+    disconnected: !connectedAreaSet.has(sensor)
+  }));
+
+  if (sensorsWithState.length > maxIcons) {
+    return [...sensorsWithState.slice(0, maxIcons - 1), { name: 'ellipsis', disconnected: false }];
+  }
+  return sensorsWithState;
+});
 
 const usersList = computed(() => {
   const key = getAreaKey(props.label);
@@ -125,16 +173,22 @@ const startResize = (event: MouseEvent | TouchEvent) => {
 
 // Perform Resizing
 const resize = (event: MouseEvent | TouchEvent) => {
-  if(!props.editMode) return;
+  const minWidth = 50; // set the min widht so that the resize doesn't fall below
+  const minHeight = 50; // set the min height so that the resize doesn't fall below
+  if (!props.editMode) return;
   if (resizing.value) {
     const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
     const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
+    
+    const newWidth = Math.max(minWidth, props.position.width + (clientX - resizeStart.value.x) / props.zoomLevel);
+    const newHeight = Math.max(minHeight, props.position.height + (clientY - resizeStart.value.y) / props.zoomLevel);
+
     emit('update:position', {
       ...props.position,
-      // Adjust resizing for zoom level
-      width: props.position.width + (clientX - resizeStart.value.x) / props.zoomLevel,
-      height: props.position.height + (clientY - resizeStart.value.y) / props.zoomLevel,
+      width: newWidth,
+      height: newHeight,
     });
+
     resizeStart.value = { x: clientX, y: clientY };
   }
 };
@@ -149,6 +203,16 @@ const endResize = () => {
   window.removeEventListener('mouseup', endResize);
   window.removeEventListener('touchmove', resize);
   window.removeEventListener('touchend', endResize);
+};
+
+
+const getSensorStyle = () => {
+  const minDimension = Math.min(props.position.width, props.position.height);
+  return {
+    fontSize: minDimension < 60 ? '8px' : minDimension < 100 ? '12px' : '14px',  
+    padding: minDimension < 60 ? '2px' : '5px', 
+    minWidth: minDimension < 60 ? '25px' : '40px', 
+  };
 };
 </script>
 
@@ -181,7 +245,26 @@ const endResize = () => {
       <font-awesome-icon :icon="faExclamationTriangle" />
     </button>
   -->
-    <span class="overlay-area-label">{{ label }}</span>
+    <div class="d-flex flex-column">
+      <span class="overlay-area-label">{{ label }}</span>
+
+      <div class="sensor-container">
+        <div 
+          v-for="sensor in displayedSensors" 
+          :key="sensor.name" 
+          class="sensor-item"
+          :class="{ 'disconnected-sensor': sensor.disconnected }" 
+          :style="getSensorStyle(sensor)"
+        >
+          <font-awesome-icon 
+            v-if="sensor.name !== 'ellipsis'"
+            :icon="sensorMapping[sensor.name]?.icon || 'question'"
+            class="sensor-icon"
+          />
+          <span v-else class="ellipsis">...</span>
+        </div>
+      </div>
+    </div>
 
     <PersonMarker
       v-for="(person, index) in usersList"
@@ -197,6 +280,7 @@ const endResize = () => {
       :position="item.position"
       :color="item.color"
     />
+
 
     <!-- Resize Handle -->
     <div
@@ -217,6 +301,8 @@ const endResize = () => {
   justify-content: center;
   cursor: grab;
   overflow: hidden;
+  padding: 20px;
+  text-align: center;
 }
 
 .overlay-area:active {
@@ -260,4 +346,48 @@ const endResize = () => {
   right: -0.3rem;
   z-index: 100;
 }
+.sensor-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  width: 100%;  /* Ensure it fills the overlay-area */
+  height: 100%;
+  padding: 2px; /* Adjusted padding to avoid overflow */
+  gap: 2px;
+  overflow: hidden; /* Prevents overflow */
+}
+
+.sensor-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% / 5); /* Ensures items fit dynamically */
+  height: calc(100% / 3); /* Adjusted for aspect ratio */
+  min-width: 15px; /* Smallest possible size */
+  min-height: 15px;
+  max-width: 40px;
+  max-height: 40px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  font-size: clamp(8px, 2vw, 16px);
+}
+
+.disconnected-sensor {
+  background: rgba(255, 0, 0, 0.8); 
+  color: white;
+}
+
+.ellipsis {
+  font-size: 14px;
+  font-weight: bold;
+  color: black;
+  text-align: center;
+}
+
+.sensor-icon {
+  font-size: clamp(8px, 2vw, 18px);
+  color: black;
+}
+
 </style>

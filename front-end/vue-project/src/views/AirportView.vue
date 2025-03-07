@@ -11,8 +11,8 @@ import type { Timeout } from "node:timers";
 import type {preset, presetListType, boxAndData, boxType, summaryType, environmentData, dataObject} from "../utils/mapTypes";
 import { addNotification } from '@/stores/notificationStore';
 */
-import {usePresetStore} from "../utils/useFetchPresets";
-
+import { usePresetStore } from "../utils/useFetchPresets";
+import { usePresetLocalCache } from '../stores/presetLocalCache';
 // Receive isMobile from App.vue
 const props = defineProps({
   isMobile: {
@@ -33,7 +33,18 @@ const props = defineProps({
   },
 });
 const emit = defineEmits(["updateOverlayAreaColor", "updateOverlayAreas"]);
+const presetStore = usePresetStore();
+const presetCache = usePresetLocalCache();
 
+const enabledSensors = ref([]);
+const showAll = ref(true);
+const showDisconnected = ref(false);
+
+const updateEnabledSensors = (filters) => {
+  enabledSensors.value = filters.sensors;
+  showDisconnected.value = filters.showDisconnected;
+  showAll.value = filters.showAll;
+};
 /*
 const emit = defineEmits(["updateOverlayAreaColor", "updateOverlayAreas"]);
 
@@ -402,7 +413,6 @@ const isDashboardOpen = ref(true);
 const toggleDashboard = () => {
   isDashboardOpen.value = !isDashboardOpen.value;
 };
-const presetStore = usePresetStore();
 
 onMounted(async () => {
   await presetStore.fetchPresets();
@@ -417,30 +427,39 @@ onMounted(async () => {
   <BottomTabNavigator v-if="isMobile">
     <!-- Slot for Map -->
     <template #map>
-      <AirportMap
-        class="flex-grow-1"
-        :isLoading="presetStore.isLoading"
-        :warnings="warnings"
-        v-model="presetStore.boxes_and_data"
-        :presetList="presetStore.presetList"
-        :canCreate="presetStore.canCreate"
-        :settable="presetStore.settable"
-        :defaultPresetId="presetStore.defaultPresetId"
-        :currentPreset="presetStore.currentPreset"
-        :backgroundImage="presetStore.presetImage"
-        :canDelete="presetStore.canDelete"
-        :canEdit="presetStore.canEdit"
-        :presetData="presetStore.presetData"
-        :editMode="presetStore.editMode"
-        @selectPreset="presetStore.handleSelectPreset"
-        @setDefault="presetStore.setDefaultPreset"
-        @newPreset="presetStore.reloadPresets"
-        @newImage="presetStore.reloadPresets"
-        @delete="presetStore.deletePreset"
-        @edit="presetStore.editMode = true"
-        @save="presetStore.uploadBoxes"
-        @cancel="presetStore.cancelBoxEdit"
-      />
+      <div class="d-flex flex-column flex-grow-1 h-100">
+        <AirportMap
+          class="flex-grow-1"
+          :isLoading="presetStore.isLoading"
+          :warnings="warnings"
+          v-model="presetStore.boxes_and_data"
+          :presetList="presetStore.presetList"
+          :canCreate="presetStore.canCreate"
+          :settable="presetStore.settable"
+          :defaultPresetId="presetStore.defaultPresetId"
+          :currentPreset="presetStore.currentPreset"
+          :backgroundImage="presetStore.presetImage"
+          :canDelete="presetStore.canDelete"
+          :canEdit="presetStore.canEdit"
+          :presetData="presetStore.presetData"
+          :editMode="presetStore.editMode"
+          :showDisconnected="showDisconnected"
+          :showAll="showAll"
+          :enabledSensors="enabledSensors"
+          @selectPreset="presetStore.handleSelectPreset"
+          @setDefault="presetStore.setDefaultPreset"
+          @newPreset="presetStore.reloadPresets"
+          @newImage="presetStore.reloadPresets"
+          @delete="presetStore.deletePreset"
+          @edit="presetStore.editMode = true"
+          @save="presetStore.uploadBoxes"
+          @cancel="presetStore.cancelBoxEdit"
+        />
+        <FilterBar 
+          class="filter-bar flex-grow-1"
+          @updateFilters="updateEnabledSensors" 
+        />
+      </div>
     </template>
 
     <!-- Slot for Dashboard -->
@@ -476,6 +495,9 @@ onMounted(async () => {
       :canEdit="presetStore.canEdit"
       :presetData="presetStore.presetData"
       :editMode="presetStore.editMode"
+      :showDisconnected="showDisconnected"
+      :showAll="showAll"
+      :enabledSensors="enabledSensors"
       @selectPreset="presetStore.handleSelectPreset"
       @setDefault="presetStore.setDefaultPreset"
       @newPreset="presetStore.reloadPresets"
@@ -485,7 +507,7 @@ onMounted(async () => {
       @save="presetStore.uploadBoxes"
       @cancel="presetStore.cancelBoxEdit"
     />
-    <FilterBar/>
+    <FilterBar @updateFilters="updateEnabledSensors" />
     </div>
 
     <DashBoard
