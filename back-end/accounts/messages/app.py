@@ -327,7 +327,62 @@ def unread_messages_count():
 
     return jsonify({"unread_messages_count": unread_count}), 200
 
+@app.route('/get_chat_messages', methods=['GET'])
+def get_chat_messages():
+    session_id = request.headers.get('session-id')
+    user_email = request.args.get('user_email')  # The person we're chatting with
 
+    if not session_id or not user_email:
+        return jsonify({'error': 'Invalid request'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Get logged-in user's ID and email from session ID
+    cursor.execute("SELECT user_id, email FROM users WHERE cookie = %s", (session_id,))
+    logged_in_user = cursor.fetchone()
+
+    if not logged_in_user:
+        conn.close()
+        return jsonify({'error': 'Invalid session'}), 401
+
+    logged_in_id = logged_in_user['user_id']
+
+    # Get the recipient's user_id using email
+    cursor.execute("SELECT user_id FROM users WHERE email = %s", (user_email,))
+    recipient = cursor.fetchone()
+
+    if not recipient:
+        conn.close()
+        return jsonify({'error': 'User not found'}), 404
+
+    recipient_id = recipient['user_id']
+
+    # Fetch both sent & received messages between the two users
+    cursor.execute("""
+        SELECT 
+            m.message_id, 
+            m.sender_id, 
+            m.receiver_id, 
+            m.left_message, 
+            m.time_sent,
+            u1.email AS sender_email,
+            u2.email AS receiver_email
+        FROM messages m
+        JOIN users u1 ON m.sender_id = u1.user_id
+        JOIN users u2 ON m.receiver_id = u2.user_id
+        WHERE 
+            (m.sender_id = %s AND m.receiver_id = %s) 
+            OR 
+            (m.sender_id = %s AND m.receiver_id = %s)
+        ORDER BY m.time_sent ASC
+    """, (logged_in_id, recipient_id, recipient_id, logged_in_id))
+
+    messages = cursor.fetchall()
+
+    conn.close()
+    
+    return jsonify({'messages': messages})
 
 
 if __name__ == '__main__':
