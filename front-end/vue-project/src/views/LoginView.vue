@@ -1,6 +1,6 @@
 <template>
   <div id="login" class="d-flex justify-content-center align-items-center">
-    <div style="color: #000; width:30rem; min-height: 20rem; background-color: #305f72;" class="card d-flex align-content-center justify-content-center px-4 py-4">
+    <div style="color: #000; width:30rem; min-height: 20rem; background-color: var(--primary-dark-bg);" class="card d-flex align-content-center justify-content-center px-4 py-4">
       <div class="text-warning fw-medium mb-2">{{ errorMessage }}</div>
       <form @submit.prevent="handleSubmit">
         <div class="mb-3">
@@ -78,6 +78,6 @@ const handleSubmit = async () => {
 <style scoped>
 #login {
   height: 90vh;
-  background: rgb(235, 235, 235);
+  background: var(--primary-light-bg);
 }
 </style>

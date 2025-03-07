@@ -290,8 +290,8 @@ watch([selectedTime, userID], fetchUserMovementData);
 }
 
 .bg-theme {
-  background-color: #305f72;
-  color: white;
+  background-color: var(--primary-dark-bg);
+  color: var(--primary-light-text);
 }
 
 .time-selector {
@@ -325,7 +325,7 @@ watch([selectedTime, userID], fetchUserMovementData);
 .no-data {
   text-align: center;
   font-size: 16px;
-  color: #999;
+  color: var(--negative-text);
 }
 
 .movement-data {
@@ -352,8 +352,8 @@ watch([selectedTime, userID], fetchUserMovementData);
 }
 
 .card-header {
-  background-color: #305f72;
-  color: white;
+  background-color: var(--primary-dark-bg);
+  color: var(--primary-light-text);
   padding: 10px;
   font-weight: bold;
 }
@@ -363,7 +363,7 @@ watch([selectedTime, userID], fetchUserMovementData);
 }
 
 .new-row > td {
-  background-color: #b6dfbf;
+  background-color: var(--positive);
 }
 
 .deactivated-data {
@@ -382,6 +382,6 @@ watch([selectedTime, userID], fetchUserMovementData);
 }
 
 .deactivated-data th {
-  background-color: #f2f2f2;
+  background-color: var(--primary-light-bg);
 }
 </style>

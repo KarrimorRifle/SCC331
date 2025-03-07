@@ -32,3 +32,45 @@ a,
   }
 
 }
+
+:root{
+  --primary-bg: #568ea6; 
+  --primary-text: #568ea6;
+  --primary-bg-hover: #305f72; 
+  
+  --primary-dark-bg: #305f72; 
+  --primary-dark-text: #305f72;
+  --primary-dark-bg-hover: #568ea6; 
+  --primary-dark-text-hover: #568ea6; 
+
+
+  --primary-light-bg: #ffffff;
+  --primary-light-text: #ffffff;
+  --primary-light-bg-hover: #f0f0f0;
+  --primary-light-text-hover: #e0e0e0;
+  
+  --warning-text: #ff4d4d;
+  --warning-bg: #ff4d4d; 
+  --warning-text-hover: #D94A4A; 
+  --warning-bg-hover: #D94A4A; 
+
+
+  --notification-text: #ff4d4d;
+  --notification-bg: #ff4d4d; 
+  --notification-text-hover: #D94A4A; 
+  --notification-bg-hover: #D94A4A; 
+
+  --active: #F18C8E;
+  --active-text: #F18C8E;
+  --active-bg: #F18C8E;
+
+  --not-active: lightgray;
+  --not-active-text: lightgray;
+  --not-active-bg: lightgray;
+
+  --negative: #666;
+  --negative-text: #666;
+  --negative-bg: #666;
+
+  --positive: #b6dfbf;
+}

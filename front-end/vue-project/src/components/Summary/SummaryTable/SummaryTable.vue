@@ -132,9 +132,9 @@ const filteredAreas = computed(() => {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  background-color: #f8f8ff; 
+  background-color: var(--primary-light-bg); 
   border-top: 1px solid #ccc;
-  color: black;
+  color: var(--primary-dark-text);
 }
 
 /* Header Styling */
@@ -147,8 +147,8 @@ const filteredAreas = computed(() => {
 }
 
 .toggle-button {
-  background-color: #568EA6;
-  color: white;
+  background-color: var(--primary-bg);
+  color: var(--primary-light-text);
   border: none;
   padding: 8px 12px;
   border-radius: 5px;
@@ -158,7 +158,7 @@ const filteredAreas = computed(() => {
 }
 
 .toggle-button:hover {
-  background-color: #305F72;
+  background-color: var(--primary-bg-hover);
 }
 
 /* Cards Layout */
@@ -174,7 +174,7 @@ const filteredAreas = computed(() => {
 .summary-card {
   border-radius: 10px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-  background: white;
+  background: var(--primary-light-bg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -183,8 +183,8 @@ const filteredAreas = computed(() => {
 }
 
 .card-header {
-  background-color: #305F72;
-  color: white;
+  background-color: var(--primary-dark-bg);
+  color: var(--primary-light-text);
   padding: 15px;
   font-size: 16px;
   font-weight: bold;
@@ -236,15 +236,15 @@ button {
   align-self: flex-start;
   padding: 8px 12px;
   border: none;
-  background-color: #568EA6;
-  color: white;
+  background-color: var(--primary-bg);
+  color: var(--primary-light-text);
   cursor: pointer;
   border-radius: 5px;
   transition: background 0.3s;
 }
 
 button:hover {
-  background-color: #305F72;
+  background-color: var(--primary-bg-hover);
 }
 
 /* Responsive Grid */

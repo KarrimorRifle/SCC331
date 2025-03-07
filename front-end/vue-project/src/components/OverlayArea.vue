@@ -340,8 +340,8 @@ const getSensorStyle = () => {
   top: 0;
   left: 0;
   width: 100%;
-  background: red;
-  color: white;
+  background: var(--warning-bg);
+  color: var(--primary-light-text);
   border: none;
   padding: 5px 0;
   font-size: 14px;
@@ -350,12 +350,12 @@ const getSensorStyle = () => {
   z-index: 100;
 }
 .warning-btn:hover {
-  background: darkred;
+  background: var(--warning-bg-hover);
 }
 
 .overlay-area-label{
     user-select: none;
-    color: black;
+    color: var(--primary-dark-text);
     font-weight: bold;
 }
 .resize-handle {
@@ -364,7 +364,7 @@ const getSensorStyle = () => {
   height: 10px;
   bottom: 0;
   right: 0;
-  background: #FFF;
+  background: var(--primary-light-bg);
   border: #000 2px solid;
   cursor: se-resize;
   position: absolute;
@@ -400,20 +400,20 @@ const getSensorStyle = () => {
 }
 
 .disconnected-sensor {
-  background: rgba(255, 0, 0, 0.8); 
-  color: white;
+  background: rgba(255, 0, 0, 0.5); 
+  color: var(--primary-light-text);
 }
 
 .ellipsis {
   font-size: 14px;
   font-weight: bold;
-  color: black;
+  color: var(--primary-dark-text);
   text-align: center;
 }
 
 .sensor-icon {
   font-size: clamp(8px, 2vw, 18px);
-  color: black;
+  color: var(--primary-dark-text);
 }
 
 </style>

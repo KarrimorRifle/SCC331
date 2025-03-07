@@ -96,8 +96,8 @@ const updateFilters = () => {
 
 <style scoped>
 .filter-bar-container {
-  background-color: #fff;
-  color: black;
+  background-color: var(--primary-light-bg);
+  color: var(--primary-dark-text);
   padding: 15px;
   max-height: 30vh;
   overflow-y: auto;
@@ -127,7 +127,7 @@ const updateFilters = () => {
   align-items: center;
   justify-content: space-between;
   padding: 8px;
-  background: #f9f9f9;
+  background: var(--primary-light-bg);
   border-radius: 8px;
 }
 
@@ -138,7 +138,7 @@ const updateFilters = () => {
 
 .sensor-icon {
   font-size: 18px;
-  color: #333;
+  color: var(--primary-dark-text);
 }
 
 .state-indicator {
@@ -177,12 +177,12 @@ const updateFilters = () => {
   width: 14px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
+  background-color: var(--primary-light-bg);
   transition: 0.4s;
   border-radius: 50%;
 }
 input:checked + .slider {
-  background-color: #F18C8E;
+  background-color: var(--active);
 }
 input:checked + .slider:before {
   transform: translateX(14px);

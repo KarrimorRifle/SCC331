@@ -160,7 +160,7 @@ onUnmounted(() => {
         v-for="([key, data]) in Object.entries(modelValue)"
         :key="key"
         class="dashboard-area"
-        :style="{ backgroundColor: data.box?.colour ?? '#FFFFFF', color: getTextColour(data.box?.colour) }"
+        :style="{ backgroundColor: data.box?.colour ?? 'var(--primary-light-text)', color: getTextColour(data.box?.colour) }"
       >
         <!-- Colour Picker Popover -->
         <div v-if="colourPickerVisible === key" class="colour-picker-popover">
@@ -195,7 +195,7 @@ onUnmounted(() => {
             <button
               title="Change box colour"
               class="btn add-button d-flex align-items-center justify-content-center"
-              style="max-width: 2.5rem; background-color: #568ea6;"
+              style="max-width: 2.5rem; background-color: var(--primary-bg);"
               @click="showColourPicker(key, data.box.colour)"
               v-else
             >
@@ -277,7 +277,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   padding: 0 20px;
-  background-color: white;
+  background-color: var(--primary-light-bg);
   border-left: 1px solid #ccc;
   overflow-y: auto;
   transition: all 0.8s ease-in-out;
@@ -292,13 +292,13 @@ onUnmounted(() => {
   padding: 20px 0;
   position: sticky;
   top: 0;
-  background: white;
+  background: var(--primary-light-bg);
   z-index: 888;
 }
 
 .expand-btn {
-  background-color: #305f72;
-  color: white;
+  background-color: var(--primary-dark-bg);
+  color: var(--primary-light-text);
   border: none;
   padding: 8px 12px;
   font-size: 18px;
@@ -307,17 +307,17 @@ onUnmounted(() => {
 }
 
 .expand-btn:hover {
-  background-color: #568ea6;
+  background-color: var(--primary-dark-bg-hover);
 }
 
 .dashboard h2 {
-  color: black;
+  color: var(--primary-dark-text);
 }
 
 /* Expanded Dashboard */
 .dashboard.expanded {
   flex: 5;
-  background-color: white;
+  background-color: var(--primary-light-text);
   z-index: 888;
 }
 
@@ -347,7 +347,7 @@ onUnmounted(() => {
   margin-bottom: 20px;
   padding: 10px;
   border-radius: 8px;
-  background-color: #ffffff;
+  background-color: var(--primary-light-bg);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
 }
@@ -366,8 +366,8 @@ onUnmounted(() => {
 }
 
 .warning-btn {
-  background: red;
-  color: white;
+  background: var(--warning-bg);
+  color: var(--primary-light-text);
   border: none;
   padding: 5px 8px;
   margin: 0 5px;
@@ -377,7 +377,7 @@ onUnmounted(() => {
 }
 
 .warning-btn:hover {
-  background: darkred;
+  background: var(--warning-bg-hover);
 }
 
 /* Counters for Luggage & People */
@@ -415,7 +415,7 @@ onUnmounted(() => {
   top: 40px;
   right: 10px;
   z-index: 1000;
-  background: white;
+  background: var(--primary-light-bg);
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -427,7 +427,7 @@ onUnmounted(() => {
   top: 40px;
   right: 10px;
   z-index: 1000;
-  background: white;
+  background: var(--primary-light-bg);
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 8px;

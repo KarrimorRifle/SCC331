@@ -299,7 +299,7 @@ watch(() => props.showModal, (newValue) => {
 }
 
 .modal-content {
-  background: white;
+  background: var(--primary-light-bg);
   padding: 20px;
   width: 70%;
   border-radius: 10px;
@@ -338,15 +338,15 @@ watch(() => props.showModal, (newValue) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: lightgray;
+  background: var(--not-active-bg);
   border-radius: 10px;
   font-weight: bold;
   transition: background 0.3s ease-in-out;
 }
 
 .active {
-  background: #568EA6;
-  color: white;
+  background: var(--primary-bg);
+  color: var(--primary-light-text);
   border: 3px solid #F18C8E;
 }
 
@@ -362,7 +362,7 @@ watch(() => props.showModal, (newValue) => {
 /* Time Display */
 .time-display {
   font-size: 16px;
-  color: #305F72;
+  color: var(--primary-dark-text);
   margin: 10px 0;
 }
 
@@ -382,7 +382,7 @@ watch(() => props.showModal, (newValue) => {
 
 .speed-control label, .loop-control label {
   font-weight: bold;
-  color: #305F72;
+  color: var(--primary-dark-text);
   margin-right: 5px;
 }
 
@@ -399,14 +399,14 @@ watch(() => props.showModal, (newValue) => {
   margin: 5px;
   padding: 8px 12px;
   border: none;
-  background: #305F72;
-  color: white;
+  background: var(--primary-dark-bg);
+  color: var(--primary-light-text);
   border-radius: 5px;
   cursor: pointer;
 }
 
 .controls button:disabled {
-  background: gray;
+  background: var(--negative-bg);
   cursor: not-allowed;
 }
 
@@ -424,7 +424,7 @@ watch(() => props.showModal, (newValue) => {
   width: 100%;
   appearance: none;
   height: 6px;
-  background: #305F72;
+  background: var(--primary-dark-bg);
   border-radius: 5px;
   outline: none;
 }
@@ -437,7 +437,7 @@ watch(() => props.showModal, (newValue) => {
   appearance: none;
   width: 16px;
   height: 16px;
-  background: #F18C8E;
+  background: var(--active-bg);
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.2s ease-in-out;
@@ -452,7 +452,7 @@ watch(() => props.showModal, (newValue) => {
   display: flex;
   justify-content: space-between;
   font-size: 14px;
-  color: #305F72;
+  color: var(--primary-dark-text);
   width: 100%;
   margin-top: 5px;
 }

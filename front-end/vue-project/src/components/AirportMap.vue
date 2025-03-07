@@ -351,7 +351,7 @@ const updateMode = ref<boolean>(false);
   position: relative;
   height: 100%;
   overflow: hidden;
-  background-color: white;
+  background-color: var(--primary-light-bg);
 }
 
 .zoom-controls {
@@ -364,8 +364,8 @@ const updateMode = ref<boolean>(false);
 }
 
 .zoom-controls > .button-container button {
-  background-color: #568ea6;
-  color: white;
+  background-color: var(--primary-bg);
+  color: var(--primary-light-text);
   border: none;
   padding: 5px 10px;
   border-radius: 5px;
@@ -374,7 +374,7 @@ const updateMode = ref<boolean>(false);
 }
 
 .zoom-controls button:hover {
-  background-color: #305f72;
+  background-color: var(--primary-bg-hover);
 }
 
 .airport-map-wrapper {

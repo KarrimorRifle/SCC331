@@ -17,7 +17,7 @@ const props = defineProps({
 <style scoped>
 .summary-header {
   padding: 20px;
-  background-color: #f8f8ff;
+  background-color: var(--primary-light-bg);
   border-bottom: 1px solid #ccc;
   text-align: center;
 }
@@ -26,12 +26,12 @@ const props = defineProps({
   margin: 0;
   font-size: 24px;
   font-weight: bold;
-  color: #333;
+  color: var(--primary-dark-text);
 }
 
 .summary-header p {
   margin-top: 10px;
   font-size: 14px;
-  color: #666;
+  color: var(--primary-dark-text);
 }
 </style>

@@ -135,14 +135,14 @@ onBeforeUnmount(() => {
 
 /* Modal Content */
 .modal-content {
-  background: white;
+  background: var(--primary-light-bg);
   padding: 20px;
   width: 600px;
   height: 400px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   position: relative;
-  color: black;
+  color: var(--primary-dark-text);
 }
 
 .modal-graph-header{

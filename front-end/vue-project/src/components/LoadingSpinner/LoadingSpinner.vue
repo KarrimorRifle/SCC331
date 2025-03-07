@@ -34,7 +34,7 @@ defineProps({
   width: 50px;
   height: 50px;
   border: 5px solid rgba(0, 0, 0, 0.2);
-  border-top-color: #568EA6; /* Highlighted color */
+  border-top-color: var(--primary-bg); /* Highlighted color */
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -43,7 +43,7 @@ p {
   margin-top: 10px;
   font-size: 16px;
   font-weight: bold;
-  color: black;
+  color: var(--primary-dark-text);
 }
 
 @keyframes spin {
