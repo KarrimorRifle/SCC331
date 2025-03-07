@@ -73,18 +73,44 @@ const filteredSensors = computed(() => {
  * If the box is too small, show an ellipsis "..." instead of overflowing icons.
  */
 const displayedSensors = computed(() => {
-  const maxIcons = Math.floor(props.position.width / 20); // Adjust dynamically based on width
+  const iconWidth = 60; // match max-width in CSS
+  const iconHeight = 60; // match max-height in CSS
+
+  // Compute maximum columns and rows that can fit in the overlay area.
+  const maxColumns = Math.floor(props.position.width / iconWidth);
+  const maxRows = Math.floor(props.position.height / iconHeight);
+
+  // Get the connection info for this area.
   const areaKey = getAreaKey(props.label);
   const connectedAreaSet = presetCache.connectedSensors.get(areaKey) || new Set();
 
+  // Map filtered sensor names into an array of sensor objects that include connection state.
   const sensorsWithState = filteredSensors.value.map(sensor => ({
     name: sensor,
     disconnected: !connectedAreaSet.has(sensor)
   }));
 
-  if (sensorsWithState.length > maxIcons) {
-    return [...sensorsWithState.slice(0, maxIcons - 1), { name: 'ellipsis', disconnected: false }];
+  // Partition the sensors into rows based on maxColumns.
+  const rows = [];
+  for (let i = 0; i < sensorsWithState.length; i += maxColumns) {
+    rows.push(sensorsWithState.slice(i, i + maxColumns));
   }
+
+  // If the total number of rows exceeds the maximum allowed by height...
+  if (rows.length > maxRows) {
+    // For the last allowed row, take only up to (maxColumns - 1) items and add ellipsis.
+    const allowedLastRow = rows[maxRows - 1].slice(0, maxColumns - 1);
+    allowedLastRow.push({ name: 'ellipsis', disconnected: false });
+
+    // Keep only the rows that fit.
+    const allowedRows = rows.slice(0, maxRows - 1);
+    allowedRows.push(allowedLastRow);
+
+    // Flatten the grid back to an array.
+    return allowedRows.flat();
+  }
+
+  // If we do not exceed the maximum rows, return the full list.
   return sensorsWithState;
 });
 
@@ -350,7 +376,7 @@ const getSensorStyle = () => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;  /* Ensure it fills the overlay-area */
   height: 100%;
   padding: 2px; /* Adjusted padding to avoid overflow */
