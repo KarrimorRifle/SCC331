@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, onMounted, watch, nextTick, onBeforeUnmount } from 'vue';
 import axios from 'axios';
 
 interface Message {
@@ -13,20 +13,44 @@ interface Message {
 interface ChatUser {
   email: string;
   messages: Message[];
+  unreadCount: number;
 }
 
-// State variables
 const chatUsers = ref<ChatUser[]>([]);
 const selectedUser = ref<string | null>(null);
 const messages = ref<Message[]>([]);
+const newMessage = ref(''); 
 const messagesContainer = ref<HTMLElement | null>(null);
 const sessionId = document.cookie
   .split('; ')
   .find(row => row.startsWith('session_id='))
   ?.split('=')[1] || '';
+const allUsers = ref<string[]>([]);
+const showNewChat = ref(false);
+const newChatUser = ref<string | null>(null);
 
-// **1️⃣ Fetch all messages to populate the chat list**
+// This user's email, used for hiding the 'ghost chat' between the user and themselves
+const fetchUserEmail = async () => {
+  try {
+    const response = await axios.get('http://localhost:5007/get_user_email', {
+      headers: { 'session-id': sessionId },
+      withCredentials: true
+    });
+
+    if (response.data.email) {
+      return response.data.email;
+    }
+  } catch (error) {
+    console.error('Error fetching user email:', error);
+  }
+  return null;
+};
+
+// Fetches all of the messages in the database that involve this user, and displays them on the chat list
 const fetchAllMessages = async () => {
+  const userEmail = await fetchUserEmail();
+  if (!userEmail) return;
+
   try {
     const response = await axios.get('http://localhost:5007/get_messages', {
       headers: { 'session-id': sessionId },
@@ -35,30 +59,36 @@ const fetchAllMessages = async () => {
 
     if (response.data.messages) {
       const allMessages: Message[] = response.data.messages;
-      processChatUsers(allMessages);
+      const unreadCounts = response.data.unreadCounts || {};
+      processChatUsers(allMessages, unreadCounts, userEmail);
     }
   } catch (error) {
     console.error('Error fetching messages:', error);
   }
 };
 
-// **2️⃣ Process messages to create a unique user list**
-const processChatUsers = (allMessages: Message[]) => {
+// Helper function to remove this user from the chatlist
+const processChatUsers = (allMessages: Message[], unreadCounts: Record<string, number>, userEmail: string) => {
   const userMap = new Map<string, Message[]>();
 
   allMessages.forEach((msg) => {
-    const otherUser = msg.sender_email === sessionId ? msg.receiver_email : msg.sender_email;
-    
+    const otherUser = msg.sender_email === userEmail ? msg.receiver_email : msg.sender_email;
+
     if (!userMap.has(otherUser)) {
       userMap.set(otherUser, []);
     }
     userMap.get(otherUser)?.push(msg);
   });
 
-  chatUsers.value = Array.from(userMap, ([email, messages]) => ({ email, messages }));
+  // Add unread message count to the user object 
+  chatUsers.value = Array.from(userMap, ([email, messages]) => ({
+    email,
+    messages,
+    unreadCount: unreadCounts[email] || 0 // Add unread count if exists
+  }));
 };
 
-// **3️⃣ Fetch messages for a selected user**
+// Fetch the messages from the chat that is open
 const fetchChatMessages = async () => {
   if (!selectedUser.value) return;
 
@@ -78,14 +108,14 @@ const fetchChatMessages = async () => {
   }
 };
 
-// **4️⃣ Select a user and fetch messages**
+// Select the user from the message bar
 const selectUser = (email: string) => {
   selectedUser.value = email;
   messages.value = [];
   fetchChatMessages();
 };
 
-// **5️⃣ Scroll to the bottom when messages update**
+// Scroll to the latest message if needed
 const scrollToBottom = () => {
   nextTick(() => {
     if (messagesContainer.value) {
@@ -94,21 +124,104 @@ const scrollToBottom = () => {
   });
 };
 
-// **6️⃣ Watch for new messages and scroll down**
+// Watch for if it is necessary to scroll down
 watch(() => messages.value, scrollToBottom, { deep: true });
 
-// **7️⃣ Fetch all messages when the component mounts**
+// Fetch all messages and users when the component mounts
 onMounted(() => {
   fetchAllMessages();
-});
-</script>
+  fetchAllUsers();
+  const intervalId = setInterval(() => {
+    fetchAllMessages();
+    if (selectedUser.value) {
+      fetchChatMessages();
+    }
+  }, 5000); // Refresh every 5 seconds
 
+  // Clean up the interval when the component is unmounted
+  onBeforeUnmount(() => {
+    clearInterval(intervalId);
+  });
+});
+
+// Fetch all of the users except this one to make a new chat
+const fetchAllUsers = async () => {
+  try {
+    const response = await axios.get('http://localhost:5007/get_users_messages_page', {
+      headers: { 'session-id': sessionId },
+      withCredentials: true
+    });
+
+    if (response.data.users) {
+      allUsers.value = response.data.users.map((user: { email: string }) => user.email);
+    }
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+};
+
+// Start a new chat
+const startNewChat = () => {
+  if (!newChatUser.value) return;
+  
+  selectedUser.value = newChatUser.value;
+  messages.value = [];
+  showNewChat.value = false;
+  fetchChatMessages();
+};
+
+// Send a message
+const sendMessage = async () => {
+  if (!newMessage.value.trim() || !selectedUser.value) return;
+
+  try {
+    await axios.post('http://localhost:5007/send_message', {
+      receiver_email: selectedUser.value,
+      message: newMessage.value
+    }, {
+      headers: { 'session-id': sessionId },
+      withCredentials: true
+    });
+
+    // Add message to local state
+    messages.value.push({
+      message_id: Date.now(),
+      sender_email: sessionId,
+      receiver_email: selectedUser.value,
+      left_message: newMessage.value,
+      time_sent: new Date().toISOString()
+    });
+
+    newMessage.value = '';
+    scrollToBottom();
+
+    // Refresh chat user list to update sidebar
+    fetchAllMessages();
+    fetchAllUsers();
+  } catch (error) {
+    console.error('Error sending message:', error);
+  }
+};
+</script>
 
 <template>
   <div class="messages-container">
     <!-- Sidebar with User List -->
     <div class="sidebar">
       <h2>Chats</h2>
+      
+      <button @click="showNewChat = !showNewChat" class="new-chat-btn">New Chat</button>
+      
+      <!-- Dropdown for Selecting New Chat -->
+      <div v-if="showNewChat" class="new-chat-dropdown">
+        <select v-model="newChatUser">
+          <option v-for="user in allUsers" :key="user" :value="user">
+            {{ user }}
+          </option>
+        </select>
+        <button @click="startNewChat">Start</button>
+      </div>
+
       <ul v-if="chatUsers.length > 0">
         <li 
           v-for="user in chatUsers" 
@@ -116,7 +229,12 @@ onMounted(() => {
           @click="selectUser(user.email)"
           :class="{ active: selectedUser === user.email }"
         >
-          {{ user.email }}
+          <div class="user-info">
+            <span>{{ user.email }}</span>
+            <span v-if="user.unreadCount > 0" class="unread-count"> <!-- Doesn't really work at the moment -->
+              {{ user.unreadCount }}
+            </span>
+          </div>
         </li>
       </ul>
       <p v-else>No messages yet.</p>
@@ -137,6 +255,12 @@ onMounted(() => {
             <span class="message-time">{{ new Date(message.time_sent).toLocaleTimeString() }}</span>
           </div>
         </div>
+
+        <!-- Message Input -->
+        <div class="message-input">
+          <input v-model="newMessage" type="text" placeholder="Type a message..." @keyup.enter="sendMessage" />
+          <button @click="sendMessage">Send</button>
+        </div>
       </div>
       <div v-else class="no-chat-selected">
         <p>Select a chat to view messages</p>
@@ -145,8 +269,36 @@ onMounted(() => {
   </div>
 </template>
 
-
 <style scoped>
+.new-chat-btn {
+  width: 100%;
+  padding: 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.new-chat-dropdown {
+  display: flex;
+  gap: 10px;
+}
+
+.new-chat-dropdown select {
+  flex-grow: 1;
+  padding: 5px;
+}
+
+.new-chat-dropdown button {
+  padding: 5px;
+  background: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
 .messages-container {
   display: flex;
   height: 100vh;
@@ -177,11 +329,31 @@ onMounted(() => {
   cursor: pointer;
   border-radius: 5px;
   transition: background 0.3s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .sidebar li:hover, .sidebar .active {
   background: #007bff;
   color: white;
+}
+
+/* User Info inside Sidebar */
+.user-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* Unread count badge */
+.sidebar .unread-count {
+  background-color: #007bff;
+  color: white;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border-radius: 50%;
 }
 
 /* Chat Panel */
@@ -235,16 +407,44 @@ onMounted(() => {
 }
 
 .received {
-  align-self: flex-start;
-  background: #e4e6eb;
-  color: black;
+  background: #e1e1e1;
+  color: #333;
 }
 
-/* Message Timestamp */
+/* Message Time */
 .message-time {
-  font-size: 0.75rem;
-  color: gray;
-  display: block;
-  margin-top: 5px;
+  font-size: 0.8rem;
+  color: #aaa;
+  position: absolute;
+  bottom: 5px;
+  right: 10px;
+}
+
+.message-input {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.message-input input {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.message-input button {
+  padding: 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.no-chat-selected {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #aaa;
 }
 </style>
