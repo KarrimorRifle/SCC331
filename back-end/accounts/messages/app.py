@@ -65,6 +65,44 @@ def get_users():
 	connection.close()
 
 	return jsonify({"users": users}), 200
+
+
+@app.route('/get_users_messages_page', methods=['GET'])
+def get_users_messsages():
+    session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+    if not session_id:
+        return jsonify({"error": "No session cookie or header provided"}), 400
+    
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cursor = connection.cursor(dictionary=True)
+
+    # Retrieve the logged-in user's user_id based on session ID
+    cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
+    user = cursor.fetchone()
+
+    if user is None:
+        cursor.close()
+        connection.close()
+        return jsonify({"error": "User not found!"}), 404
+
+    user_id = user["user_id"]
+
+    # Exclude the logged-in user from the list of users
+    cursor.execute("""
+        SELECT email, full_name AS name, last_login, authority
+        FROM users
+        WHERE user_id != %s
+    """, (user_id,))
+    
+    users = cursor.fetchall()
+    cursor.close()
+    connection.close()
+
+    return jsonify({"users": users}), 200
+
 	
 @app.route('/send_message', methods=['POST'])
 def send_message():
@@ -251,45 +289,74 @@ def check_admin():
 
 	return jsonify({"message": "Authorized"}), 200
 
-
 @app.route('/get_messages', methods=['GET'])
 def get_messages():
-	session_id = request.headers.get('session-id') or request.cookies.get('session_id')
-	if not session_id:
-		return jsonify({"error": "No session cookie or header provided"}), 400
+    session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+    if not session_id:
+        return jsonify({"error": "No session cookie or header provided"}), 400
 
-	connection = get_db_connection()
-	if connection is None:
-		return jsonify({"error": "Database connection failed"}), 500
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
 
-	cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor(dictionary=True)
 
-	cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
-	user = cursor.fetchone()
+    # Retrieve the logged-in user's user_id based on session ID
+    cursor.execute("SELECT user_id FROM users WHERE cookie = %s", (session_id,))
+    user = cursor.fetchone()
 
-	if user is None:
-		cursor.close()
-		connection.close()
-		return jsonify({"error": "User not found!"}), 404
+    if user is None:
+        cursor.close()
+        connection.close()
+        return jsonify({"error": "User not found!"}), 404
 
-	user_id = user["user_id"]
+    user_id = user["user_id"]
 
-	# Retrieve messages where the logged-in user is the receiver
-	cursor.execute("""
-		SELECT m.message_id, u.email AS sender_email, m.left_message, m.time_sent
-		FROM messages m
-		JOIN users u ON m.sender_id = u.user_id
-		WHERE m.receiver_id = %s
-		ORDER BY m.time_sent DESC
-	""", (user_id,))
+    # Retrieve messages and determine who the other participant in the conversation is
+    cursor.execute("""
+        SELECT m.message_id,
+               u.email AS sender_email,
+               CASE 
+                   WHEN m.receiver_id = %s THEN u.email  -- logged-in user is the receiver, show sender_email
+                   WHEN m.sender_id = %s THEN u.email  -- logged-in user is the sender, show receiver_email
+               END AS other_user_email,
+               m.left_message, m.time_sent
+        FROM messages m
+        JOIN users u ON (m.sender_id = u.user_id OR m.receiver_id = u.user_id)
+        WHERE ((m.receiver_id = %s AND m.sender_id != %s)  -- Only get messages where receiver is not the logged-in user
+                OR (m.sender_id = %s AND m.receiver_id != %s))  -- Only get messages where sender is not the logged-in user
+        ORDER BY m.time_sent DESC
+    """, (user_id, user_id, user_id, user_id, user_id, user_id))
 
-	messages = cursor.fetchall()
-	
-	cursor.close()
-	connection.close()
+    messages = cursor.fetchall()
 
-	return jsonify({"messages": messages}), 200
+    # Now, let's get the count of unread messages for each user that has messaged the logged-in user
+    cursor.execute("""
+        SELECT m.sender_id, COUNT(*) AS unread_count
+        FROM messages m
+        WHERE m.receiver_id = %s AND m.is_read = 0
+        GROUP BY m.sender_id
+    """, (user_id,))
 
+    unread_counts = cursor.fetchall()
+
+    # Convert unread_counts into a dictionary for easy access
+    unread_counts_dict = {str(unread_count["sender_id"]): unread_count["unread_count"] for unread_count in unread_counts}
+
+    # Add the unread count to each user's message thread
+    for message in messages:
+        sender_user_email = message["other_user_email"]
+
+        # Adding the unread count from the unread_counts_dict
+        if sender_user_email in unread_counts_dict:
+            message["unread_count"] = unread_counts_dict[sender_user_email]
+        else:
+            message["unread_count"] = 0
+
+    cursor.close()
+    connection.close()
+
+    return jsonify({"messages": messages, "unreadCounts": unread_counts_dict}), 200
 
 @app.route('/unread_messages_count', methods=['GET'])
 def unread_messages_count():
@@ -358,6 +425,13 @@ def get_chat_messages():
 
     recipient_id = recipient['user_id']
 
+    # Mark all messages as read where the logged-in user is the receiver
+    cursor.execute("""
+        UPDATE messages
+        SET is_read = 1
+        WHERE receiver_id = %s AND sender_id = %s AND is_read = 0
+    """, (logged_in_id, recipient_id))
+
     # Fetch both sent & received messages between the two users
     cursor.execute("""
         SELECT 
@@ -380,9 +454,39 @@ def get_chat_messages():
 
     messages = cursor.fetchall()
 
+    conn.commit()  # Commit the update to the messages
+
     conn.close()
-    
+
     return jsonify({'messages': messages})
+
+
+@app.route('/get_user_email', methods=['GET'])
+def get_user_email():
+    session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+    if not session_id:
+        return jsonify({"error": "No session cookie or header provided"}), 400
+
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    cursor = connection.cursor(dictionary=True)
+
+    # Retrieve the logged-in user's email based on session ID
+    cursor.execute("SELECT email FROM users WHERE cookie = %s", (session_id,))
+    user = cursor.fetchone()
+
+    if user is None:
+        cursor.close()
+        connection.close()
+        return jsonify({"error": "User not found!"}), 404
+
+    cursor.close()
+    connection.close()
+
+    # Return the email of the logged-in user
+    return jsonify({"email": user["email"]}), 200
 
 
 if __name__ == '__main__':
