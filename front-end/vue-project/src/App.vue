@@ -243,7 +243,7 @@ html, body, #app {
 }
 
 .warning-content {
-  background: white;
+  background: var(--primary-light-bg);
   padding: 20px;
   border-radius: 8px;
   text-align: center;
@@ -251,20 +251,20 @@ html, body, #app {
 }
 
 .warning-content h2 {
-  color: red;
+  color: var(--warning-text);
   font-size: 24px;
   margin-bottom: 10px;
 }
 
 .warning-content p {
-  color: black;
+  color: var(--primary-dark-text);
   font-size: 18px;
   margin-bottom: 15px;
 }
 
 .close-popup {
-  background: red;
-  color: white;
+  background: var(--warning-bg);
+  color: var(--primary-light-text);
   padding: 10px 20px;
   border: none;
   font-size: 16px;

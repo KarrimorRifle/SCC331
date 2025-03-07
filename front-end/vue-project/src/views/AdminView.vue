@@ -214,27 +214,28 @@ export default {
 	height: 100vh;
 	font-size: 32px;
 	font-weight: bold;
-	color: #e53e3e;
+	color: var(--warning-text);
 	text-align: center;
 }
 .container {
 	max-width: 900px;
 	margin: 0 auto;
 	padding: 20px;
-	background: #90cdf4;
+	background: var(--primary-bg);
+	color: var(--primary-dark-text);
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 .title {
 	text-align: center;
 	font-size: 24px;
 	font-weight: bold;
-	color: #2d3748;
+	color: var(--primary-dark-text);
 	margin-bottom: 20px;
 }
 .input-section {
 	display: flex;
 	gap: 10px;
-	background: white;
+	background: var(--primary-light-bg);
 	padding: 10px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	align-items: center; /* Vertically center the items inside the container */
@@ -248,7 +249,7 @@ export default {
 .button {
 	padding: 8px 12px;
 	border-radius: 5px;
-	color: white;
+	color: var(--primary-light-text);
 	cursor: pointer;
 }
 .add { background: #38a169; }
@@ -258,7 +259,7 @@ export default {
 .cancel { background: #718096; }
 .send { background: #38a169; }
 .table-container {
-	background: white;
+	background: var(--primary-light-bg);
 	padding: 10px;
 }
 .user-table {
@@ -285,14 +286,14 @@ export default {
 .modal-title {
 	font-size: 24px;
 	font-weight: 600;
-	color: #333;
+	color: var(--primary-dark-text);
 	margin-bottom: 10px;
 }
 
 /* Modal Description */
 .modal-description {
 	font-size: 16px;
-	color: #555;
+	color: var(--primary-dark-text);
 	margin-bottom: 20px;
 }
 
@@ -338,13 +339,13 @@ export default {
 }
 
 .send {
-	background-color: #38a169;
-	color: white;
+	background-color: var(--positive);
+	color: var(--primary-dark-text);
 }
 
 .cancel {
-	background-color: #e53e3e;
-	color: white;
+	background-color: var(--warning-bg);
+	color: var(--primary-light-text);
 }
 
 .send:hover {

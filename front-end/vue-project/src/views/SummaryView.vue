@@ -64,14 +64,14 @@ const activeSection = ref("all");
 /* Layout */
 .summary-container {
   display: flex;
-  background-color: #f8f8ff;
+  background-color: var(--primary-light-bg);
 }
 
 .sidebar {
   width: 200px;
   padding: 20px;
-  background-color: #305F72;
-  color: white;
+  background-color: var(--primary-dark-bg);
+  color: var(--primary-light-text);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -80,7 +80,7 @@ const activeSection = ref("all");
 .sidebar button {
   background: none;
   border: none;
-  color: white;
+  color: var(--primary-light-text);
   font-size: 16px;
   cursor: pointer;
   padding: 10px;
@@ -91,7 +91,7 @@ const activeSection = ref("all");
 
 .sidebar button:hover,
 .sidebar button.active {
-  background: #568EA6;
+  background: var(--primary-dark-bg-hover);
 }
 
 .summary-content {

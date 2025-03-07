@@ -131,10 +131,9 @@ watch(() => authStore.userAuthority, (newVal) => {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	background-color: #305f72;
+	background-color: var(--primary-dark-bg);
 	padding: 10px 20px;
-	color: white;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	color: var(--primary-light-text);
 	width: 100%;
 	position: relative;
 }
@@ -146,18 +145,14 @@ watch(() => authStore.userAuthority, (newVal) => {
 
 .nav-link {
 	margin: 0 15px;
-	color: #FFFFFF;
+	color: var(--primary-light-text);
 	text-decoration: none;
 	font-size: 16px;
 	font-weight: bold;
 }
 
-.nav-link:hover {
-	color: #f1d1b5;
-}
-
 .active {
-	color: rgb(196, 196, 196);
+	color: var(--active);
 }
 
 /* Hamburger Button (Visible on Mobile) */
@@ -166,7 +161,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 	font-size: 24px;
 	background: none;
 	border: none;
-	color: white;
+	color: var(--primary-light-text);
 	cursor: pointer;
 }
 
@@ -177,7 +172,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 	left: -250px; /* Initially hidden */
 	width: 250px;
 	height: 100vh;
-	background: #305f72;
+	background: var(--primary-dark-bg);
 	box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
 	display: flex;
 	flex-direction: column;
@@ -193,20 +188,16 @@ watch(() => authStore.userAuthority, (newVal) => {
 /* Mobile Menu Links */
 .mobile-link {
 	padding: 15px;
-	color: white;
+	color: var(--primary-light-text);
 	text-decoration: none;
 	font-size: 18px;
-}
-
-.mobile-link:hover {
-	background: #568ea6;
 }
 
 /* Close Button */
 .close-btn {
 	background: none;
 	border: none;
-	color: white;
+	color: var(--primary-light-text);
 	font-size: 22px;
 	text-align: right;
 	cursor: pointer;
@@ -245,7 +236,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 	font-size: 24px;
 	background: none;
 	border: none;
-	color: white;
+	color: var(--primary-light-text);
 	cursor: pointer;
 }
 
@@ -256,7 +247,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 	left: -250px; /* Initially hidden */
 	width: 250px;
 	height: 100vh;
-	background: #305f72;
+	background: var(--primary-dark-bg);
 	box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
 	display: flex;
 	flex-direction: column;
@@ -272,20 +263,16 @@ watch(() => authStore.userAuthority, (newVal) => {
 /* Mobile Menu Links */
 .mobile-link {
 	padding: 15px;
-	color: white;
+	color: var(--primary-light-text);
 	text-decoration: none;
 	font-size: 18px;
-}
-
-.mobile-link:hover {
-	background: #568ea6;
 }
 
 /* Close Button */
 .close-btn {
 	background: none;
 	border: none;
-	color: white;
+	color: var(--primary-light-text);
 	font-size: 22px;
 	text-align: right;
 	cursor: pointer;
