@@ -338,6 +338,9 @@ GRANT SELECT, UPDATE(updated) ON warning.updated    TO 'warning_processor'@'%';
 GRANT SELECT ON accounts.users                      TO 'warning_editor'@'%';
 FLUSH PRIVILEGES;
 
+CREATE USER IF NOT EXISTS 'dummy'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'dummy';
+GRANT SELECT, INSERT ON pico.* TO 'dummy'@'%';
+
 -- =============================================
 -- Security Hardening
 -- =============================================
