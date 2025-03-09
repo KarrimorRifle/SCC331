@@ -314,10 +314,7 @@ FLUSH PRIVILEGES;
 
 -- Assets Editing Service (Full permissions)
 CREATE USER IF NOT EXISTS 'assets_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'edit_password';
-GRANT SELECT, INSERT, UPDATE ON assets.presets        TO 'assets_editor'@'%';
-GRANT SELECT, INSERT, UPDATE ON assets.map_blocks     TO 'assets_editor'@'%';
-GRANT SELECT, INSERT, UPDATE ON assets.preset_trusted TO 'assets_editor'@'%';
-GRANT SELECT, INSERT, UPDATE ON assets.default_preset TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.* TO 'assets_editor'@'%';
 ALTER USER 'assets_editor'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
