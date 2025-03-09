@@ -6,6 +6,8 @@ port: 5001
   - `name`: Full name of the user (required)
   - `email`: Email of the user (required, must end with '@fakecompany.co.uk')
   - `password`: Password of the user (required)
+  - `super`: If set to "yes" will set the user to super admin
+  - `bypass`: If set to "yes" will set the user to admin
 - **Responses:**
   - `201`: User registered successfully
   - `400`: Missing or invalid fields
