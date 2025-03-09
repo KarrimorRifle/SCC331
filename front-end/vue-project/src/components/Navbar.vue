@@ -86,10 +86,13 @@ watch(() => authStore.userAuthority, (newVal) => {
       <RouterLink to="/summaries" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
 
 			<!-- Admins -->
-			<template v-if="authStore.userAuthority === 'Admin'">
+			<template v-if="authStore.userAuthority === 'Admin' || authStore.userAuthority === 'Super Admin'">
 				<RouterLink to="/create-warning" class="nav-link ms-4" exact-active-class="active" >Warnings</RouterLink>
 				<RouterLink to="/admin" class="nav-link" exact-active-class="active" >Users</RouterLink>
 				<RouterLink to="/inspection" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" >Inspection</RouterLink>
+			</template>
+			<template v-if="authStore.userAuthority === 'Super Admin'">
+				<RouterLink to="/change-domain" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" >Change Domain</RouterLink>
 			</template>
       <RouterLink to="/login" class="nav-link" exact-active-class="active" v-if="!props.loggedIn">Login</RouterLink>
       <RouterLink to="#" class="nav-link ms-4" v-if="props.loggedIn" @click.prevent="handleLogout">
@@ -108,12 +111,15 @@ watch(() => authStore.userAuthority, (newVal) => {
       <RouterLink to="/summaries" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Summary</RouterLink>
 
 			<!-- Admin links -->
-			<template v-if="authStore.userAuthority === 'Admin'">
+			<template v-if="authStore.userAuthority === 'Admin' || authStore.userAuthority === 'Super Admin'">
 				<RouterLink to="/create-warning" class="mobile-link" exact-active-class="active" @click="closeMenu">Create Warning</RouterLink>
 				<RouterLink to="/admin" class="mobile-link" exact-active-class="active" @click="closeMenu">Admin</RouterLink>
 				<RouterLink to="/inspection" class="mobile-link" exact-active-class="active" @click="closeMenu">Inspection</RouterLink>
 			</template>
 
+			<template v-if="authStore.userAuthority === 'Super Admin'">
+				<RouterLink to="/change-domain" class="mobile-link" exact-active-class="active" @click="closeMenu">Change Domain</RouterLink>
+			</template>
       <RouterLink to="/login" class="mobile-link" exact-active-class="active" v-if="!props.loggedIn" @click="closeMenu">Login</RouterLink>
       <RouterLink to="#" class="mobile-link" v-if="props.loggedIn" @click.prevent="handleLogout" @click="closeMenu">
         Log out
