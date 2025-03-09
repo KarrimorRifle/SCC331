@@ -745,6 +745,58 @@ This service handles the creation, modification, and deletion of asset presets, 
   - `401`: Unauthorized.
   - `500`: Server error.
 
+#### Set front page
+- **PATCH:** `/home`
+- **Cookies:**
+  - `session_id`: Valid "Super Admin" session
+- **Request Body (JSON):**
+  ```json
+  {
+    "config": {
+      "domain": "string",
+      "loginText": "Image description",
+      "hero": {
+        "title": "title of the stuff",
+        "subtitle": "Description",
+        "image": {
+          "name": "Name of image.jpg",
+          "data": "adiabfwafbawu==" // BASE64 image
+        }
+      }
+    },
+    "features": [
+      {
+        "icon": "validFontAwesomeIcon",
+        "title": "feature title",
+        "description": "Description of said title"
+      },
+      //... More of this
+    ],
+    "howItWorks": [
+      {
+        "step": 1, //Number
+        "title": "title of the step",
+        "description": "udbaudiwaifiaifawifhiwa"
+      },
+      // ... More of this
+    ],
+    "theme": {
+      "primaryDarkBg": "#003865",
+      "primaryDarkText": "#003865",
+      "primarySecondaryBg": "lightgray",
+      "primarySecondaryText": "lightgray",
+      "primaryLightBg": "white",
+      "primaryLightText": "white",
+      "accent": "#FFD700",
+      "accentHover": "#E6C200"
+    }
+  }
+  ```
+- **Responses:**
+  - `200`: Front page updated.
+  - `401`: Unauthorized.
+  - `500`: Server error.
+
 ## Assets Reader Microservice (Port: 5010)
 This service is dedicated to delivering asset preset details to staff users. Its endpoints require a valid `session_id` cookie with appropriate staff privileges.
 
@@ -812,4 +864,56 @@ This service is dedicated to delivering asset preset details to staff users. Its
   - `400`: Invalid preset ID.
   - `401`: Unauthorized.
   - `404`: Preset not found.
+  - `500`: Server error.
+
+#### Get front page
+- **GET:** `/home`
+- **Cookies:**
+  - `session_id`: Valid cookie session
+- **Request Body (JSON):**
+  ```json
+  {
+    "config": {
+      "domain": "string",
+      "loginText": "Image description",
+      "hero": {
+        "title": "title of the stuff",
+        "subtitle": "Description",
+        "image": {
+          "name": "Name of image.jpg",
+          "data": "adiabfwafbawu==" // BASE64 image
+        }
+      }
+    },
+    "features": [
+      {
+        "icon": "validFontAwesomeIcon",
+        "title": "feature title",
+        "description": "Description of said title"
+      },
+      //... More of this
+    ],
+    "howItWorks": [
+      {
+        "step": 1, //Number
+        "title": "title of the step",
+        "description": "udbaudiwaifiaifawifhiwa"
+      },
+      // ... More of this
+    ],
+    "theme": {
+      "primaryDarkBg": "#003865",
+      "primaryDarkText": "#003865",
+      "primarySecondaryBg": "lightgray",
+      "primarySecondaryText": "lightgray",
+      "primaryLightBg": "white",
+      "primaryLightText": "white",
+      "accent": "#FFD700",
+      "accentHover": "#E6C200"
+    }
+  }
+  ```
+- **Responses:**
+  - `200`: Front page retrieved.
+  - `401`: Unauthorized.
   - `500`: Server error.
