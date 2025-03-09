@@ -294,7 +294,6 @@ FLUSH PRIVILEGES;
 -- Data Reading Service (pico Read)
 CREATE USER IF NOT EXISTS 'data_reader'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'read_password';
 GRANT SELECT ON pico.* TO 'data_reader'@'%';
-ALTER USER 'data_reader'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 -- Data Deletion Service (pico Delete + Read)
@@ -337,6 +336,9 @@ GRANT SELECT, UPDATE ON warning.tests               TO 'warning_processor'@'%';
 GRANT SELECT, UPDATE(updated) ON warning.updated    TO 'warning_processor'@'%';
 GRANT SELECT ON accounts.users                      TO 'warning_editor'@'%';
 FLUSH PRIVILEGES;
+
+CREATE USER IF NOT EXISTS 'dummy'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'dummy';
+GRANT SELECT, INSERT ON pico.* TO 'dummy'@'%';
 
 -- =============================================
 -- Security Hardening

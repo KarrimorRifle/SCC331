@@ -210,6 +210,21 @@ services:
       - my_network
     profiles: ["test"]
 
+  dummy:
+    build: ./dummy
+    container_name: dummy
+    environment:
+      DB_HOST: mysql
+      DB_USER: dummy
+      DB_PASSWORD: dummy
+      DB_NAME: pico
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+    profiles: ["dummy"]
+
 networks:
   my_network:
     driver: bridge
