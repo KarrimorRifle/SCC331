@@ -140,7 +140,8 @@ watch(
       :warnings="notificationQueue"
       :warningCount="warningCount"
       :loggedIn="authStore.isLoggedIn"
-      :isAdmin="authStore.userAuthority === 'Admin'"
+      :isAdmin="authStore.userAuthority === 'Admin' || authStore.userAuthority === 'Super Admin'"
+      :isSuperAdmin="authStore.userAuthority === 'Super Admin'"
       @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
       @logout="authStore.logout"
     />
