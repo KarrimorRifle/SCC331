@@ -267,6 +267,37 @@ void BluetoothSensor::checkForAcknowledgement() {
     display->println("Understood");
     display->display();
 
+    StaticJsonDocument<256> json;
+    json["PicoID"] = mqtt->getHardwareIdentifier();
+    json["RoomID"] = String(strongestScanBluetoothID);
+    json["PicoType"] = picoType;
+    json["Response"] = "I acknowledge and will take the appropriate actions";
+
+    String jsonString;
+    serializeJson(json, jsonString);
+
+    mqtt->publishDataWithIdentifier(jsonString, "warnings/admin");
+
+    delay(2000);
+
+    display->clearDisplay();
+    display->setCursor(0, 0);
+    display->display();
+  }
+  else if (digitalRead(BLACK_BUTTON) == HIGH && warningLive) { //added the use of warningLive boolean to free up red button, will remove if buggy
+    warningLive = false;
+    leds->clear();
+    leds->setPixelColor(1, leds->Color(255, 255, 255));
+    leds->show();
+    
+    noTone(BUZZER);
+
+    display->clearDisplay();
+    display->setCursor(0, 0);
+    display->println("Acknowledgement:");
+    display->println("Ignored");
+    display->display();
+
     delay(2000);
 
     display->clearDisplay();
@@ -308,7 +339,7 @@ void BluetoothSensor::SOSCall(){
       //OR just shine on customer a known colour
 
   //both buttons to suggest
-  if(digitalRead(BLACK_BUTTON) == HIGH && digitalRead(RED_BUTTON)){
+  if(digitalRead(BLACK_BUTTON) == HIGH && digitalRead(RED_BUTTON)){//loop waiting for response??
     //display message
     display->clearDisplay();
     display->setCursor(0, 0);
@@ -354,14 +385,14 @@ void BluetoothSensor::SOSCall(){
       //json file
       StaticJsonDocument<256> json;
       json["PicoID"] = mqtt->getHardwareIdentifier();
-      json["RoomID"] = majorID;
+      json["RoomID"] = String(strongestScanBluetoothID);
       json["PicoType"] = picoType;
-      json["Request"] = "Request for assistance in Room " + String(majorID);
+      json["Request"] = "Request for assistance in Room " + String(strongestScanBluetoothID) + ", person with bright device";
 
       String jsonString;
       serializeJson(json, jsonString);
 
-      mqtt->publishDataWithIdentifier(jsonString, "warning/staff");
+      mqtt->publishDataWithIdentifier(jsonString, "warnings/staff");
 
       display->clearDisplay();
       display->setCursor(0, 0);
