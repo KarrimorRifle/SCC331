@@ -126,11 +126,12 @@ CREATE TABLE IF NOT EXISTS config (
 	loginText VARCHAR(250),
 	hero_title VARCHAR(250) NOT NULL,
 	hero_subtitle VARCHAR(250) NOT NULL,
+	image_name VARCHAR(250) NOT NULL,
 	image_data LONGBLOB DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS features (
-	id INT PRIMARY KEY NOT NULL,
+	id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
 	icon VARCHAR(50) NOT NULL,
 	title VARCHAR(50) NOT NULL,
 	`description` VARCHAR(500) NOT NULL
@@ -155,40 +156,35 @@ CREATE TABLE IF NOT EXISTS theme_colours (
 );
 
 -- Insert data into 'config' table only if it's empty
-INSERT INTO config (id, domain, loginText, hero_title, hero_subtitle, image_data)
+INSERT INTO config (id, domain, loginText, hero_title, hero_subtitle, image_name, image_data)
 SELECT 1, 'airport', 'Login to Monitor', 'Newcastle Airport Monitoring', 
-       'Ensuring seamless airport operations with real-time monitoring of security, occupancy, and environmental conditions.', 
-       LOAD_FILE('/docker-entrypoint-initdb.d/base64_airportimg.txt')
+       'Ensuring seamless airport operations with real-time monitoring of security, occupancy, and environmental conditions.',
+       'newcastle-airport-image.webp',
+       FROM_BASE64(LOAD_FILE('/docker-entrypoint-initdb.d/base64_airportimg.txt'))
 WHERE NOT EXISTS (SELECT * FROM config);
 
--- Insert data into 'features' table only if it's empty
+-- Insert data into 'features' table only if it's empty (bulk insert)
 INSERT INTO features (id, icon, title, `description`)
-SELECT 1, 'shield', 'Security Alerts', 'Get notified of any security breaches in real-time.'
+SELECT * FROM (
+    SELECT 1 AS id, 'shield' AS icon, 'Security Alerts' AS title, 'Get notified of any security breaches in real-time.' AS `description`
+    UNION ALL
+    SELECT 2, 'map', 'Live Airport Map', 'Monitor passenger flow and track luggage locations.'
+    UNION ALL
+    SELECT 3, 'bell', 'Instant Notifications', 'Receive alerts for emergency and unusual activities.'
+    UNION ALL
+    SELECT 4, 'clock', '24/7 Monitoring', 'Track airport conditions anytime, anywhere.'
+) AS tmp
 WHERE NOT EXISTS (SELECT * FROM features);
 
-INSERT INTO features (id, icon, title, `description`)
-SELECT 2, 'map', 'Live Airport Map', 'Monitor passenger flow and track luggage locations.'
-WHERE NOT EXISTS (SELECT * FROM features);
-
-INSERT INTO features (id, icon, title, `description`)
-SELECT 3, 'bell', 'Instant Notifications', 'Receive alerts for emergency and unusual activities.'
-WHERE NOT EXISTS (SELECT * FROM features);
-
-INSERT INTO features (id, icon, title, `description`)
-SELECT 4, 'clock', '24/7 Monitoring', 'Track airport conditions anytime, anywhere.'
-WHERE NOT EXISTS (SELECT * FROM features);
-
--- Insert data into 'how_it_works' table only if it's empty
+-- Insert data into 'how_it_works' table only if it's empty (bulk insert)
 INSERT INTO how_it_works (step, title, `description`)
-SELECT 1, 'Login', 'Access the system securely.'
-WHERE NOT EXISTS (SELECT * FROM how_it_works);
-
-INSERT INTO how_it_works (step, title, `description`)
-SELECT 2, 'Monitor', 'Track security, environmental data, and passenger flow in real-time.'
-WHERE NOT EXISTS (SELECT * FROM how_it_works);
-
-INSERT INTO how_it_works (step, title, `description`)
-SELECT 3, 'Receive Alerts', 'Get instant updates on critical situations.'
+SELECT * FROM (
+    SELECT 1 AS step, 'Login' AS title, 'Access the system securely.' AS `description`
+    UNION ALL
+    SELECT 2, 'Monitor', 'Track security, environmental data, and passenger flow in real-time.'
+    UNION ALL
+    SELECT 3, 'Receive Alerts', 'Get instant updates on critical situations.'
+) AS tmp
 WHERE NOT EXISTS (SELECT * FROM how_it_works);
 
 -- Insert data into 'theme_colours' table only if it's empty

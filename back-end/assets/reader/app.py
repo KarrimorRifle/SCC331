@@ -169,9 +169,25 @@ def get_front_page():
         return jsonify({"error": "DB connection unavailable"}), 500
     cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute("SELECT domain, loginText, hero_title, hero_subtitle, image_data FROM config WHERE id=1")
+        cursor.execute("SELECT domain, loginText, hero_title, hero_subtitle, image_name, image_data FROM config WHERE id=1")
         config_row = cursor.fetchone()
-        cursor.execute("SELECT * FROM features")
+        # Changed code: decode image_data if present
+        image_data = config_row.get("image_data")
+        if image_data and isinstance(image_data, bytes):
+            image_data = image_data.decode('utf-8')
+        config = {
+            "domain": config_row.get("domain"),
+            "loginText": config_row.get("loginText"),
+            "hero": {
+                "title": config_row.get("hero_title"),
+                "subtitle": config_row.get("hero_subtitle"),
+                "image": {
+                    "name": config_row.get("image_name"),
+                    "data": image_data
+                }
+            }
+        }
+        cursor.execute("SELECT title, description, icon FROM features")
         features = cursor.fetchall()
         cursor.execute("SELECT * FROM how_it_works")
         howItWorks = cursor.fetchall()
@@ -182,12 +198,8 @@ def get_front_page():
         """)
         theme = cursor.fetchone()
         
-        # Decode image_data if present
-        if config_row and config_row.get("image_data"):
-            config_row["image_data"] = config_row["image_data"].decode('utf-8')
-        
         front_page = {
-            "config": config_row,
+            "config": config,
             "features": features,
             "howItWorks": howItWorks,
             "theme": theme

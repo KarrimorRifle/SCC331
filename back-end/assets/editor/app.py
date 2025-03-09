@@ -378,16 +378,18 @@ def update_front_page():
     try:
         # Update config using front page config data; hero data is nested
         hero = data["config"].get("hero", {})
+        image_name = hero.get("image", {}).get("name")
         image_data = hero.get("image", {}).get("data")
         cursor.execute("""
             UPDATE config 
-            SET domain = %s, loginText = %s, hero_title = %s, hero_subtitle = %s, image_data = %s 
+            SET domain = %s, loginText = %s, hero_title = %s, hero_subtitle = %s, image_name = %s, image_data = %s 
             WHERE id = 1
         """, (
             data["config"]["domain"],
             data["config"]["loginText"],
             hero.get("title"),
             hero.get("subtitle"),
+            image_name,
             image_data
         ))
         
