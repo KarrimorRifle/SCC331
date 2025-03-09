@@ -329,9 +329,9 @@ void BluetoothSensor::SOSCall(){
 
       
       //loop below until...?
-      pixelInterval = 50;                   //  Delay time (ms)
-      pixelQueue = = 0;
-      pixelCycle = 0;
+      int pixelInterval = 50;                   //  Delay time (ms)
+      int pixelQueue = 0;
+      int pixelCycle = 0;
       for(int i = 0; i < 3; i += 3) {
         leds.setPixelColor(i + pixelQueue, Wheel((i + pixelCycle) % 255)); //  Update delay time  
       }
@@ -378,6 +378,19 @@ void BluetoothSensor::SOSCall(){
       display->display(); 
     }
   }
+}
+
+uint32_t Wheel(byte WheelPos) {
+  WheelPos = 255 - WheelPos;
+  if(WheelPos < 85) {
+    return leds.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+  }
+  if(WheelPos < 170) {
+    WheelPos -= 85;
+    return leds.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+  }
+  WheelPos -= 170;
+  return leds.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
 
 
