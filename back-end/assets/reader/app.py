@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 import requests
 import time
+import base64
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -132,7 +133,7 @@ def get_preset_details(preset_id):
             print(preset_row["image_data"])
             image = {
                 "name": preset_row["image_name"],
-                "data": preset_row["image_data"].decode('utf-8')
+                "data": base64.b64encode(preset_row["image_data"]).decode('utf-8')
             }
 
         # Minimal representation of "permission"
@@ -174,7 +175,7 @@ def get_front_page():
         # Changed code: decode image_data if present
         image_data = config_row.get("image_data")
         if image_data and isinstance(image_data, bytes):
-            image_data = image_data.decode('utf-8')
+            image_data = base64.b64encode(image_data).decode('utf-8')
         config = {
             "domain": config_row.get("domain"),
             "loginText": config_row.get("loginText"),

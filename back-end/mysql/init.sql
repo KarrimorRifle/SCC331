@@ -160,7 +160,7 @@ INSERT INTO config (id, domain, loginText, hero_title, hero_subtitle, image_name
 SELECT 1, 'airport', 'Login to Monitor', 'Newcastle Airport Monitoring', 
        'Ensuring seamless airport operations with real-time monitoring of security, occupancy, and environmental conditions.',
        'newcastle-airport-image.webp',
-       FROM_BASE64(LOAD_FILE('/docker-entrypoint-initdb.d/base64_airportimg.txt'))
+       FROM_BASE64(LOAD_FILE('/var/lib/mysql-files/base64_airportimg.txt'))  -- updated file pathortimg.txt'))
 WHERE NOT EXISTS (SELECT * FROM config);
 
 -- Insert data into 'features' table only if it's empty (bulk insert)
