@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS messages (
 	sender_id INT,
 	left_message VARCHAR(1000),
 	time_sent TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	is_read BOOLEAN DEFAULT 0,
 	FOREIGN KEY (receiver_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL,
 	FOREIGN KEY (sender_id) REFERENCES accounts.users(user_id) ON DELETE CASCADE
 );
@@ -199,7 +200,6 @@ CREATE TABLE IF NOT EXISTS rule (
   id INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(50) NOT NULL UNIQUE,
   owner_id INT,
-	test_only BOOLEAN NOT NULL DEFAULT false,
   FOREIGN KEY (owner_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL -- if its null it will allow anyone to delete
 );
 
@@ -294,6 +294,7 @@ FLUSH PRIVILEGES;
 -- Data Reading Service (pico Read)
 CREATE USER IF NOT EXISTS 'data_reader'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'read_password';
 GRANT SELECT ON pico.* TO 'data_reader'@'%';
+ALTER USER 'data_reader'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 -- Data Deletion Service (pico Delete + Read)
