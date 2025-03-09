@@ -120,6 +120,82 @@ CREATE TABLE IF NOT EXISTS default_preset (
 INSERT INTO default_preset (id, preset_id) VALUES (1, NULL)
 ON DUPLICATE KEY UPDATE id = 1;
 
+CREATE TABLE IF NOT EXISTS config (
+	id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+	domain VARCHAR(50) NOT NULL,
+	loginText VARCHAR(250),
+	hero_title VARCHAR(250) NOT NULL,
+	hero_subtitle VARCHAR(250) NOT NULL,
+	image_data LONGBLOB DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS features (
+	id INT PRIMARY KEY NOT NULL,
+	icon VARCHAR(50) NOT NULL,
+	title VARCHAR(50) NOT NULL,
+	`description` VARCHAR(500) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS how_it_works (
+	step INT PRIMARY KEY NOT NULL,
+	title VARCHAR(50) NOT NULL,
+	`description` VARCHAR(500) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS theme_colours (
+	id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+	primaryDarkBg VARCHAR(20) NOT NULL,
+	primaryDarkText VARCHAR(20) NOT NULL,
+	primarySecondaryBg VARCHAR(20) NOT NULL,
+	primarySecondaryText VARCHAR(20) NOT NULL,
+	primaryLightBg VARCHAR(20) NOT NULL,
+	primaryLightText VARCHAR(20) NOT NULL,
+	accent VARCHAR(20) NOT NULL,
+	accentHover VARCHAR(20) NOT NULL
+);
+
+-- Insert data into 'config' table only if it's empty
+INSERT INTO config (id, domain, loginText, hero_title, hero_subtitle, image_data)
+SELECT 1, 'airport', 'Login to Monitor', 'Newcastle Airport Monitoring', 
+       'Ensuring seamless airport operations with real-time monitoring of security, occupancy, and environmental conditions.', 
+       LOAD_FILE('/docker-entrypoint-initdb.d/base64_airportimg.txt')
+WHERE NOT EXISTS (SELECT * FROM config);
+
+-- Insert data into 'features' table only if it's empty
+INSERT INTO features (id, icon, title, `description`)
+SELECT 1, 'shield', 'Security Alerts', 'Get notified of any security breaches in real-time.'
+WHERE NOT EXISTS (SELECT * FROM features);
+
+INSERT INTO features (id, icon, title, `description`)
+SELECT 2, 'map', 'Live Airport Map', 'Monitor passenger flow and track luggage locations.'
+WHERE NOT EXISTS (SELECT * FROM features);
+
+INSERT INTO features (id, icon, title, `description`)
+SELECT 3, 'bell', 'Instant Notifications', 'Receive alerts for emergency and unusual activities.'
+WHERE NOT EXISTS (SELECT * FROM features);
+
+INSERT INTO features (id, icon, title, `description`)
+SELECT 4, 'clock', '24/7 Monitoring', 'Track airport conditions anytime, anywhere.'
+WHERE NOT EXISTS (SELECT * FROM features);
+
+-- Insert data into 'how_it_works' table only if it's empty
+INSERT INTO how_it_works (step, title, `description`)
+SELECT 1, 'Login', 'Access the system securely.'
+WHERE NOT EXISTS (SELECT * FROM how_it_works);
+
+INSERT INTO how_it_works (step, title, `description`)
+SELECT 2, 'Monitor', 'Track security, environmental data, and passenger flow in real-time.'
+WHERE NOT EXISTS (SELECT * FROM how_it_works);
+
+INSERT INTO how_it_works (step, title, `description`)
+SELECT 3, 'Receive Alerts', 'Get instant updates on critical situations.'
+WHERE NOT EXISTS (SELECT * FROM how_it_works);
+
+-- Insert data into 'theme_colours' table only if it's empty
+INSERT INTO theme_colours (id, primaryDarkBg, primaryDarkText, primarySecondaryBg, primarySecondaryText, primaryLightBg, primaryLightText, accent, accentHover)
+SELECT 1, '#003865', '#003865', 'lightgray', 'lightgray', 'white', 'white', '#FFD700', '#E6C200'
+WHERE NOT EXISTS (SELECT * FROM theme_colours);
+
 -- Warning System
 USE warning;
 
@@ -238,10 +314,10 @@ FLUSH PRIVILEGES;
 
 -- Assets Editing Service (Full permissions)
 CREATE USER IF NOT EXISTS 'assets_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'edit_password';
-GRANT SELECT, INSERT, UPDATE, DELETE ON assets.presets        TO 'assets_editor'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON assets.map_blocks     TO 'assets_editor'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON assets.preset_trusted TO 'assets_editor'@'%';
-GRANT SELECT, UPDATE ON assets.default_preset TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE ON assets.presets        TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE ON assets.map_blocks     TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE ON assets.preset_trusted TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE ON assets.default_preset TO 'assets_editor'@'%';
 ALTER USER 'assets_editor'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
