@@ -4,7 +4,6 @@ import { ref, defineProps, defineEmits, watch } from "vue";
 const props = defineProps({
   conditions: Object as () => Record<string, any>, // Receive set conditions
 });
-console.log(props.conditions);
 const emit = defineEmits(["updateMessages"]);
 
 // Store custom messages for each condition

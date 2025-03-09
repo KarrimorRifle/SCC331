@@ -14,8 +14,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
-const { overlayAreasConstant, overlayAreasData, updateOverlayAreaColor, updateAllOverlayAreas, updates, environmentHistory, warnings } = useFetchData(picoIds);
-console.log(warnings);
+const { updates, warnings } = useFetchData(picoIds);
 const presetStore = usePresetStore();
 const isMobile = ref(window.innerWidth < 768);
 const isWarningModalOpen = ref(false);
@@ -28,13 +27,6 @@ const authStore = useAuthStore();
 // first time loading for the warnings
 let firstTime = true;
 
-const handleUpdateOverlayAreaColor = ({ roomID, colour }) => {
-  updateOverlayAreaColor(roomID, colour);
-};
-
-const handleUpdateAllOverlayAreas = (newOverlayAreas) => {
-  updateAllOverlayAreas(newOverlayAreas);
-};
 // Sync `notificationQueue` when `safeWarnings` updates
 watch(
   () => JSON.stringify(safeWarnings.value), 
@@ -117,12 +109,9 @@ watch(
   () => presetStore.summary,
   (newSummary) => {
     if (!newSummary || Object.keys(newSummary).length === 0) return;
-
-    console.log("Summary is now available, running warning checks...");
     
     Object.entries(fullWarningConditions.value).forEach(([warningId, warning]) => {
       const triggeredAreas = checkWarningAreas(newSummary, warning);
-      console.log(`Triggered Areas for Warning ${warningId}:`, triggeredAreas);
       triggeredAreas.forEach(({ roomID, messages }) => {
         messages.forEach(msg => {
           addNotification(msg); // Ensure unique notifications get added
@@ -162,12 +151,8 @@ watch(
       :environmentHistory="environmentHistory"
       :warnings="notificationQueue"
       :isMobile="isMobile"
-      :overlayAreasConstant="overlayAreasConstant"
-      :overlayAreasData="overlayAreasData"
       :loggedIn="authStore.isLoggedIn"
       @login="authStore.login"
-      @updateOverlayAreaColor="handleUpdateOverlayAreaColor"
-      @updateOverlayAreas="handleUpdateAllOverlayAreas"
     />
     
     <!-- Notification Icon Component -->
@@ -180,9 +165,7 @@ watch(
     />
 
     <!-- Warning Area Modal that pops up when the user clicks on the warning button -->
-    <WarningAreaModal 
-      :overlayAreasConstant="overlayAreasConstant"
-    />
+    <WarningAreaModal/>
 
     <!-- Warning Notification Modal -->
     <WarningNotificationModal 
@@ -260,7 +243,7 @@ html, body, #app {
 }
 
 .warning-content {
-  background: white;
+  background: var(--primary-light-bg);
   padding: 20px;
   border-radius: 8px;
   text-align: center;
@@ -268,20 +251,20 @@ html, body, #app {
 }
 
 .warning-content h2 {
-  color: red;
+  color: var(--warning-text);
   font-size: 24px;
   margin-bottom: 10px;
 }
 
 .warning-content p {
-  color: black;
+  color: var(--primary-dark-text);
   font-size: 18px;
   margin-bottom: 15px;
 }
 
 .close-popup {
-  background: red;
-  color: white;
+  background: var(--warning-bg);
+  color: var(--primary-light-text);
   padding: 10px 20px;
   border: none;
   font-size: 16px;

@@ -87,8 +87,8 @@ const switchMode = (newMode: string) => {
 
 /* Modal Content */
 .modal-content {
-  background: white;
-  color: #333;
+  background: var(--primary-light-bg);
+  color: var(--primary-dark-text);
   width: 100%;
   border-radius: 10px;
   border-left: 6px solid #305f72;
@@ -118,12 +118,12 @@ const switchMode = (newMode: string) => {
   top: 0;
   z-index: 888;
   padding: 10px 20px;
-  background: white;
+  background: var(--primary-light-bg);
 }
 
 .modal-header h3 {
   font-size: 18px;
-  color: #305f72;
+  color: var(--primary-dark-text);
   font-weight: bold;
 }
 
@@ -132,12 +132,12 @@ const switchMode = (newMode: string) => {
   background: none;
   font-size: 18px;
   cursor: pointer;
-  color: #333;
+  color: var(--primary-dark-text);
   transition: color 0.2s ease-in-out;
 }
 
 .close-btn:hover {
-  color: #ff4d4d;
+  color: var(--warning-text-hover);
 }
 
 /* Modal Tabs */
@@ -151,15 +151,15 @@ const switchMode = (newMode: string) => {
   flex: 1;
   padding: 10px;
   border: none;
-  background: #f1f1f1;
+  background: var(--primary-light-bg);
   cursor: pointer;
   transition: background 0.3s ease-in-out;
   position: relative;
 }
 
 .modal-tabs button.active {
-  background: #305f72;
-  color: white;
+  background: var(--primary-dark-bg);
+  color: var(--primary-light-text);
 }
 
 .modal-tabs button:hover:not(.active) {
@@ -167,8 +167,8 @@ const switchMode = (newMode: string) => {
 }
 
 .modal-tabs .count {
-  background: #ff4d4d;
-  color: white;
+  background: var(--notification-bg);
+  color: var(--primary-light-text);
   border-radius: 50%;
   padding: 2px 6px;
   font-size: 12px;
@@ -186,7 +186,7 @@ const switchMode = (newMode: string) => {
   border-radius: 10px;
   display: flex;
   flex-direction: column;
-  color: white;
+  color: var(--primary-light-text);
 }
 
 /* Severity-Based Title Colors */
@@ -206,32 +206,32 @@ h4 {
   margin-top: 8px;
   padding: 8px 12px;
   font-size: 14px;
-  color: white;
+  color: var(--primary-light-text);
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  background-color: #305f72;
+  background-color: var(--primary-dark-bg);
   align-self: flex-end;
   transition: background 0.3s ease-in-out;
 }
 
 .dismiss-btn:hover {
-  background-color: #568ea6;
+  background-color: var(--primary-dark-bg-hover);
 }
 
 .no-warnings {
   text-align: center;
   font-size: 14px;
-  color: #666;
+  color: var(--negative-text);
   padding: 10px 0;
 }
 
 /* Adjustments for Text Contrast */
 .warning-card p {
-  color: #f9f9f9;
+  color: var(--primary-light-text);
 }
 
 .warning-card strong {
-  color: #ffffff;
+  color: var(--primary-light-text);
 }
 </style>

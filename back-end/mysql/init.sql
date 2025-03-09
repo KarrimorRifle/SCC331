@@ -13,7 +13,7 @@ USE accounts;
 CREATE TABLE IF NOT EXISTS users (
 	user_id INT AUTO_INCREMENT PRIMARY KEY,
 	full_name VARCHAR(100) NOT NULL,
-	authority ENUM('Reception', 'Admin') NOT NULL DEFAULT 'Reception',
+	authority ENUM('Reception', 'Admin', 'Super Admin') NOT NULL DEFAULT 'Reception',
 	pass_hash CHAR(60) NOT NULL COMMENT 'BCrypt hashed',
 	email VARCHAR(100) NOT NULL UNIQUE,
 	cookie CHAR(64) COMMENT 'Secure session token',
@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS messages (
 	sender_id INT,
 	left_message VARCHAR(1000),
 	time_sent TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	is_read BOOLEAN DEFAULT 0,
 	FOREIGN KEY (receiver_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL,
 	FOREIGN KEY (sender_id) REFERENCES accounts.users(user_id) ON DELETE CASCADE
 );
@@ -120,6 +121,78 @@ CREATE TABLE IF NOT EXISTS default_preset (
 INSERT INTO default_preset (id, preset_id) VALUES (1, NULL)
 ON DUPLICATE KEY UPDATE id = 1;
 
+CREATE TABLE IF NOT EXISTS config (
+	id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+	domain VARCHAR(50) NOT NULL,
+	loginText VARCHAR(250),
+	hero_title VARCHAR(250) NOT NULL,
+	hero_subtitle VARCHAR(250) NOT NULL,
+	image_name VARCHAR(250) NOT NULL,
+	image_data LONGBLOB DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS features (
+	id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+	icon VARCHAR(50) NOT NULL,
+	title VARCHAR(50) NOT NULL,
+	`description` VARCHAR(500) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS how_it_works (
+	step INT PRIMARY KEY NOT NULL,
+	title VARCHAR(50) NOT NULL,
+	`description` VARCHAR(500) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS theme_colours (
+	id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+	primaryDarkBg VARCHAR(20) NOT NULL,
+	primaryDarkText VARCHAR(20) NOT NULL,
+	primarySecondaryBg VARCHAR(20) NOT NULL,
+	primarySecondaryText VARCHAR(20) NOT NULL,
+	primaryLightBg VARCHAR(20) NOT NULL,
+	primaryLightText VARCHAR(20) NOT NULL,
+	accent VARCHAR(20) NOT NULL,
+	accentHover VARCHAR(20) NOT NULL
+);
+
+-- Insert data into 'config' table only if it's empty
+INSERT INTO config (id, domain, loginText, hero_title, hero_subtitle, image_name, image_data)
+SELECT 1, 'airport', 'Login to Monitor', 'Newcastle Airport Monitoring', 
+       'Ensuring seamless airport operations with real-time monitoring of security, occupancy, and environmental conditions.',
+       'newcastle-airport-image.webp',
+       FROM_BASE64(LOAD_FILE('/var/lib/mysql-files/base64_airportimg.txt'))  -- updated file pathortimg.txt'))
+WHERE NOT EXISTS (SELECT * FROM config);
+
+-- Insert data into 'features' table only if it's empty (bulk insert)
+INSERT INTO features (id, icon, title, `description`)
+SELECT * FROM (
+    SELECT 1 AS id, 'shield' AS icon, 'Security Alerts' AS title, 'Get notified of any security breaches in real-time.' AS `description`
+    UNION ALL
+    SELECT 2, 'map', 'Live Airport Map', 'Monitor passenger flow and track luggage locations.'
+    UNION ALL
+    SELECT 3, 'bell', 'Instant Notifications', 'Receive alerts for emergency and unusual activities.'
+    UNION ALL
+    SELECT 4, 'clock', '24/7 Monitoring', 'Track airport conditions anytime, anywhere.'
+) AS tmp
+WHERE NOT EXISTS (SELECT * FROM features);
+
+-- Insert data into 'how_it_works' table only if it's empty (bulk insert)
+INSERT INTO how_it_works (step, title, `description`)
+SELECT * FROM (
+    SELECT 1 AS step, 'Login' AS title, 'Access the system securely.' AS `description`
+    UNION ALL
+    SELECT 2, 'Monitor', 'Track security, environmental data, and passenger flow in real-time.'
+    UNION ALL
+    SELECT 3, 'Receive Alerts', 'Get instant updates on critical situations.'
+) AS tmp
+WHERE NOT EXISTS (SELECT * FROM how_it_works);
+
+-- Insert data into 'theme_colours' table only if it's empty
+INSERT INTO theme_colours (id, primaryDarkBg, primaryDarkText, primarySecondaryBg, primarySecondaryText, primaryLightBg, primaryLightText, accent, accentHover)
+SELECT 1, '#003865', '#003865', 'lightgray', 'lightgray', 'white', 'white', '#FFD700', '#E6C200'
+WHERE NOT EXISTS (SELECT * FROM theme_colours);
+
 -- Warning System
 USE warning;
 
@@ -127,7 +200,6 @@ CREATE TABLE IF NOT EXISTS rule (
   id INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(50) NOT NULL UNIQUE,
   owner_id INT,
-	test_only BOOLEAN NOT NULL DEFAULT false,
   FOREIGN KEY (owner_id) REFERENCES accounts.users(user_id) ON DELETE SET NULL -- if its null it will allow anyone to delete
 );
 
@@ -238,10 +310,7 @@ FLUSH PRIVILEGES;
 
 -- Assets Editing Service (Full permissions)
 CREATE USER IF NOT EXISTS 'assets_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'edit_password';
-GRANT SELECT, INSERT, UPDATE, DELETE ON assets.presets        TO 'assets_editor'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON assets.map_blocks     TO 'assets_editor'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE ON assets.preset_trusted TO 'assets_editor'@'%';
-GRANT SELECT, UPDATE ON assets.default_preset TO 'assets_editor'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON assets.* TO 'assets_editor'@'%';
 ALTER USER 'assets_editor'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
@@ -267,6 +336,9 @@ GRANT SELECT, UPDATE ON warning.tests               TO 'warning_processor'@'%';
 GRANT SELECT, UPDATE(updated) ON warning.updated    TO 'warning_processor'@'%';
 GRANT SELECT ON accounts.users                      TO 'warning_editor'@'%';
 FLUSH PRIVILEGES;
+
+CREATE USER IF NOT EXISTS 'dummy'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'dummy';
+GRANT SELECT, INSERT ON pico.* TO 'dummy'@'%';
 
 -- =============================================
 -- Security Hardening

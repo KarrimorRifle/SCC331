@@ -90,7 +90,7 @@ watch(
   height: 50px;
   border-radius: 50%;
   border: none;
-  color: white;
+  color: var(--primary-light-text);
   cursor: pointer;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
   transition: background-color 0.1s ease-in-out, transform 0.1s ease-in-out;
@@ -102,7 +102,7 @@ watch(
 
 .notification-icon:disabled {
   cursor: not-allowed;
-  background-color: #ccc;
+  background-color: var(--negative);
 }
 
 .new-warning {
@@ -122,8 +122,8 @@ watch(
   position: absolute;
   bottom: 60px;
   right: 0;
-  background-color: #fff;
-  color: #333;
+  background-color: var(--primary-light-bg);
+  color: var(--primary-dark-text);
   padding: 5px 10px;
   font-size: 12px;
   border-radius: 5px;
@@ -134,8 +134,8 @@ watch(
   position: absolute;
   top: -2px;
   right: -2px;
-  background: #ff4d4d;
-  color: white;
+  background: var(--notification-bg);
+  color: var(--primary-light-text);
   border-radius: 50%;
   padding: 2px 6px;
   font-size: 12px;

@@ -159,7 +159,6 @@ const setCondition = (roomID: string) => {
 
   pendingConditions.value = { ...pendingConditions.value };
 
-  console.log(props.conditions);
 };
 
 const removeCondition = (roomID: string, conditionIndex: number) => {
@@ -333,8 +332,8 @@ watch(
 
 <style scoped>
 .warning-message {
-  background: #FF6B6B !important;
-  color: white !important;
+  background: var(--warning-bg) !important;
+  color: var(--primary-light-text) !important;
   border: none;
   padding: 10px;
   text-align: center;
@@ -345,7 +344,7 @@ watch(
 .conditions-container {
   padding: 20px;
   border-radius: 10px;
-  background: white;
+  background: var(--primary-light-bg);
   border: 2px solid #568EA6;
 }
 
@@ -353,13 +352,13 @@ watch(
   margin-bottom: 20px;
   padding: 15px;
   border-radius: 8px;
-  background: white; 
+  background: var(--primary-light-bg); 
 }
 
 .existing-conditions {
   margin-top: 10px;
   padding: 10px;
-  background: white; 
+  background: var(--primary-light-bg); 
   border-radius: 8px;
 }
 
@@ -367,7 +366,7 @@ watch(
 .existing-conditions h5 {
   font-size: 16px;
   font-weight: bold;
-  color: #305F72;
+  color: var(--primary-dark-text);
   margin-bottom: 8px;
 }
 
@@ -384,7 +383,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 8px;
-  background: white;
+  background: var(--primary-light-bg);
   border-radius: 6px;
   border: 1px solid #CBD5E1;
   margin-bottom: 6px;
@@ -393,18 +392,18 @@ watch(
 
 /* Add hover effect */
 .condition-item:hover {
-  background: #F0B7A4; /* Subtle hover effect */
+  background: var(--primary-light-bg-hover);
 }
 
 /* Trash icon styling */
 .delete-icon {
-  color: #FF6B6B;
+  color: var(--warning-text);
   cursor: pointer;
   transition: color 0.3s ease-in-out;
 }
 
 .delete-icon:hover {
-  color: #D94A4A;
+  color: var(--warning-text-hover);
 }
 
 
@@ -428,10 +427,6 @@ input, select, textarea {
   transition: border 0.2s ease-in-out;
 }
 
-input:focus, select:focus, textarea:focus {
-  border-color: #568EA6;
-}
-
 .condition-row {
   display: flex;
   gap: 15px;
@@ -443,18 +438,18 @@ input:focus, select:focus, textarea:focus {
 }
 
 .delete-icon {
-  color: #FF6B6B;
+  color: var(--warning-text);
   cursor: pointer;
   transition: color 0.3s ease-in-out;
 }
 
 .delete-icon:hover {
-  color: #D94A4A;
+  color: var(--warning-text-hover);
 }
 
 button {
-  background: #568EA6;
-  color: white;
+  background: var(--primary-bg);
+  color: var(--primary-light-text);
   border: none;
   padding: 10px;
   font-weight: bold;
@@ -467,7 +462,7 @@ button {
 }
 
 button:hover {
-  background: #305F72;
+  background: var(--primary-bg-hover);
 }
 button:disabled{
   cursor: not-allowed;

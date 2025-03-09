@@ -59,6 +59,15 @@ const props = defineProps({
   editMode: {
     type: Boolean,
     required: true
+  }, 
+  enabledSensors: {
+    type: Array
+  }, 
+  showDisconnected: {
+    type: Boolean,
+  },
+  showAll: {
+    type: Boolean,
   }
 });
 // Zoom level and map position state
@@ -218,21 +227,21 @@ const updateMode = ref<boolean>(false);
 </script>
 
 <template>
-  <div class="airport-map-container" id="">
-    <div class="zoom-controls d-flex flex-column align-items-end" style="pointer-events: none;">
-      <div class="preset-container card p-2">
-        <div class="input-group" style="pointer-events: all;">
-          <button v-if="props.settable" class="btn btn-success ms-2" @click="emit('setDefault')" for="inputGroupSelect01">Set Default</button>
-          <label v-else class="input-group-text bg-dark text-light" for="inputGroupSelect01">Preset</label>
-          <!-- add v-model and make it a v-if to change the name -->
-          <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem" @change="emit('selectPreset', $event.target.value)" :value="props.currentPreset">
-            <option v-for="preset in presetList.presets" :value="preset.id" :key="preset.id">
-              {{ preset.id === defaultPresetId ? `Default: ${preset.name}` : preset.name }}
-            </option>
-            <option v-if="presetList?.presets?.length == 0" value="-1">"No presets found!"</option>
-          </select>
-        </div>
+  <div class="airport-map-container d-flex flex-column" id="">
+    <div class="preset-container d-flex flex-row card p-1 m-3 w-50" style="z-index: 100;">
+      <div class="input-group" style="pointer-events: all;">
+        <button v-if="props.settable" class="btn btn-success ms-2" @click="emit('setDefault')" for="inputGroupSelect01">Set Default</button>
+        <label v-else class="input-group-text bg-dark text-light" for="inputGroupSelect01">Preset</label>
+        <!-- add v-model and make it a v-if to change the name -->
+        <select class="form-select" id="inputGroupSelect02" style="max-width: 30rem;" @change="emit('selectPreset', $event.target.value)" :value="props.currentPreset">
+          <option v-for="preset in presetList.presets" :value="preset.id" :key="preset.id">
+            {{ preset.id === defaultPresetId ? `Default: ${preset.name}` : preset.name }}
+          </option>
+          <option v-if="presetList?.presets?.length == 0" value="-1">"No presets found!"</option>
+        </select>
       </div>
+    </div>
+    <div class="zoom-controls d-flex flex-column align-items-end" style="pointer-events: none;">
       <div class="button-container d-flex flex-column align-items-end" style="pointer-events: all;">
         <button class="mb-1" @click="zoomIn(true)" title="Zoom in">+</button>
         <button class="mb-1" @click="zoomOut(true)" title="Zoom out">-</button>
@@ -322,11 +331,14 @@ const updateMode = ref<boolean>(false);
           :warnings="getWarningsByArea(data.label)" 
           :data="data.tracker"
           :edit-mode="editMode"
+          :enabledSensors="enabledSensors"
+          :showDisconnected="showDisconnected"
+          :showAll="showAll"
           @update:position="(pos) => updateBox(key, pos)"
         />
       </div>
     </div>
-    <NewPreset :presetData="presetData" :updateMode="updateMode" @new-preset="emit('newPreset')"/>
+    <NewPreset :presetList="presetList" :presetData="presetData" :updateMode="updateMode" @new-preset="emit('newPreset')"/>
     <ImageUpload :currentPresetId="props.currentPreset" @new-image="emit('newImage')"/>
     </div>
   </div>
@@ -339,7 +351,7 @@ const updateMode = ref<boolean>(false);
   position: relative;
   height: 100%;
   overflow: hidden;
-  background-color: #f8f8ff;
+  background-color: var(--primary-light-bg);
 }
 
 .zoom-controls {
@@ -352,8 +364,8 @@ const updateMode = ref<boolean>(false);
 }
 
 .zoom-controls > .button-container button {
-  background-color: #568ea6;
-  color: white;
+  background-color: var(--primary-bg);
+  color: var(--primary-light-text);
   border: none;
   padding: 5px 10px;
   border-radius: 5px;
@@ -362,14 +374,13 @@ const updateMode = ref<boolean>(false);
 }
 
 .zoom-controls button:hover {
-  background-color: #305f72;
+  background-color: var(--primary-bg-hover);
 }
 
 .airport-map-wrapper {
   width: 100%;
   height: 100%;
   cursor: grab;
-  overflow: hidden; /* Ensure the map doesn't go out of bounds */
 }
 
 .airport-map-wrapper:active {
@@ -388,7 +399,6 @@ const updateMode = ref<boolean>(false);
 .map {
   object-fit: contain;
   user-select: none;
-  filter: brightness(50%);
-  border: 2px solid black;
+  border: none;
 }
 </style>
