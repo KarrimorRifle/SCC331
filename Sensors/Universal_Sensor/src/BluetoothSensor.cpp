@@ -358,30 +358,6 @@ void BluetoothSensor::SOSCall(){
       display->println("Sending request");
       display->display(); 
 
-      
-      //loop below until...?
-      int pixelInterval = 50;                   //  Delay time (ms)
-      int pixelQueue = 0;
-      int pixelCycle = 0;
-      for(int i = 0; i < 3; i += 3) {
-        leds.setPixelColor(i + pixelQueue, Wheel((i + pixelCycle) % 255)); //  Update delay time  
-      }
-
-      leds.show();
-      
-      for(int i = 0; i < 3; i += 3) {
-        leds.setPixelColor(i + pixelQueue, leds.Color(0, 0, 0)); //  Update delay time  
-      }
-
-      pixelQueue++;                           //  Advance current queue  
-      pixelCycle++;                           //  Advance current cycle
-      
-      if(pixelQueue >= 3){
-        pixelQueue = 0;                       //  Loop
-      }if(pixelCycle >= 256){
-        pixelCycle = 0;                       //  Loop
-      }
-
       //json file
       StaticJsonDocument<256> json;
       json["PicoID"] = mqtt->getHardwareIdentifier();
@@ -399,6 +375,8 @@ void BluetoothSensor::SOSCall(){
       display->println("Request sent");
       display->println("An assistant is on their way");
       display->display(); 
+
+      rainbowLEDs(50);
     }else if(digitalRead(RED_BUTTON) == HIGH){
       //cancel
         //display message
@@ -409,6 +387,19 @@ void BluetoothSensor::SOSCall(){
       display->display(); 
     }
   }
+}
+
+void rainbowLEDs(uint8_t wait) {
+  if(pixelInterval != wait)
+    pixelInterval = wait;                   
+  for(uint16_t i=0; i < 3; i++) {
+    leds.setPixelColor(i, Wheel((i + pixelCycle) & 255)); //  Update delay time  
+  }
+  leds.show();                             //  Update strip to match
+  delay(50);
+  pixelCycle++;                             //  Advance current cycle
+  if(pixelCycle >= 256)
+    pixelCycle = 0;                         //  Loop the cycle back to the begining
 }
 
 uint32_t Wheel(byte WheelPos) {
