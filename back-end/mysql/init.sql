@@ -13,7 +13,7 @@ USE accounts;
 CREATE TABLE IF NOT EXISTS users (
 	user_id INT AUTO_INCREMENT PRIMARY KEY,
 	full_name VARCHAR(100) NOT NULL,
-	authority ENUM('Reception', 'Admin') NOT NULL DEFAULT 'Reception',
+	authority ENUM('Reception', 'Admin', 'Super Admin') NOT NULL DEFAULT 'Reception',
 	pass_hash CHAR(60) NOT NULL COMMENT 'BCrypt hashed',
 	email VARCHAR(100) NOT NULL UNIQUE,
 	cookie CHAR(64) COMMENT 'Secure session token',

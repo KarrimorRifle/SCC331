@@ -158,6 +158,47 @@ def get_preset_details(preset_id):
         cursor.close()
         conn.close()
 
+@app.route('/home', methods=['GET'])
+def get_front_page():
+    cookie_error = validate_session_cookie(request)
+    if len(cookie_error) == 2:
+        return jsonify(cookie_error[0]), cookie_error[1]
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "DB connection unavailable"}), 500
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT domain, loginText, hero_title, hero_subtitle, image_data FROM config WHERE id=1")
+        config_row = cursor.fetchone()
+        cursor.execute("SELECT * FROM features")
+        features = cursor.fetchall()
+        cursor.execute("SELECT * FROM how_it_works")
+        howItWorks = cursor.fetchall()
+        cursor.execute("""
+            SELECT primaryDarkBg, primaryDarkText, primarySecondaryBg, primarySecondaryText, 
+                   primaryLightBg, primaryLightText, accent, accentHover 
+            FROM theme_colours WHERE id=1
+        """)
+        theme = cursor.fetchone()
+        
+        # Decode image_data if present
+        if config_row and config_row.get("image_data"):
+            config_row["image_data"] = config_row["image_data"].decode('utf-8')
+        
+        front_page = {
+            "config": config_row,
+            "features": features,
+            "howItWorks": howItWorks,
+            "theme": theme
+        }
+        return jsonify(front_page), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 if __name__ == '__main__':
     get_db_connection()  # Ensure the connection is established at startup
     app.run(host='0.0.0.0', port=5010)

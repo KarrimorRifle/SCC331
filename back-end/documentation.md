@@ -746,6 +746,7 @@ This service handles the creation, modification, and deletion of asset presets, 
   - `500`: Server error.
 
 #### Set front page
+Note that all items need to be present, if something is missing, that is what will be returned on the get
 - **PATCH:** `/home`
 - **Cookies:**
   - `session_id`: Valid "Super Admin" session
