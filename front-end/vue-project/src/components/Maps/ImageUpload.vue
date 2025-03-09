@@ -124,6 +124,6 @@ const clearMessages = () => {
 
 <style scoped>
 .modal-content {
-  background-color: #f8f8ff;
+  background-color: var(--primary-light-bg);
 }
 </style>

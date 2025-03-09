@@ -55,7 +55,7 @@ const toggleAllAreas = () => {
 .filter-bar {
   padding: 20px;
   margin: 20px;
-  background: #ffffff;
+  background: var(--primary-light-bg);
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -63,7 +63,7 @@ const toggleAllAreas = () => {
 /* Title */
 .filter-bar h2 {
   font-size: 18px;
-  color: #305F72;
+  color: var(--primary-dark-text);
   margin-bottom: 10px;
 }
 
@@ -83,20 +83,16 @@ const toggleAllAreas = () => {
   transition: background 0.3s ease-in-out;
 }
 
-.checkbox-group:hover {
-  background: #f1f1f1;
-}
-
 /* Checkbox Inputs */
 .checkbox-group input {
   margin-right: 10px;
-  accent-color: #F18C8E; /* Match color theme */
+  accent-color: var(--active); /* Match color theme */
 }
 
 /* Checkbox Labels */
 .checkbox-group label {
   font-size: 14px;
-  color: #444;
+  color: var(--primary-dark-text);
   cursor: pointer;
   font-weight: bold;
 }

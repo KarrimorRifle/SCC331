@@ -7,150 +7,141 @@ import axios from 'axios';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 
 defineProps({
-	loggedIn: Boolean,
+  loggedIn: Boolean,
 });
 
 // Smooth scroll function
 const scrollToSection = (id: string) => {
-	const section = document.getElementById(id);
-	if (section) {
-		section.scrollIntoView({ behavior: 'smooth' });
-	}
+  const section = document.getElementById(id);
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth' });
+  }
 };
-	
-const messages = ref<{ message_id: number; sender_email: string; left_message: string; time_sent: string }[]>([]);
 
 const showModal = ref(false);
-	
-const fetchMessages = async () => {
-	try {
-		const response = await axios.get('http://localhost:5007/get_messages', {
-			headers: {
-				'session-id': document.cookie.split('; ').find(row => row.startsWith('session_id='))?.split('=')[1] || ''
-			},
-			withCredentials: true // Ensures cookies are sent with the request
-		});
+const unreadMessagesCount = ref(0);
 
-		if (response.data.messages && response.data.messages.length > 0) {
-			messages.value = response.data.messages;
-			showModal.value = true; // Open modal only if messages exist
-		} else {
-			showModal.value = false; // Close modal if no messages
-		}
-	} catch (error) {
-		console.error('Error fetching messages:', error.response?.data || error.message);
-		showModal.value = false; // Ensure the modal is closed in case of an error
-	}
+// Function to check unread messages
+const checkUnreadMessages = async () => {
+  try {
+    const response = await axios.get('http://localhost:5007/unread_messages_count', {
+      headers: {
+        'session-id': document.cookie.split('; ').find(row => row.startsWith('session_id='))?.split('=')[1] || '',
+      },
+      withCredentials: true, // Ensures cookies are sent with the request
+    });
+
+    // Set the unread messages count
+    unreadMessagesCount.value = response.data.unread_messages_count || 0;
+
+    // Show modal only if there are unread messages
+    showModal.value = unreadMessagesCount.value > 0;
+  } catch (error) {
+    console.error('Error fetching unread messages count:', error.response?.data || error.message);
+    showModal.value = false; // Ensure modal stays closed on error
+  }
 };
 
-
-// Fetch messages when the component is mounted
+// Fetch unread messages count when the component is mounted
 onMounted(() => {
-	fetchMessages();
+  checkUnreadMessages();
 });
 
 // Function to close the modal
 const closeModal = () => {
-	showModal.value = false;
+  showModal.value = false;
 };
 
 </script>
 
-
 <template>
-	<div>
-		<!-- Hero Section -->
-		<header class="hero">
-			<div class="overlay"></div>
-			<div class="hero-content-container">
-				<div class="hero-content">
-					<h1>
-						<FontAwesomeIcon :icon="faPlaneDeparture" class="icon" /> Newcastle Airport Monitoring
-					</h1>
-					<p>Ensuring seamless airport operations with real-time monitoring of security, occupancy, and environmental conditions.</p>
-					<RouterLink v-if="!loggedIn" to="/login" class="cta-button">
-						<FontAwesomeIcon :icon="faSignInAlt" class="btn-icon" /> Login to Monitor
-					</RouterLink>
-				</div>
+  <div>
+    <!-- Hero Section -->
+    <header class="hero">
+      <div class="overlay"></div>
+      <div class="hero-content-container">
+        <div class="hero-content">
+          <h1>
+            <FontAwesomeIcon :icon="faPlaneDeparture" class="icon" /> Newcastle Airport Monitoring
+          </h1>
+          <p>Ensuring seamless airport operations with real-time monitoring of security, occupancy, and environmental conditions.</p>
+          <RouterLink v-if="!loggedIn" to="/login" class="cta-button">
+            <FontAwesomeIcon :icon="faSignInAlt" class="btn-icon" /> Login to Monitor
+          </RouterLink>
+        </div>
 
-				<div class="hero-image">
-					<img src="@/assets/newcastle-airport-image.webp" alt="airport-image">
-				</div>
-			</div>
+        <div class="hero-image">
+          <img src="@/assets/newcastle-airport-image.webp" alt="airport-image">
+        </div>
+      </div>
 
-			<!-- Scroll Indicator -->
-			<div class="scroll-indicator" @click="scrollToSection('features')">
-				<FontAwesomeIcon :icon="faChevronDown" class="scroll-icon" />
-			</div>
-		</header>
+      <!-- Scroll Indicator -->
+      <div class="scroll-indicator" @click="scrollToSection('features')">
+        <FontAwesomeIcon :icon="faChevronDown" class="scroll-icon" />
+      </div>
+    </header>
 
-		<section id="features" class="features">
-			<h2>Key Features</h2>
-			<div class="feature-cards">
-				<div class="feature-card">
-					<FontAwesomeIcon :icon="faShieldAlt" class="feature-icon" />
-					<h3>Security Alerts</h3>
-					<p>Get notified of any security breaches in real-time.</p>
-				</div>
-				<div class="feature-card">
-					<FontAwesomeIcon :icon="faMapMarkedAlt" class="feature-icon" />
-					<h3>Live Airport Map</h3>
-					<p>Monitor passenger flow and track luggage locations.</p>
-				</div>
-				<div class="feature-card">
-					<FontAwesomeIcon :icon="faBell" class="feature-icon" />
-					<h3>Instant Notifications</h3>
-					<p>Receive alerts for emergency and unusual activities.</p>
-				</div>
-				<div class="feature-card">
-					<FontAwesomeIcon :icon="faClock" class="feature-icon" />
-					<h3>24/7 Monitoring</h3>
-					<p>Track airport conditions anytime, anywhere.</p>
-				</div>
-			</div>
-		</section>
+    <section id="features" class="features">
+      <h2>Key Features</h2>
+      <div class="feature-cards">
+        <div class="feature-card">
+          <FontAwesomeIcon :icon="faShieldAlt" class="feature-icon" />
+          <h3>Security Alerts</h3>
+          <p>Get notified of any security breaches in real-time.</p>
+        </div>
+        <div class="feature-card">
+          <FontAwesomeIcon :icon="faMapMarkedAlt" class="feature-icon" />
+          <h3>Live Airport Map</h3>
+          <p>Monitor passenger flow and track luggage locations.</p>
+        </div>
+        <div class="feature-card">
+          <FontAwesomeIcon :icon="faBell" class="feature-icon" />
+          <h3>Instant Notifications</h3>
+          <p>Receive alerts for emergency and unusual activities.</p>
+        </div>
+        <div class="feature-card">
+          <FontAwesomeIcon :icon="faClock" class="feature-icon" />
+          <h3>24/7 Monitoring</h3>
+          <p>Track airport conditions anytime, anywhere.</p>
+        </div>
+      </div>
+    </section>
 
-		<section class="how-it-works">
-			<h2>How It Works</h2>
-			<div class="steps">
-				<div class="step">
-					<span class="step-number">1</span>
-					<h3>Login</h3>
-					<p>Access the system securely.</p>
-				</div>
-				<div class="step">
-					<span class="step-number">2</span>
-					<h3>Monitor</h3>
-					<p>Track security, environmental data, and passenger flow in real-time.</p>
-				</div>
-				<div class="step">
-					<span class="step-number">3</span>
-					<h3>Receive Alerts</h3>
-					<p>Get instant updates on critical situations.</p>
-				</div>
-			</div>
-		</section>
-		
-				<!-- Message Modal -->
-				<div v-if="showModal" class="modal-overlay">
-			<div class="modal-content">
-				<button class="close-btn" @click="closeModal">
-					<FontAwesomeIcon :icon="faTimes" />
-				</button>
-				<h2>New Messages</h2>
-				<ul>
-					<li v-for="message in messages" :key="message.message_id">
-						<strong>{{ message.sender_email }}</strong>: {{ message.left_message }} 
-						<br />
-						<small>{{ new Date(message.time_sent).toLocaleString() }}</small>
-					</li>
-				</ul>
-			</div>
-		</div>
-		
+    <section class="how-it-works">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <span class="step-number">1</span>
+          <h3>Login</h3>
+          <p>Access the system securely.</p>
+        </div>
+        <div class="step">
+          <span class="step-number">2</span>
+          <h3>Monitor</h3>
+          <p>Track security, environmental data, and passenger flow in real-time.</p>
+        </div>
+        <div class="step">
+          <span class="step-number">3</span>
+          <h3>Receive Alerts</h3>
+          <p>Get instant updates on critical situations.</p>
+        </div>
+      </div>
+    </section>
+    
+	<!-- Message Modal -->
+	<div v-if="showModal" class="modal-overlay">
+	<div class="modal-content">
+		<button class="close-btn" @click="closeModal">
+		<FontAwesomeIcon :icon="faTimes" />
+		</button>
+		<h2>You have {{ unreadMessagesCount }} unread message{{ unreadMessagesCount > 1 ? 's' : '' }}</h2>
+		<p><RouterLink to="/messages" class="cta-button">Go to Messages</RouterLink></p>
 	</div>
-</template>
+	</div>
 
+
+  </div>
+</template>
 <style scoped>
 .home-page-container {
   height: 100vh;

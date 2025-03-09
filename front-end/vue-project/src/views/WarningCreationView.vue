@@ -243,7 +243,7 @@ onMounted(fetchWarnings);
 <style scoped>
 .app-container {
   display: flex;
-  background: #f8f8ff;
+  background: var(--primary-light-bg);
 }
 
 .sidebar h3 {
@@ -254,8 +254,8 @@ onMounted(fetchWarnings);
 .sidebar {
   width: 200px;
   padding: 20px;
-  background-color: #305F72;
-  color: white;
+  background-color: var(--primary-dark-bg);
+  color: var(--primary-light-text);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -264,7 +264,7 @@ onMounted(fetchWarnings);
 .sidebar button {
   background: none;
   border: none;
-  color: white;
+  color: var(--primary-light-text);
   font-size: 16px;
   cursor: pointer;
   padding: 10px;
@@ -275,7 +275,7 @@ onMounted(fetchWarnings);
 
 .sidebar button:hover,
 .sidebar button.active {
-  background: #568EA6;
+  background: var(--primary-dark-bg-hover);
 }
 
 .warning-creation-content {
@@ -290,8 +290,8 @@ onMounted(fetchWarnings);
 .section {
   padding: 20px;
   border-radius: 8px;
-  background: white;
-  color: black;
+  background: var(--primary-light-bg);
+  color: var(--primary-dark-text);
   transition: opacity 0.3s;
   border: 2px solid #568EA6;
 }
@@ -311,7 +311,7 @@ onMounted(fetchWarnings);
   font-size: 18px;    
   transition: transform 0.2s ease-in-out, color 0.2s ease-in-out;
   cursor: pointer;   
-  color: #568EA6;   
+  color: var(--primary-bg);   
 }
 .is-collapsed .toggle-icon {
   transform: rotate(90deg);
@@ -324,7 +324,7 @@ onMounted(fetchWarnings);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #305F72;
+  color: var(--primary-dark-text);
   padding: 5px;
   margin: 10px 0;
   border-radius: 8px;
@@ -334,12 +334,12 @@ onMounted(fetchWarnings);
 }
 
 .warning-item:hover {
-  background: lightgray;
+  background: var(--not-active-bg);
   transform: scale(1.01);
 }
 
 .warning-item.selected {
-  background: #F18C8E;
+  background: var(--active-bg);
   transform: scale(1.01);
 }
 
@@ -357,13 +357,13 @@ onMounted(fetchWarnings);
   background: none;
   border: none;
   cursor: pointer;
-  color: #FF6B6B;
+  color: var(--warning-text);
   font-size: 18px;
   transition: color 0.3s ease-in-out;
 }
 
 .delete-button:hover {
-  color: #D94A4A !important;
+  color: var(--warning-text-hover) !important;
   z-index: 999;
 }
 
@@ -372,7 +372,7 @@ onMounted(fetchWarnings);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: white;
+  background: var(--primary-light-bg);
   padding: 12px 16px;
   border-radius: 8px;
   border: 1px solid #568EA6;
@@ -391,7 +391,7 @@ onMounted(fetchWarnings);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: white;
+  background: var(--primary-light-bg);
   padding: 12px 16px;
   border-radius: 8px;
   border: 1px solid #568EA6;
@@ -405,14 +405,9 @@ onMounted(fetchWarnings);
   outline: none;
   transition: border 0.2s ease-in-out;
 }
-
-.add-warning-container input:focus {
-  border-color: #568EA6;
-}
-
 .add-warning-container button {
-  background: #568EA6;
-  color: white;
+  background: var(--primary-bg);
+  color: var(--primary-light-text);
   border: none;
   padding: 10px;
   font-weight: bold;
@@ -422,7 +417,7 @@ onMounted(fetchWarnings);
 }
 
 .add-warning-container button:hover {
-  background: #305F72;
+  background: var(--primary-bg-hover);
 }
 
 @media (max-width: 768px) {

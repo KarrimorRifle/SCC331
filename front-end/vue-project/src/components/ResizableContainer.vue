@@ -23,7 +23,7 @@ import 'vue3-resizable/dist/index.css';
 <style scoped>
 .resizable-container {
   border: 1px solid #ccc;
-  background-color: #f9f9f9;
+  background-color: var(--primary-light-bg);
   display: flex;
   justify-content: center;
   align-items: center;

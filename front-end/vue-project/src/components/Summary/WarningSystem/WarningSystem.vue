@@ -104,9 +104,9 @@ const updateFilter = (severity: string) => {
 <style scoped>
 .warnings-container {
   padding: 20px;
-  background-color: #f8f8ff;
+  background-color: var(--primary-light-bg);
   border-top: 1px solid #ccc;
-  color: black;
+  color: var(--primary-dark-text);
 }
 
 /* Header & Filter Bar Flexbox */
@@ -138,14 +138,14 @@ const updateFilter = (severity: string) => {
 .area-group {
   padding: 15px;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--primary-light-bg);
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
   border: 2px solid #568EA6;
 }
 
 /* Area Title */
 .area-title {
-  color: white;
+  color: var(--primary-light-text);
   margin-bottom: 10px;
   padding: 10px;
   border-radius: 5px;
@@ -162,16 +162,16 @@ const updateFilter = (severity: string) => {
 /* Individual Warning Cards */
 .warning-card {
   padding: 15px;
-  background: white;
+  background: var(--primary-light-bg);
   border-radius: 5px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  color: white; /* Text contrast for colored backgrounds */
+  color: var(--primary-light-text); /* Text contrast for colored backgrounds */
 }
 
 /* Warning Title */
 .warning-card h3 {
   margin: 0;
-  color: white;
+  color: var(--primary-light-text);
   font-size: 18px;
   font-weight: bold;
   border-radius: 5px 5px 0 0;
@@ -182,8 +182,8 @@ const updateFilter = (severity: string) => {
   padding: 10px;
   text-align: center;
   font-size: 14px;
-  color: #666;
-  background: #e8e8e8;
+  color: var(--negative-text);
+  background: var(--not-active-bg);
   border-radius: 5px;
 }
 

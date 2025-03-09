@@ -84,6 +84,7 @@ watch(() => authStore.userAuthority, (newVal) => {
       <RouterLink to="/" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
       <RouterLink to="/map" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
       <RouterLink to="/summaries" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
+      <RouterLink to="/messages" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Messages</RouterLink>
 
 			<!-- Admins -->
 			<template v-if="authStore.userAuthority === 'Admin'">
@@ -106,6 +107,7 @@ watch(() => authStore.userAuthority, (newVal) => {
       <RouterLink to="/" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Home</RouterLink>
       <RouterLink to="/map" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Map</RouterLink>
       <RouterLink to="/summaries" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Summary</RouterLink>
+      <RouterLink to="/messages" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Messages</RouterLink>
 
 			<!-- Admin links -->
 			<template v-if="authStore.userAuthority === 'Admin'">
@@ -131,10 +133,9 @@ watch(() => authStore.userAuthority, (newVal) => {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	background-color: #305f72;
+	background-color: var(--primary-dark-bg);
 	padding: 10px 20px;
-	color: white;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	color: var(--primary-light-text);
 	width: 100%;
 	position: relative;
 }
@@ -146,18 +147,14 @@ watch(() => authStore.userAuthority, (newVal) => {
 
 .nav-link {
 	margin: 0 15px;
-	color: #FFFFFF;
+	color: var(--primary-light-text);
 	text-decoration: none;
 	font-size: 16px;
 	font-weight: bold;
 }
 
-.nav-link:hover {
-	color: #f1d1b5;
-}
-
 .active {
-	color: rgb(196, 196, 196);
+	color: var(--active);
 }
 
 /* Hamburger Button (Visible on Mobile) */
@@ -166,7 +163,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 	font-size: 24px;
 	background: none;
 	border: none;
-	color: white;
+	color: var(--primary-light-text);
 	cursor: pointer;
 }
 
@@ -177,7 +174,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 	left: -250px; /* Initially hidden */
 	width: 250px;
 	height: 100vh;
-	background: #305f72;
+	background: var(--primary-dark-bg);
 	box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
 	display: flex;
 	flex-direction: column;
@@ -193,20 +190,16 @@ watch(() => authStore.userAuthority, (newVal) => {
 /* Mobile Menu Links */
 .mobile-link {
 	padding: 15px;
-	color: white;
+	color: var(--primary-light-text);
 	text-decoration: none;
 	font-size: 18px;
-}
-
-.mobile-link:hover {
-	background: #568ea6;
 }
 
 /* Close Button */
 .close-btn {
 	background: none;
 	border: none;
-	color: white;
+	color: var(--primary-light-text);
 	font-size: 22px;
 	text-align: right;
 	cursor: pointer;
@@ -245,7 +238,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 	font-size: 24px;
 	background: none;
 	border: none;
-	color: white;
+	color: var(--primary-light-text);
 	cursor: pointer;
 }
 
@@ -256,7 +249,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 	left: -250px; /* Initially hidden */
 	width: 250px;
 	height: 100vh;
-	background: #305f72;
+	background: var(--primary-dark-bg);
 	box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
 	display: flex;
 	flex-direction: column;
@@ -272,20 +265,16 @@ watch(() => authStore.userAuthority, (newVal) => {
 /* Mobile Menu Links */
 .mobile-link {
 	padding: 15px;
-	color: white;
+	color: var(--primary-light-text);
 	text-decoration: none;
 	font-size: 18px;
-}
-
-.mobile-link:hover {
-	background: #568ea6;
 }
 
 /* Close Button */
 .close-btn {
 	background: none;
 	border: none;
-	color: white;
+	color: var(--primary-light-text);
 	font-size: 22px;
 	text-align: right;
 	cursor: pointer;
