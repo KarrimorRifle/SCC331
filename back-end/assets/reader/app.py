@@ -193,8 +193,16 @@ def get_front_page():
         cursor.execute("SELECT * FROM how_it_works")
         howItWorks = cursor.fetchall()
         cursor.execute("""
-            SELECT primaryDarkBg, primaryDarkText, primarySecondaryBg, primarySecondaryText, 
-                   primaryLightBg, primaryLightText, accent, accentHover 
+            SELECT 
+              primary_bg, primary_text, primary_bg_hover,
+              primary_dark_bg, primary_dark_text, primary_dark_bg_hover, primary_dark_text_hover,
+              primary_light_bg, primary_light_text, primary_light_bg_hover, primary_light_text_hover,
+              warning_text, warning_bg, warning_text_hover, warning_bg_hover,
+              notification_text, notification_bg, notification_text_hover, notification_bg_hover,
+              active, active_text, active_bg,
+              not_active, not_active_text, not_active_bg,
+              negative, negative_text, negative_bg,
+              positive
             FROM theme_colours WHERE id=1
         """)
         theme = cursor.fetchone()
