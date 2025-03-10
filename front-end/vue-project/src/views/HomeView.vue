@@ -8,17 +8,17 @@
           <h1>
             <!-- Use computed heroIcon to select the correct icon based on domain -->
             <FontAwesomeIcon :icon="heroIcon" class="icon" />
-            {{ config.heroTitle }}
+            {{ configTexts.heroTitle }}
           </h1>
-          <p>{{ config.heroSubtitle }}</p>
+          <p>{{ configTexts.heroSubtitle }}</p>
           <RouterLink v-if="!loggedIn" to="/login" class="cta-button">
             <FontAwesomeIcon :icon="faSignInAlt" class="btn-icon" />
-            {{ config.loginText }}
+            {{ configTexts.loginText }}
           </RouterLink>
         </div>
         <div class="hero-image">
           <!-- The image source is set dynamically via the URL provided by the backend -->
-          <img :src="config.heroImage" alt="hero image" />
+          <img :src="configTexts.heroImage" alt="hero image" />
         </div>
       </div>
       <!-- Scroll Indicator -->
@@ -31,7 +31,7 @@
     <section id="features" class="features">
       <h2>Key Features</h2>
       <div class="feature-cards">
-        <div class="feature-card" v-for="(feature, index) in config.features" :key="index">
+        <div class="feature-card" v-for="(feature, index) in features" :key="index">
           <FontAwesomeIcon :icon="feature.icon" class="feature-icon" />
           <h3>{{ feature.title }}</h3>
           <p>{{ feature.description }}</p>
@@ -43,7 +43,7 @@
     <section class="how-it-works">
       <h2>How It Works</h2>
       <div class="steps">
-        <div class="step" v-for="(step, index) in config.howItWorks" :key="index">
+        <div class="step" v-for="(step, index) in howItWorks" :key="index">
           <span class="step-number">{{ step.step }}</span>
           <h3>{{ step.title }}</h3>
           <p>{{ step.description }}</p>
@@ -84,6 +84,10 @@ import {
   getHeroIcon,
   defaultDomainConfig
 } from '../constants/HomeConfig';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { fas } from '@fortawesome/free-solid-svg-icons';
+library.add(fas);
+
 
 // In this component, use the global domainConfig defined in HomeConfig.ts.
 // If a prop is not provided, we use the backend-configured one.
@@ -98,25 +102,48 @@ const props = defineProps({
 });
 
 // Use the configuration from the backend if available.
-const config = computed(() => {
+const homeConfig = computed(() => {
   // If the backend has updated our global domainConfig, use it;
   // otherwise, fall back to the prop.
   return domainConfig.value || props.domainConfig;
 });
 
-console.log(config.value)
 const themeStyles = computed(() => ({
-  '--home-primary-dark-bg': config.value.theme.primaryDarkBg,
-  '--home-primary-dark-text': config.value.theme.primaryDarkText,
-  
-  '--home-secondary-bg': config.value.theme.primarySecondaryBg,
-  '--home-secondary-text': config.value.theme.primarySecondaryText,
-
-  '--home-primary-light-bg': config.value.theme.primaryLightBg,
-  '--home-primary-light-text': config.value.theme.primaryLightText,
-  '--home-accent': config.value.theme.accent,
-  '--home-accent-hover': config.value.theme.accentHover,
+  '--home-primary-dark-bg': homeConfig.value.theme.primaryDarkBg,
+  '--home-primary-dark-text': homeConfig.value.theme.primaryDarkText,
+  '--home-secondary-bg': homeConfig.value.theme.primarySecondaryBg,
+  '--home-secondary-text': homeConfig.value.theme.primarySecondaryText,
+  '--home-primary-light-bg': homeConfig.value.theme.primaryLightBg,
+  '--home-primary-light-text': homeConfig.value.theme.primaryLightText,
+  '--home-accent': homeConfig.value.theme.accent,
+  '--home-accent-hover': homeConfig.value.theme.accentHover,
 }));
+
+const configTexts = computed(() => {
+  const imageName = homeConfig.value.config.hero.image.name;
+  let base64Data = homeConfig.value.config.hero.image.data;
+
+  if (base64Data) {
+    base64Data = base64Data.replace(/\s/g, ''); // Remove extra spaces/newlines
+  }
+
+  return {
+    heroTitle: homeConfig.value.config.hero.title,
+    heroSubtitle: homeConfig.value.config.hero.subtitle,
+    loginText: homeConfig.value.config.loginText,
+    heroImage: base64Data && imageName.includes('.') 
+      ? `data:image/${imageName.split('.').pop()};base64,${base64Data}` 
+      : '/newcastle-airport-image.webp', // Fallback image
+  };
+});
+
+console.log(configTexts.value.heroImage)
+
+const features = computed(() => homeConfig.value.features);
+const howItWorks = computed(() => homeConfig.value.howItWorks);
+
+// Computed property to choose the hero icon based on the domain.
+const heroIcon = computed(() => getHeroIcon(homeConfig.value.config.domain));
 
 
 // Smooth scroll function
@@ -137,9 +164,6 @@ onMounted(() => {
 const closeModal = () => {
   showModal.value = false;
 };
-
-// Computed property to choose the hero icon based on the domain.
-const heroIcon = computed(() => getHeroIcon(config.value.domain));
 </script>
 
 <style scoped>
