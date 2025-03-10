@@ -134,11 +134,11 @@
               <!-- New statistical counter -->
               <div class="stats mb-2">
                 <div class="d-inline-block rounded me-2 p-1">Total: {{ Object.keys(movementData[selectedTime]?.[roomID] || {}).length }}</div>
-                <div class="d-inline-block rounded me-2 p-1" v-for="(box, roomID) in boxes" :key="roomID" :style="{'background-color': box.colour}">{{box.label}}: {{ Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce((total, obj) => {
+                <button class="d-inline-block rounded me-2 p-1 border-0" @click="scrollToRoom(roomID)" v-for="(box, roomID) in boxes" :key="roomID" :style="{'background-color': box.colour}">{{box.label}}: {{ Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce((total, obj) => {
                   if(previousLocation[selectedTime][obj[0]] == roomID)
                     return total? total + 1 : 1;
                   return total? total : 0;
-                }, 0) }}</div>
+                }, 0) }}</button>
                 <div class="d-inline-block rounded me-2 p-1">New: {{ Object.values(previousLocation[selectedTime]).filter(location => location === 'NEW').length }}</div>
               </div>
               <table class="table rounded-top-1" v-show="showTable[roomID] ?? true">
