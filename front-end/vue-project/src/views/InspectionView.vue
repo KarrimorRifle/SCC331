@@ -1,20 +1,19 @@
 <template>
   <div class="inspection bg-light text-dark mt-0 p-0" style="flex-grow: 1;">
     <div :class="['row', 'bg-theme', 'p-3', 'pt-0', 'rounded', 'sticky-top', { 'd-none': hideHeader }]" style="z-index: 1;">
-      <div class="row g-3 align-items-end col-lg-7 mt-0 col-12">
-        <div class="col-5">
-          <label for="start-time" class="form-label">Start Time:</label>
-          <input id="start-time" type="datetime-local" v-model="startTime" class="form-control">
-        </div>
-        <div class="col-5">
-          <label for="end-time" class="form-label">End Time:</label>
-          <input id="end-time" type="datetime-local" v-model="endTime" class="form-control">
-        </div>
-        <div class="col-2">
-          <button @click="fetchMovementData" class="btn btn-primary w-100">Fetch</button>
+      <div class="g-3 align-items-end col-lg-5 mt-0 col-12">
+        <div class="row mb-2">
+          <label for="start-time" class="col-form-label col-1">Start:</label>
+          <div class="col-5">
+            <input id="start-time" type="date" v-model="startTime" class="form-control">
+          </div>
+          <label for="end-time" class="col-form-label col-1">End:</label>
+          <div class="col-5">
+            <input id="end-time" type="date" v-model="endTime" class="form-control">
+          </div>
         </div>
       </div>
-      <div class="row g-3 col-lg-5 col-12">
+      <div class="row g-3 col-lg-7 col-12">
         <div class="range-selector">
           <label for="time-range" class="form-label">Select Time:</label>
           <input id="time-range" type="range" :min="0" :max="timeKeys.length - 1" v-model="selectedTimeIndex" class="form-range mb-3">
@@ -42,19 +41,23 @@
               {{ box.label || generateTempLabel() }}
             </div>
             <div class="card-body">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>picoID</th>
-                    <th>Type</th>
-                    <th>Came From</th>
+              <table class="table rounded-top-1">
+                <thead class="rounded-top-1">
+                  <tr class="rounded-top-1">
+                    <th class="rounded-top-1 rounded-end-0" style="font-weight: 600; background-color: rgb(200, 200, 200);">picoID</th>
+                    <th style="font-weight: 600; background-color: rgb(200, 200, 200);">Type</th>
+                    <th class="rounded-top-1 rounded-start-0" style="font-weight: 600; background-color: rgb(200, 200, 200);">Came From</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="(type, picoID) in movementData[selectedTime][roomID]" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
                     <td @click="userID = picoID + ''; showModal = true" style="color: blue; text-decoration: underline; cursor: pointer;">{{ picoID }}</td>
-                    <td>{{ type }}</td>
-                    <td :style="{backgroundColor: boxes[previousLocation[selectedTime][picoID]]?.colour}">{{ boxes[previousLocation[selectedTime][picoID]]?.label || previousLocation[selectedTime][picoID] }}</td>
+                    <td>
+                      <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/> {{ type }}
+                    </td>
+                    <td :style="{backgroundColor: boxes[previousLocation[selectedTime][picoID]]?.colour}">
+                      {{ boxes[previousLocation[selectedTime][picoID]]?.label || previousLocation[selectedTime][picoID] }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -104,6 +107,8 @@ import axios from 'axios';
 import type { Record } from 'vue';
 import type { presetListType, preset, boxType } from '@/utils/mapTypes';
 import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModal.vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion } from '@fortawesome/free-solid-svg-icons';
 
 const showModal = ref(false);
 const isLoading = ref(false);
@@ -124,9 +129,9 @@ const handleScroll = (event: Event) => {
   lastScrollTop = scrollTop;
 };
 
-// Default start time to 3 hours before now and end time to now
-const startTime = ref(new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 16));
-const endTime = ref(new Date().toISOString().slice(0, 16));
+// Default start time to the start of the day and end time to the end of the day
+const startTime = ref(new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0,10));
+const endTime = ref(new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0,10));
 
 const fetchMovementData = async () => {
   try {
@@ -280,6 +285,38 @@ const fetchUserMovementData = async () => {
 };
 
 watch([selectedTime, userID], fetchUserMovementData);
+
+// Add helper function to return icon mapping based on type using imported icons
+const getIcon = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'guard':
+      return faShieldAlt;
+    case 'luggage':
+      return faSuitcase;
+    case 'user':
+      return faUser;
+    case 'staff':
+      return faClipboardCheck;
+    default:
+      return faQuestion;
+  }
+};
+
+// New helper to return color per role
+const getRoleColor = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'guard':
+      return 'blue';
+    case 'luggage':
+      return 'grey';
+    case 'user':
+      return 'darkblue';
+    case 'staff':
+      return 'green';
+    default:
+      return 'black';
+  }
+};
 </script>
 
 <style scoped>
