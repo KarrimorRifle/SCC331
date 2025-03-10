@@ -54,4 +54,8 @@ class BluetoothSensor : public SensorType {
         void warningOver();
 
         void ledSetup();
+
+        void SOSCall();
+        void rainbowLEDs(uint8_t wait);
+        uint32_t Wheel(byte WheelPos);
 };
