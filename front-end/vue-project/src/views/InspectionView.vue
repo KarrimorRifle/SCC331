@@ -1,32 +1,37 @@
 <template>
   <div class="inspection bg-light text-dark mt-0 p-0" style="flex-grow: 1;">
-    <div :class="['row', 'bg-theme', 'p-3', 'py-1', 'rounded', 'sticky-top', { 'd-none': hideHeader }]" style="z-index: 1;">
-      <div class="g-3 d-flex align-middle align-items-center col-xxl-6 mt-0 col-12 flex-wrap">
-        <label for="start-time" class="form-label mb-0 d-inline me-2">Start:</label>
-        <input id="start-time" type="date" v-model="startTime" class="form-control d-inline align-middle me-4" style="max-width: 10rem">
-        <label for="end-time" class="form-label mb-0 d-inline me-2">End:</label>
-        <input id="end-time" type="date" v-model="endTime" class="form-control d-inline align-middle me-4" style="max-width: 10rem">
-        <div class="d-flex flex-row align-middle mt-2 mt-md-0">
-          <label for="day-select" class="form-label mb-0 d-flex align-items-center me-2">Day:</label>
-          <select id="day-select" v-model="selectedDay" class="form-select me-1">
-            <option v-for="day in uniqueDays" :key="day" :value="day">{{ day }}</option>
-          </select>
-          <div class="d-flex align-items-center justify-content-center" style="min-width: 4rem;">
-            <button @click="prevDay" class="btn-sm btn btn-secondary me-1">
-              <font-awesome-icon :icon="faChevronLeft" />
-            </button>
-            <button @click="nextDay" class="btn btn-sm btn-secondary">
-              <font-awesome-icon :icon="faChevronRight" />
-            </button>
+    <div id="date-time-selector" :class="['row', 'bg-theme', 'p-3', 'py-1', 'rounded', 'sticky-top']" style="z-index: 1;">
+      <div class="d-md-none w-100 text-center btn btn-sm" @click="toggleDateTimeSelector" style="cursor: pointer;">
+        <font-awesome-icon :icon="showDateTimeSelector ? faChevronUp : faChevronDown" />
+      </div>
+      <div v-show="isDateTimeVisible" class="w-100">
+        <div class="g-3 d-flex align-middle align-items-center col-xxl-6 mt-0 col-12 flex-wrap">
+          <label for="start-time" class="form-label mb-0 d-inline me-2">Start:</label>
+          <input id="start-time" type="date" v-model="startTime" class="form-control d-inline align-middle me-4" style="max-width: 10rem">
+          <label for="end-time" class="form-label mb-0 d-inline me-2">End:</label>
+          <input id="end-time" type="date" v-model="endTime" class="form-control d-inline align-middle me-4" style="max-width: 10rem">
+          <div class="d-flex flex-row align-middle mt-2 mt-md-0">
+            <label for="day-select" class="form-label mb-0 d-flex align-items-center me-2">Day:</label>
+            <select id="day-select" v-model="selectedDay" class="form-select me-1">
+              <option v-for="day in uniqueDays" :key="day" :value="day">{{ day }}</option>
+            </select>
+            <div class="d-flex align-items-center justify-content-center" style="min-width: 4rem;">
+              <button @click="prevDay" class="btn-sm btn btn-secondary me-1">
+                <font-awesome-icon :icon="faChevronLeft" />
+              </button>
+              <button @click="nextDay" class="btn btn-sm btn-secondary">
+                <font-awesome-icon :icon="faChevronRight" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="row col-xxl-6 col-12 mt-2 mt-xxl-0">
-        <div class="range-selector">
-          <label for="time-range" class="form-label align-middle mb-0">Time:</label>
-          <input id="time-range" type="range" :min="0" :max="dayTimeKeys.length - 1" v-model="selectedDayTimeIndex" class="form-range">
-          <span style="min-width: 7rem" v-if="dayTimeKeys.length" class="align-middle">{{ formatTime(dayTimeKeys[0]) }} - {{ formatTime(dayTimeKeys[dayTimeKeys.length - 1]) }}</span>
-          <span v-else>No time data available</span>
+        <div class="row col-xxl-6 col-12 mt-2 mt-xxl-0">
+          <div class="range-selector">
+            <label for="time-range" class="form-label align-middle mb-0">Time:</label>
+            <input id="time-range" type="range" :min="0" :max="dayTimeKeys.length - 1" v-model="selectedDayTimeIndex" class="form-range">
+            <span style="min-width: 7rem" v-if="dayTimeKeys.length" class="align-middle">{{ formatTime(dayTimeKeys[0]) }} - {{ formatTime(dayTimeKeys[dayTimeKeys.length - 1]) }}</span>
+            <span v-else>No time data available</span>
+          </div>
         </div>
       </div>
     </div>
@@ -40,10 +45,10 @@
       <p>No data selected</p>
     </div>
 
-    <div v-else class="movement-data p-3" style="flex-grow: 1; overflow: auto;" @scroll="handleScroll">
+    <div v-else class="movement-data p-3 pb-4 pb-md-0" style="flex-grow: 1; overflow: auto; padding-bottom: 60px;" @scroll="handleScroll">
       <h4 class="current-time">{{ formatTime(selectedTime) }}</h4>
       <div class="row">
-        <div v-for="(box, roomID) in boxes" :key="roomID" class="col-md-4 mb-4">
+        <div v-for="(box, roomID) in boxes" :key="roomID" :id="'room-' + roomID" class="col-md-4 mb-4">
           <div class="card">
             <div class="card-header text-dark" :style="{backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor()}" :title="box.label.startsWith('%') ? 'Temporary value as no label available' : ''">
               {{ box.label || generateTempLabel() }}
@@ -97,7 +102,7 @@
         </div>
       </div>
       <div class="row">
-        <div class="col-md-12 mb-4">
+        <div id="deactivated-devices" class="col-md-12 mb-4">
           <div class="card">
             <div class="card-header">
               Deactivated Devices
@@ -126,9 +131,29 @@
         </div>
       </div>
     </div>
-  </div>
-  <!-- Modal -->
 
+    <!-- Quick Selects for small screens -->
+    <div class="quick-selects d-md-none fixed-bottom bg-light p-2 border-top" style="overflow-x: auto;">
+      <div class="container-fluid">
+        <div class="d-flex flex-nowrap justify-content-start">
+          <button v-for="(box, roomID) in boxes"
+                  :key="roomID"
+                  @click="scrollToRoom(roomID)"
+                  class="btn btn-sm text-dark me-2"
+                  :style="{ backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor(), color: 'white' }">
+            {{ box.label }}
+          </button>
+          <button @click="scrollToDeactivated"
+                  class="btn btn-sm text-dark me-2"
+                  style="background-color: #568EA6; border-color: #568EA6; color: white;">
+            Deactivated
+          </button>
+        </div>
+      </div>
+    </div>
+
+  <!-- Modal -->
+  </div>
   <user-movement-modal class="text-dark" :show-modal="showModal" :selected-user-id="Number.parseInt(userID)" :overlay-areas-constant="boxData" :user-room-history="userMovementHistory" @close="showModal = false"/>
 </template>
 
@@ -139,7 +164,16 @@ import type { Record } from 'vue';
 import type { presetListType, preset, boxType } from '@/utils/mapTypes';
 import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModal.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion, faChevronLeft, faChevronRight, faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+
+// New reactive state for date-time selector
+const showDateTimeSelector = ref(true);
+const isMobile = ref(window.innerWidth < 768);
+window.addEventListener('resize', () => {
+  isMobile.value = window.innerWidth < 768;
+});
+const isDateTimeVisible = computed(() => isMobile.value ? showDateTimeSelector.value : true);
+const toggleDateTimeSelector = () => { showDateTimeSelector.value = !showDateTimeSelector.value; };
 
 const showModal = ref(false);
 const isLoading = ref(false);
@@ -403,6 +437,24 @@ const nextDay = () => {
   const idx = days.indexOf(selectedDay.value);
   if (idx < days.length - 1) {
     selectedDay.value = days[idx + 1];
+  }
+};
+
+// New method for quick room selection scrolling
+const scrollToRoom = (roomID: string) => {
+  showDateTimeSelector.value = false;
+  const element = document.getElementById('room-' + roomID);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+
+// New method for quick jump to deactivated devices
+const scrollToDeactivated = () => {
+  showDateTimeSelector.value = false;
+  const element = document.getElementById('deactivated-devices');
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 };
 </script>
