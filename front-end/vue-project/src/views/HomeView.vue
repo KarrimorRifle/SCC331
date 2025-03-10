@@ -109,15 +109,46 @@ const homeConfig = computed(() => {
 });
 
 const themeStyles = computed(() => ({
-  '--home-primary-dark-bg': homeConfig.value.theme.primaryDarkBg,
-  '--home-primary-dark-text': homeConfig.value.theme.primaryDarkText,
-  '--home-secondary-bg': homeConfig.value.theme.primarySecondaryBg,
-  '--home-secondary-text': homeConfig.value.theme.primarySecondaryText,
-  '--home-primary-light-bg': homeConfig.value.theme.primaryLightBg,
-  '--home-primary-light-text': homeConfig.value.theme.primaryLightText,
-  '--home-accent': homeConfig.value.theme.accent,
-  '--home-accent-hover': homeConfig.value.theme.accentHover,
+  '--home-active': homeConfig.value.theme.active,
+  '--home-active-bg': homeConfig.value.theme.active_bg,
+  '--home-active-text': homeConfig.value.theme.active_text,
+
+  '--home-negative': homeConfig.value.theme.negative,
+  '--home-negative-bg': homeConfig.value.theme.negative_bg,
+  '--home-negative-text': homeConfig.value.theme.negative_text,
+
+  '--home-not-active': homeConfig.value.theme.not_active,
+  '--home-not-active-bg': homeConfig.value.theme.not_active_bg,
+  '--home-not-active-text': homeConfig.value.theme.not_active_text,
+
+  '--home-notification-bg': homeConfig.value.theme.notification_bg,
+  '--home-notification-bg-hover': homeConfig.value.theme.notification_bg_hover,
+  '--home-notification-text': homeConfig.value.theme.notification_text,
+  '--home-notification-text-hover': homeConfig.value.theme.notification_text_hover,
+
+  '--home-positive': homeConfig.value.theme.positive,
+
+  '--home-primary-bg': homeConfig.value.theme.primary_bg,
+  '--home-primary-bg-hover': homeConfig.value.theme.primary_bg_hover,
+
+  '--home-primary-dark-bg': homeConfig.value.theme.primary_dark_bg,
+  '--home-primary-dark-bg-hover': homeConfig.value.theme.primary_dark_bg_hover,
+  '--home-primary-dark-text': homeConfig.value.theme.primary_dark_text,
+  '--home-primary-dark-text-hover': homeConfig.value.theme.primary_dark_text_hover,
+
+  '--home-primary-light-bg': homeConfig.value.theme.primary_light_bg,
+  '--home-primary-light-bg-hover': homeConfig.value.theme.primary_light_bg_hover,
+  '--home-primary-light-text': homeConfig.value.theme.primary_light_text,
+  '--home-primary-light-text-hover': homeConfig.value.theme.primary_light_text_hover,
+
+  '--home-primary-text': homeConfig.value.theme.primary_text,
+
+  '--home-warning-bg': homeConfig.value.theme.warning_bg,
+  '--home-warning-bg-hover': homeConfig.value.theme.warning_bg_hover,
+  '--home-warning-text': homeConfig.value.theme.warning_text,
+  '--home-warning-text-hover': homeConfig.value.theme.warning_text_hover,
 }));
+
 
 const configTexts = computed(() => {
   const imageName = homeConfig.value.config.hero.image.name;
@@ -186,7 +217,7 @@ const closeModal = () => {
   align-items: center;
   justify-content: center;
   position: relative;
-  color: white;
+  color: var(--home-primary-light-text);
   background: var(--home-primary-dark-bg);
   padding: 2rem;
 }
@@ -225,7 +256,7 @@ const closeModal = () => {
   font-size: 3rem;
   font-weight: bold;
   margin-bottom: 1rem;
-  color: var(--home-accent);
+  color: var(--home-primary-light-text);
 }
 
 .hero p {
@@ -248,7 +279,7 @@ section {
   padding: 1rem 2.5rem;
   font-size: 1.4rem;
   color: var(--home-primary-light-text);
-  background-color: var(--home-accent);
+  background-color: var(--home-active);
   border-radius: 10px;
   text-decoration: none;
   transition: all 0.3s ease-in-out;
@@ -257,7 +288,7 @@ section {
 }
 
 .cta-button:hover {
-  background-color: var(--home-accent-hover);
+  background-color: var(--home-active-hover);
   transform: scale(1.05);
 }
 
@@ -291,7 +322,7 @@ section {
   text-align: center;
   padding: 5rem 2rem;
   color: var(--home-primary-dark-text);
-  background: var(--home-secondary-bg);
+  background: var(--home-primary-light-bg);
 }
 
 .features h2 {
@@ -396,7 +427,7 @@ section {
 }
 
 .step {
-  background: var(--home-accent);
+  background: var(--home-primary-light-bg);
   color: var(--home-primary-dark-text);
   padding: 2rem;
   border-radius: 10px;
@@ -411,13 +442,14 @@ section {
   top: -15px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--home-primary-light-bg);
-  color: var(--home-primary-dark-text);
+  background: var(--home-active);
+  color: var(--home-primary-light-text);
   width: 40px;
   height: 40px;
   line-height: 40px;
   border-radius: 50%;
   font-size: 1.2rem;
+  font-weight: bold;
 }
 
 @media (max-width: 768px) {

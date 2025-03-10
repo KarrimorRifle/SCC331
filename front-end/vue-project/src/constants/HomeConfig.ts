@@ -54,14 +54,35 @@ export const defaultDomainConfig = {
     { step: 3, title: 'Receive Alerts', description: 'Get instant updates on critical situations.' }
   ],
   theme: {
-    primaryDarkBg: '#003865',
-    primaryDarkText: '#003865',
-    primarySecondaryBg: 'lightgray',
-    primarySecondaryText: 'lightgray',
-    primaryLightBg: 'white',
-    primaryLightText: 'white',
-    accent: '#FFD700',
-    accentHover: '#E6C200'
+    active: "#F18C8E",
+    active_bg: "#F18C8E",
+    active_text: "#F18C8E",
+    negative: "#666",
+    negative_bg: "#666",
+    negative_text: "#666",
+    not_active: "lightgray",
+    not_active_bg: "lightgray",
+    not_active_text: "lightgray",
+    notification_bg: "#ff4d4d",
+    notification_bg_hover: "#D94A4A",
+    notification_text: "#ff4d4d",
+    notification_text_hover: "#D94A4A",
+    positive: "#b6dfbf",
+    primary_bg: "#568ea6",
+    primary_bg_hover: "#305f72",
+    primary_dark_bg: "#305f72",
+    primary_dark_bg_hover: "#568ea6",
+    primary_dark_text: "#305f72",
+    primary_dark_text_hover: "#568ea6",
+    primary_light_bg: "#ffffff",
+    primary_light_bg_hover: "#f0f0f0",
+    primary_light_text: "#ffffff",
+    primary_light_text_hover: "#e0e0e0",
+    primary_text: "#568ea6",
+    warning_bg: "#ff4d4d",
+    warning_bg_hover: "#D94A4A",
+    warning_text: "#ff4d4d",
+    warning_text_hover: "#D94A4A"
   }
 };
 

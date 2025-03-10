@@ -9,13 +9,23 @@
 
     <form @submit.prevent="handleSubmit">
       <!-- Theme Section -->
+
+
       <section>
-        <ThemeEditor v-model:theme="form.theme" />
+        <div class="section-header">
+          <h2>Theme Settings</h2>
+          <span class="toggle-icon" @click="toggleSection('theme')">{{ collapsed.theme ? '+' : '-' }}</span>
+        </div>
+        <ThemeEditor v-model:theme="form.theme" v-if="!collapsed.theme"/>
       </section>
 
       <!-- General Config Section -->
       <section class="hero-config-section">
-        <div class="hero-content-container">
+        <div class="section-header">
+          <h2>Landing Page (Hero) Settings</h2>
+          <span class="toggle-icon" @click="toggleSection('heroConfig')">{{ collapsed.heroConfig ? '+' : '-' }}</span>
+        </div>
+        <div class="hero-content-container" v-if="!collapsed.heroConfig">
           <!-- Live Preview (looks like the actual homepage hero) -->
           <header class="hero-preview">
             <div class="overlay"></div>
@@ -67,12 +77,20 @@
 
       <!-- Features Section -->
       <section>
-        <FeatureListEditor v-model:features="form.features" />
+        <div class="section-header">
+          <h2>Features Settings</h2>
+          <span class="toggle-icon" @click="toggleSection('features')">{{ collapsed.features ? '+' : '-' }}</span>
+        </div>
+        <FeatureListEditor v-model:features="form.features" v-if="!collapsed.features"/>
       </section>
 
       <!-- How It Works Section -->
       <section>
-        <HowItWorksEditor v-model:steps="form.howItWorks" />
+        <div class="section-header">
+          <h2>How It Works Settings</h2>
+          <span class="toggle-icon" @click="toggleSection('howItWorks')">{{ collapsed.howItWorks ? '+' : '-' }}</span>
+        </div>
+        <HowItWorksEditor v-model:steps="form.howItWorks" v-if="!collapsed.howItWorks"/>
       </section>
     </form>
   </div>
@@ -109,15 +127,53 @@ const form = ref({
   features: [],
   howItWorks: [],
   theme: {
-    primaryDarkBg: '',
-    primaryDarkText: '',
-    primarySecondaryBg: '',
-    primarySecondaryText: '',
-    primaryLightBg: '',
-    primaryLightText: '',
-    accent: '',
-    accentHover: ''
-  }
+    active: '',
+    active_bg: '',
+    active_text: '',
+
+    negative: '',
+    negative_bg: '',
+    negative_text: '',
+
+    not_active: '',
+    not_active_bg: '',
+    not_active_text: '',
+
+    notification_bg: '',
+    notification_bg_hover: '',
+    notification_text: '',
+    notification_text_hover: '',
+
+    positive: '',
+
+    primary_bg: '',
+    primary_bg_hover: '',
+
+    primary_dark_bg: '',
+    primary_dark_bg_hover: '',
+    primary_dark_text: '',
+    primary_dark_text_hover: '',
+
+    primary_light_bg: '',
+    primary_light_bg_hover: '',
+    primary_light_text: '',
+    primary_light_text_hover: '',
+
+    primary_text: '',
+
+    warning_bg: '',
+    warning_bg_hover: '',
+    warning_text: '',
+    warning_text_hover: ''
+    }
+
+});
+
+const collapsed = ref({
+  theme: false,
+  heroConfig: false,
+  features: false,
+  howItWorks: false
 });
 
 // Fetch current configuration from the backend on mount.
@@ -167,17 +223,52 @@ function handleImageUpload(event: Event) {
   }
 }
 
+function toggleSection(sectionName: string) {
+  collapsed.value[sectionName] = !collapsed.value[sectionName];
+}
+
 // Compute themeStyles so that children can use CSS variables.
 const themeStyles = computed(() => ({
-  '--home-primary-dark-bg': form.value.theme.primaryDarkBg,
-  '--home-primary-dark-text': form.value.theme.primaryDarkText,
-  '--home-secondary-bg': form.value.theme.primarySecondaryBg,
-  '--home-secondary-text': form.value.theme.primarySecondaryText,
-  '--home-primary-light-bg': form.value.theme.primaryLightBg,
-  '--home-primary-light-text': form.value.theme.primaryLightText,
-  '--home-accent': form.value.theme.accent,
-  '--home-accent-hover': form.value.theme.accentHover
+  '--home-active': form.value.theme.active,
+  '--home-active-bg': form.value.theme.active_bg,
+  '--home-active-text': form.value.theme.active_text,
+
+  '--home-negative': form.value.theme.negative,
+  '--home-negative-bg': form.value.theme.negative_bg,
+  '--home-negative-text': form.value.theme.negative_text,
+
+  '--home-not-active': form.value.theme.not_active,
+  '--home-not-active-bg': form.value.theme.not_active_bg,
+  '--home-not-active-text': form.value.theme.not_active_text,
+
+  '--home-notification-bg': form.value.theme.notification_bg,
+  '--home-notification-bg-hover': form.value.theme.notification_bg_hover,
+  '--home-notification-text': form.value.theme.notification_text,
+  '--home-notification-text-hover': form.value.theme.notification_text_hover,
+
+  '--home-positive': form.value.theme.positive,
+
+  '--home-primary-bg': form.value.theme.primary_bg,
+  '--home-primary-bg-hover': form.value.theme.primary_bg_hover,
+
+  '--home-primary-dark-bg': form.value.theme.primary_dark_bg,
+  '--home-primary-dark-bg-hover': form.value.theme.primary_dark_bg_hover,
+  '--home-primary-dark-text': form.value.theme.primary_dark_text,
+  '--home-primary-dark-text-hover': form.value.theme.primary_dark_text_hover,
+
+  '--home-primary-light-bg': form.value.theme.primary_light_bg,
+  '--home-primary-light-bg-hover': form.value.theme.primary_light_bg_hover,
+  '--home-primary-light-text': form.value.theme.primary_light_text,
+  '--home-primary-light-text-hover': form.value.theme.primary_light_text_hover,
+
+  '--home-primary-text': form.value.theme.primary_text,
+
+  '--home-warning-bg': form.value.theme.warning_bg,
+  '--home-warning-bg-hover': form.value.theme.warning_bg_hover,
+  '--home-warning-text': form.value.theme.warning_text,
+  '--home-warning-text-hover': form.value.theme.warning_text_hover,
 }));
+
 
 // Submit updated configuration to backend.
 const handleSubmit = async () => {
@@ -185,6 +276,7 @@ const handleSubmit = async () => {
     const response = await axios.patch('http://localhost:5011/home', form.value, { withCredentials: true });
     if (response.status === 200) {
       alert('Configuration updated successfully.');
+      window.location.reload();
     }
   } catch (error) {
     alert('Error updating configuration.');
@@ -213,6 +305,24 @@ const handleSubmit = async () => {
     z-index: 200;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--primary-light-bg);
+  color: var(--primary-dark-text);
+  font-weight: bold;
+  padding: 0.75rem;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+.toggle-icon {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--primary-dark-text);
+}
 
 .update-button {
   background: var(--positive);
@@ -229,7 +339,6 @@ const handleSubmit = async () => {
 
 /* Hero-like Section */
 .hero-config-section {
-  margin-bottom: 2rem;
   padding: 1rem;
 }
 
@@ -272,7 +381,7 @@ const handleSubmit = async () => {
   display: inline-block;
   padding: 0.75rem 2rem;
   font-size: 1.2rem;
-  background-color: var(--home-accent-hover);
+  background-color: var(--home-active);
   border-radius: 10px;
   text-align: center;
   font-weight: bold;
@@ -326,7 +435,6 @@ const handleSubmit = async () => {
 
 /* Other sections */
 section {
-  margin-bottom: 2rem;
   padding: 1rem;
 }
 

@@ -1,6 +1,6 @@
 <template>
   <div class="features">
-    <h2>Key Features</h2>
+    <!--<h2>Key Features</h2>-->
     <div class="feature-cards">
       <div v-for="(feature, index) in featuresModel" :key="index" class="feature-card">
         <button class="remove-feature-btn" @click="removeFeature(index)">
@@ -196,7 +196,7 @@ function updateFeatureIcon(iconName: string) {
 }
 
 .add-feature-card:hover {
-  background: var(--home-secondary-text);
+  background: var(--home-primary-light-bg-hover);
 }
 
 .remove-feature-btn {

@@ -1,6 +1,6 @@
 <template>
   <div class="how-it-works">
-    <h2>How It Works</h2>
+    <!--<h2>How It Works</h2> -->
     <div class="steps">
       <!-- Each Step Card -->
       <div v-for="(step, index) in stepsModel" :key="index" class="step-card">
@@ -84,6 +84,7 @@ function removeStep(index: number) {
   text-align: center;
   color: var(--home-primary-light-text);
   background: var(--home-primary-dark-bg);
+  padding: 1rem 0;
 }
 
 .how-it-works h2 {
@@ -101,7 +102,7 @@ function removeStep(index: number) {
 /* Step Card */
 .step-card {
   position: relative;
-  background: var(--home-accent);
+  background: var(--home-primary-light-bg);
   color: var(--home-primary-dark-text);
   padding: 2rem;
   border-radius: 12px;
@@ -120,8 +121,8 @@ function removeStep(index: number) {
   top: -18px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--home-primary-light-bg);
-  color: var(--home-primary-dark-text);
+  background: var(--home-active);
+  color: var(--home-primary-light-text);
   width: 45px;
   height: 45px;
   line-height: 45px;
