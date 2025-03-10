@@ -5,27 +5,22 @@
         <font-awesome-icon :icon="showDateTimeSelector ? faChevronUp : faChevronDown" />
       </div>
       <div class="w-100 row">
-        <div class="g-3 align-middle align-items-center col-xxl-6 mt-0 col-12 flex-wrap" :class="{'d-flex': isDateTimeVisible, 'd-none': !isDateTimeVisible}">
-          <label for="start-time" class="form-label mb-0 d-inline me-2">Start:</label>
-          <input id="start-time" type="date" v-model="startTime" class="form-control d-inline align-middle me-4" style="max-width: 10rem">
-          <label for="end-time" class="form-label mb-0 d-inline me-2">End:</label>
-          <input id="end-time" type="date" v-model="endTime" class="form-control d-inline align-middle me-md-4" style="max-width: 10rem">
+        <div class="g-3 align-middle align-items-center col-xxl-4 mt-0 col-md-4 col-12 flex-wrap" :class="{'d-flex': isDateTimeVisible, 'd-none': !isDateTimeVisible}">
           <div class="d-flex flex-row align-middle mt-2 mt-md-0">
-            <label for="day-select" class="form-label mb-0 d-flex align-items-center me-2">Day:</label>
-            <select id="day-select" v-model="selectedDay" class="form-select me-1">
-              <option v-for="day in uniqueDays" :key="day" :value="day">{{ day }}</option>
-            </select>
+            <label for="calendar-picker" class="form-label mb-0 d-flex align-items-center me-2">Date:</label>
+            <input type="date" id="calendar-picker" v-model="selectedDate" class="form-control me-1" />
             <div class="d-flex align-items-center justify-content-center" style="min-width: 4rem;">
-              <button @mousedown.prevent.stop="startHold(prevDay)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart.prevent.stop="startHold(prevDay)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn-sm btn btn-secondary me-1">
+              <!-- Reintroducing day navigation buttons -->
+              <button @click="prevDay" class="btn-sm btn btn-secondary me-1">
                 <font-awesome-icon :icon="faChevronLeft" />
               </button>
-              <button @mousedown.prevent.stop="startHold(nextDay)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart.prevent.stop="startHold(nextDay)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn btn-sm btn-secondary">
+              <button @click="nextDay" class="btn btn-sm btn-secondary">
                 <font-awesome-icon :icon="faChevronRight" />
               </button>
             </div>
           </div>
         </div>
-        <div class="row col-xxl-6 col-12 mt-2 mt-xxl-0">
+        <div class="row col-xxl-8 col-md-8 col-12 mt-2 mt-xxl-0">
           <div class="range-selector">
             <button @mousedown.prevent.stop="startHold(decrementTimeIndex)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart.prevent.stop="startHold(decrementTimeIndex)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn-sm btn btn-secondary me-1">
               <font-awesome-icon :icon="faChevronLeft" />
@@ -138,11 +133,11 @@
               <font-awesome-icon v-if="showTable[roomID] ?? true" :icon="faChevronUp" />
               <font-awesome-icon v-else :icon="faChevronDown" />
             </div>
-            <div class="card-body">
+            <div class="card-body" v-if="movementData[selectedTime]?.[roomID]">
               <!-- New statistical counter -->
               <div class="stats mb-2">
                 <div class="d-inline-block rounded me-2 p-1">Total: {{ Object.keys(movementData[selectedTime]?.[roomID] || {}).length }}</div>
-                <div class="d-inline-block rounded me-2 p-1" v-for="(box, roomID) in boxes" :key="roomID" :style="{'background-color': box.colour}">{{box.label}}: {{ Object.entries(movementData[selectedTime][roomID] || {}).reduce((total, obj) => {
+                <div class="d-inline-block rounded me-2 p-1" v-for="(box, roomID) in boxes" :key="roomID" :style="{'background-color': box.colour}">{{box.label}}: {{ Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce((total, obj) => {
                   if(previousLocation[selectedTime][obj[0]] == roomID)
                     return total? total + 1 : 1;
                   return total? total : 0;
@@ -209,10 +204,10 @@
               <font-awesome-icon v-if="showTable['deactivated'] ?? true" :icon="faChevronUp" />
               <font-awesome-icon v-else :icon="faChevronDown" />
             </div>
-            <div class="card-body">
+            <div class="card-body" v-if="movementData[selectedTime]">
               <div class="stats mb-2">
                 <div class="d-inline rounded me-2 p-1">Total: {{ Object.keys(filteredDeactivatedDevices || {}).length }}</div>
-                <div class="d-inline rounded me-2 p-1" v-for="(box, roomID) in boxes" :key="roomID" :style="{'background-color': box.colour}">{{box.label}}: {{ Object.entries(movementData[selectedTime][roomID] || {}).reduce((total, obj) => {
+                <div class="d-inline rounded me-2 p-1" v-for="(box, roomID) in boxes" :key="roomID" :style="{'background-color': box.colour}">{{box.label}}: {{ Object.entries(movementData[selectedTime]?.[roomID] || {}).reduce((total, obj) => {
                   if(previousLocation[selectedTime][obj[0]] == roomID)
                     return total? total + 1 : 1;
                   return total? total : 0;
@@ -305,16 +300,22 @@ const handleScroll = (event: Event) => {
   lastScrollTop = scrollTop;
 };
 
-// Default start time to the start of the day and end time to the end of the day
-const startTime = ref(new Date(new Date().setHours(0, 0, 0, 0)).toISOString().slice(0,10));
-const endTime = ref(new Date(new Date().setHours(23, 59, 59, 999)).toISOString().slice(0,10));
+const startOfDay = new Date();
+startOfDay.setHours(0,0,0,0);
+const endOfDay = new Date();
+endOfDay.setHours(23,59,59,999);
 
 const fetchMovementData = async () => {
   try {
+    isLoading.value = true;
     const response = await axios.get('http://localhost:5003/movement', {
+      headers: {
+        'time_start': startOfDay.toISOString(),
+        'time_end': endOfDay.toISOString()
+      },
       withCredentials: true
     });
-
+    isLoading.value = false;
     // Detect and fill gaps in timestamps
     const temp = response.data;
     const timestamps = Object.keys(temp).sort();
@@ -338,32 +339,31 @@ const fetchMovementData = async () => {
 
     console.log(response)
   } catch (error) {
+    if (error.response?.status === 404) {
+      movementData.value = {};
+    }
     console.error('Error fetching movement data:', error);
   }
 };
 
 const timeKeys = computed(() => Object.keys(movementData.value));
 
-const uniqueDays = computed(() => {
-  const days = timeKeys.value.map(t => new Date(t).toISOString().slice(0,10));
-  return [...new Set(days)];
-});
-const selectedDay = ref(uniqueDays.value[0] || '');
-
-// Add watcher so the day defaults to the first one when uniqueDays changes
-watch(uniqueDays, (newDays) => {
-  if(newDays.length > 0) {
-    selectedDay.value = newDays[0];
-  }
+const selectedDate = ref(new Date().toISOString().slice(0,10));
+watch(selectedDate, (newVal) => {
+  const [year, month, day] = newVal.split('-').map(Number);
+  startOfDay.setFullYear(year, month - 1, day);
+  startOfDay.setHours(0,0,0,0);
+  endOfDay.setFullYear(year, month - 1, day);
+  endOfDay.setHours(23,59,59,999);
+  fetchMovementData();
 });
 
-const dayTimeKeys = computed(() => timeKeys.value.filter(t => t.startsWith(selectedDay.value)));
+const dayTimeKeys = computed(() => timeKeys.value.filter(t => {
+  return new Date(t).toISOString().slice(0,10) === selectedDate.value;
+}));
+
 const selectedDayTimeIndex = ref(0);
 const selectedTime = computed(() => dayTimeKeys.value[selectedDayTimeIndex.value]);
-
-watch(selectedDay, () => {
-  selectedDayTimeIndex.value = 0;
-});
 
 const previousLocation = computed(() => {
   const result: Record<string, Record<string, string>> = {};
@@ -429,6 +429,7 @@ const deactivated = computed(() => {
 });
 
 const filteredDeactivatedDevices = computed(() => {
+  if (!selectedTime.value) return [];
   return Object.entries(deactivated.value[selectedTime.value] || {}).filter(([picoID, lastRoom]) => {
     const filterPico = selectedFilterPicoIDs.value.length ? selectedFilterPicoIDs.value.includes(picoID) : true;
     const filterRoom = selectedFilterRooms.value.length ? selectedFilterRooms.value.includes(lastRoom) : true;
@@ -445,6 +446,7 @@ const filteredDeactivatedDevices = computed(() => {
 });
 
 const formatTime = (time: string) => {
+  if(!time) return '';
   const date = new Date(time);
   return date.toLocaleTimeString().slice(0,5);
 };
@@ -570,22 +572,6 @@ const sortBy = (col: string) => {
   } else {
     sortColumn.value = col;
     sortDirection.value = 'asc';
-  }
-};
-
-// New functions for day navigation
-const prevDay = () => {
-  const days = uniqueDays.value;
-  const idx = days.indexOf(selectedDay.value);
-  if (idx > 0) {
-    selectedDay.value = days[idx - 1];
-  }
-};
-const nextDay = () => {
-  const days = uniqueDays.value;
-  const idx = days.indexOf(selectedDay.value);
-  if (idx < days.length - 1) {
-    selectedDay.value = days[idx + 1];
   }
 };
 
@@ -855,6 +841,23 @@ const decrementTimeIndex = () => {
 
 const incrementTimeIndex = () => {
   selectedDayTimeIndex.value = Math.min(dayTimeKeys.value.length - 1, selectedDayTimeIndex.value + 1);
+};
+
+const prevDay = () => {
+  const current = new Date(selectedDate.value);
+  current.setDate(current.getDate() - 1);
+  selectedDate.value = current.toISOString().slice(0,10);
+};
+
+const nextDay = () => {
+  const current = new Date(selectedDate.value);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  current.setDate(current.getDate() + 1);
+  if (current > today) {
+    current.setTime(today.getTime());
+  }
+  selectedDate.value = current.toISOString().slice(0,10);
 };
 </script>
 
