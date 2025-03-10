@@ -1,11 +1,8 @@
 <template>
   <div class="inspection bg-light text-dark mt-0 p-0" style="flex-grow: 1;">
     <div id="date-time-selector" :class="['row', 'bg-theme', 'p-3', 'py-1', 'rounded', 'sticky-top']" style="z-index: 1;">
-      <div class="d-md-none w-100 text-center btn btn-sm" @click="toggleDateTimeSelector" style="cursor: pointer;">
-        <font-awesome-icon :icon="showDateTimeSelector ? faChevronUp : faChevronDown" />
-      </div>
       <div class="w-100 row">
-        <div class="g-3 align-middle align-items-center col-xxl-4 mt-0 col-md-4 col-12 flex-wrap" :class="{'d-flex': isDateTimeVisible, 'd-none': !isDateTimeVisible}">
+        <div class="g-3 align-middle align-items-center col-xxl-4 mt-0 col-md-4 col-12 flex-wrap d-flex">
           <div class="d-flex flex-row align-middle mt-2 mt-md-0">
             <label for="calendar-picker" class="form-label mb-0 d-flex align-items-center me-2">Date:</label>
             <input type="date" id="calendar-picker" v-model="selectedDate" class="form-control me-1" />
@@ -14,7 +11,7 @@
               <button @click="prevDay" class="btn-sm btn btn-secondary me-1">
                 <font-awesome-icon :icon="faChevronLeft" />
               </button>
-              <button @click="nextDay" class="btn btn-sm btn-secondary">
+              <button :disabled="!canGoNextDay" @click="nextDay" class="btn btn-sm btn-secondary">
                 <font-awesome-icon :icon="faChevronRight" />
               </button>
             </div>
@@ -273,13 +270,10 @@ import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion, faChevro
 const showTable = ref<Record<string, boolean>>({});
 
 // New reactive state for date-time selector
-const showDateTimeSelector = ref(true);
 const isMobile = ref(window.innerWidth < 768);
 window.addEventListener('resize', () => {
   isMobile.value = window.innerWidth < 768;
 });
-const isDateTimeVisible = computed(() => isMobile.value ? showDateTimeSelector.value : true);
-const toggleDateTimeSelector = () => { showDateTimeSelector.value = !showDateTimeSelector.value; };
 
 const showModal = ref(false);
 const isLoading = ref(false);
@@ -577,7 +571,6 @@ const sortBy = (col: string) => {
 
 // New method for quick room selection scrolling
 const scrollToRoom = (roomID: string) => {
-  showDateTimeSelector.value = false;
   const element = document.getElementById('room-' + roomID);
   if (element) {
     element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -586,7 +579,6 @@ const scrollToRoom = (roomID: string) => {
 
 // New method for quick jump to deactivated devices
 const scrollToDeactivated = () => {
-  showDateTimeSelector.value = false;
   const element = document.getElementById('deactivated-devices');
   if (element) {
     element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -805,9 +797,6 @@ const handleSearchBlur = (category: string) => {
   }, 100);
 };
 
-// NEW: Hide the date-time-selector when clicking below it
-const hideDateTimeSelector = () => { showDateTimeSelector.value = false; };
-
 let holdTimer: number | null = null;
 let holdCounter = 0;
 
@@ -859,6 +848,14 @@ const nextDay = () => {
   }
   selectedDate.value = current.toISOString().slice(0,10);
 };
+
+const canGoNextDay = computed(() => {
+  const selected = new Date(selectedDate.value);
+  selected.setHours(0,0,0,0);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  return selected < today;
+});
 </script>
 
 <style scoped>
