@@ -44,13 +44,36 @@
               <table class="table rounded-top-1">
                 <thead class="rounded-top-1">
                   <tr class="rounded-top-1">
-                    <th class="rounded-top-1 rounded-end-0" style="font-weight: 600; background-color: rgb(200, 200, 200);">picoID</th>
-                    <th style="font-weight: 600; background-color: rgb(200, 200, 200);">Type</th>
-                    <th class="rounded-top-1 rounded-start-0" style="font-weight: 600; background-color: rgb(200, 200, 200);">Came From</th>
+                    <th class="rounded-top-1 rounded-end-0"
+                        @click="sortBy('picoID')"
+                        style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
+                      picoID <span>{{ getArrows('picoID') }}</span>
+                    </th>
+                    <th @click="sortBy('type')"
+                        style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
+                      Type <span>{{ getArrows('type') }}</span>
+                    </th>
+                    <th class="rounded-top-1 rounded-start-0"
+                        @click="sortBy('cameFrom')"
+                        style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
+                      Came From <span>{{ getArrows('cameFrom') }}</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(type, picoID) in movementData[selectedTime][roomID]" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
+                  <tr v-for="([picoID, type]) in Object.entries(movementData[selectedTime][roomID] || {}).sort((a, b) => {
+                      let comp = 0;
+                      if (sortColumn === 'picoID') {
+                        comp = a[0].localeCompare(b[0]);
+                      } else if (sortColumn === 'type') {
+                        comp = a[1].localeCompare(b[1]);
+                      } else {
+                        const cameA = previousLocation[selectedTime][a[0]] || '';
+                        const cameB = previousLocation[selectedTime][b[0]] || '';
+                        comp = cameA.localeCompare(cameB);
+                      }
+                      return sortDirection === 'asc' ? comp : -comp;
+                    })" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
                     <td @click="userID = picoID + ''; showModal = true" style="color: blue; text-decoration: underline; cursor: pointer;">{{ picoID }}</td>
                     <td>
                       <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/> {{ type }}
@@ -315,6 +338,27 @@ const getRoleColor = (type: string) => {
       return 'green';
     default:
       return 'black';
+  }
+};
+
+const sortColumn = ref('cameFrom'); // options: 'picoID', 'type', 'cameFrom'
+const sortDirection = ref('asc'); // options: 'asc', 'desc'
+
+// Add helper to return arrow icons for header
+const getArrows = (col: string) => {
+  if(sortColumn.value === col) {
+    return sortDirection.value === 'asc' ? '▲ ▽' : '△ ▼';
+  }
+  return '△ ▽';
+};
+
+// Add function to change sort column/direction on header click
+const sortBy = (col: string) => {
+  if (sortColumn.value === col) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortColumn.value = col;
+    sortDirection.value = 'asc';
   }
 };
 </script>
