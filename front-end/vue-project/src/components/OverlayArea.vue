@@ -12,6 +12,7 @@ import LuggageMarker from "./ObjectMarker/LuggageMarker.vue";
 const props = defineProps({
   label: String,
   color: String,
+  areaKey: String,
   position: {
     type: Object,
     default: () => ({ top: 0, left: 0, width: 100, height: 100 }),
@@ -37,6 +38,7 @@ const props = defineProps({
   showAll: Boolean,
 });
 console.log(props.enabledSensors);
+console.log(props.areaKey);
 const presetCache = usePresetLocalCache();
 const getAreaKey = (label: string): string | null => {
   if (!label || !label.match) {
@@ -47,9 +49,9 @@ const getAreaKey = (label: string): string | null => {
 };
 
 const filteredSensors = computed(() => {
-  const areaKey = getAreaKey(props.label);
+  const areaKey = props.areaKey;
   const connectedAreaSet = presetCache.connectedSensors.get(areaKey) || new Set();
-
+  console.log(connectedAreaSet);
   if (props.showAll) {
     // When "All" is toggled, show only selected sensor types
     return sensors.value
@@ -81,7 +83,7 @@ const displayedSensors = computed(() => {
   const maxRows = Math.floor(props.position.height / iconHeight);
 
   // Get the connection info for this area.
-  const areaKey = getAreaKey(props.label);
+  const areaKey = props.areaKey;
   const connectedAreaSet = presetCache.connectedSensors.get(areaKey) || new Set();
 
   // Map filtered sensor names into an array of sensor objects that include connection state.
@@ -115,7 +117,7 @@ const displayedSensors = computed(() => {
 });
 
 const usersList = computed(() => {
-  const key = getAreaKey(props.label);
+  const key = props.areaKey;
 
   if (!key || !props.data[key]?.users?.id) return [];
   
@@ -126,7 +128,7 @@ const usersList = computed(() => {
 });
 
 const luggageList = computed(() => {
-  const key = getAreaKey(props.label);
+  const key = props.areaKey;
   if (!key || !props.data[key]?.luggage?.id) return [];
 
   return props.data[key].luggage.id.map((itemId, index) => ({

@@ -325,6 +325,7 @@ const updateMode = ref<boolean>(false);
           v-for="([key, data]) in Object.entries(internalModelValue).filter(([k, d]) => d.box)"
           :key="key"
           :position="data.box"
+          :areaKey="key"
           :label="data.label?.length > 0 ? data.label : key"
           :color="data.box.colour"
           :zoomLevel="zoomLevel"
