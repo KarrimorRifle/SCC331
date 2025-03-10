@@ -16,10 +16,10 @@
               <option v-for="day in uniqueDays" :key="day" :value="day">{{ day }}</option>
             </select>
             <div class="d-flex align-items-center justify-content-center" style="min-width: 4rem;">
-              <button @click="prevDay" class="btn-sm btn btn-secondary me-1">
+              <button @mousedown="startHold(prevDay)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart="startHold(prevDay)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn-sm btn btn-secondary me-1">
                 <font-awesome-icon :icon="faChevronLeft" />
               </button>
-              <button @click="nextDay" class="btn btn-sm btn-secondary">
+              <button @mousedown="startHold(nextDay)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart="startHold(nextDay)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn btn-sm btn-secondary">
                 <font-awesome-icon :icon="faChevronRight" />
               </button>
             </div>
@@ -27,8 +27,13 @@
         </div>
         <div class="row col-xxl-6 col-12 mt-2 mt-xxl-0">
           <div class="range-selector">
-            <label for="time-range" class="form-label align-middle mb-0">Time:</label>
+            <button @mousedown="startHold(decrementTimeIndex)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart="startHold(decrementTimeIndex)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn-sm btn btn-secondary me-1">
+              <font-awesome-icon :icon="faChevronLeft" />
+            </button>
             <input id="time-range" type="range" :min="0" :max="dayTimeKeys.length - 1" v-model="selectedDayTimeIndex" class="form-range">
+            <button @mousedown="startHold(incrementTimeIndex)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart="startHold(incrementTimeIndex)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn btn-sm btn-secondary">
+              <font-awesome-icon :icon="faChevronRight" />
+            </button>
             <span style="min-width: 7rem" v-if="dayTimeKeys.length" class="align-middle">{{ formatTime(dayTimeKeys[0]) }} - {{ formatTime(dayTimeKeys[dayTimeKeys.length - 1]) }}</span>
             <span v-else>No time data available</span>
           </div>
@@ -772,6 +777,41 @@ const handleSearchBlur = (category: string) => {
 
 // NEW: Hide the date-time-selector when clicking below it
 const hideDateTimeSelector = () => { showDateTimeSelector.value = false; };
+
+let holdTimer: number | null = null;
+let holdCounter = 0;
+
+const startHold = (action: () => void) => {
+  action();
+  holdCounter = 0;
+  holdTimer = window.setInterval(() => {
+    action();
+    holdCounter++;
+    if (holdCounter > 20) {
+      clearInterval(holdTimer!);
+      holdTimer = window.setInterval(action, 50); // 2x speed
+    }
+    if (holdCounter > 40) {
+      clearInterval(holdTimer!);
+      holdTimer = window.setInterval(action, 10); // 10x speed
+    }
+  }, 100);
+};
+
+const stopHold = () => {
+  if (holdTimer !== null) {
+    clearInterval(holdTimer);
+    holdTimer = null;
+  }
+};
+
+const decrementTimeIndex = () => {
+  selectedDayTimeIndex.value = Math.max(0, selectedDayTimeIndex.value - 1);
+};
+
+const incrementTimeIndex = () => {
+  selectedDayTimeIndex.value = Math.min(dayTimeKeys.value.length - 1, selectedDayTimeIndex.value + 1);
+};
 </script>
 
 <style scoped>
