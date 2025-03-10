@@ -1,23 +1,31 @@
 <template>
   <div class="inspection bg-light text-dark mt-0 p-0" style="flex-grow: 1;">
-    <div :class="['row', 'bg-theme', 'p-3', 'pt-0', 'rounded', 'sticky-top', { 'd-none': hideHeader }]" style="z-index: 1;">
-      <div class="g-3 align-items-end col-lg-5 mt-0 col-12">
-        <div class="row mb-2">
-          <label for="start-time" class="col-form-label col-1">Start:</label>
-          <div class="col-5">
-            <input id="start-time" type="date" v-model="startTime" class="form-control">
-          </div>
-          <label for="end-time" class="col-form-label col-1">End:</label>
-          <div class="col-5">
-            <input id="end-time" type="date" v-model="endTime" class="form-control">
+    <div :class="['row', 'bg-theme', 'p-3', 'py-1', 'rounded', 'sticky-top', { 'd-none': hideHeader }]" style="z-index: 1;">
+      <div class="g-3 d-flex align-middle align-items-center col-xxl-6 mt-0 col-12 flex-wrap">
+        <label for="start-time" class="form-label mb-0 d-inline me-2">Start:</label>
+        <input id="start-time" type="date" v-model="startTime" class="form-control d-inline align-middle me-4" style="max-width: 10rem">
+        <label for="end-time" class="form-label mb-0 d-inline me-2">End:</label>
+        <input id="end-time" type="date" v-model="endTime" class="form-control d-inline align-middle me-4" style="max-width: 10rem">
+        <div class="d-flex flex-row align-middle mt-2 mt-md-0">
+          <label for="day-select" class="form-label mb-0 d-flex align-items-center me-2">Day:</label>
+          <select id="day-select" v-model="selectedDay" class="form-select me-1">
+            <option v-for="day in uniqueDays" :key="day" :value="day">{{ day }}</option>
+          </select>
+          <div class="d-flex align-items-center justify-content-center" style="min-width: 4rem;">
+            <button @click="prevDay" class="btn-sm btn btn-secondary me-1">
+              <font-awesome-icon :icon="faChevronLeft" />
+            </button>
+            <button @click="nextDay" class="btn btn-sm btn-secondary">
+              <font-awesome-icon :icon="faChevronRight" />
+            </button>
           </div>
         </div>
       </div>
-      <div class="row g-3 col-lg-7 col-12">
+      <div class="row col-xxl-6 col-12 mt-2 mt-xxl-0">
         <div class="range-selector">
-          <label for="time-range" class="form-label">Select Time:</label>
-          <input id="time-range" type="range" :min="0" :max="timeKeys.length - 1" v-model="selectedTimeIndex" class="form-range mb-3">
-          <span v-if="timeKeys.length">{{ formatTime(timeKeys[0]) }} - {{ formatTime(timeKeys[timeKeys.length - 1]) }}</span>
+          <label for="time-range" class="form-label align-middle mb-0">Time:</label>
+          <input id="time-range" type="range" :min="0" :max="dayTimeKeys.length - 1" v-model="selectedDayTimeIndex" class="form-range">
+          <span style="min-width: 7rem" v-if="dayTimeKeys.length" class="align-middle">{{ formatTime(dayTimeKeys[0]) }} - {{ formatTime(dayTimeKeys[dayTimeKeys.length - 1]) }}</span>
           <span v-else>No time data available</span>
         </div>
       </div>
@@ -33,7 +41,7 @@
     </div>
 
     <div v-else class="movement-data p-3" style="flex-grow: 1; overflow: auto;" @scroll="handleScroll">
-      <h4 class="current-time">{{ formatTime(timeKeys[selectedTimeIndex]) }}</h4>
+      <h4 class="current-time">{{ formatTime(selectedTime) }}</h4>
       <div class="row">
         <div v-for="(box, roomID) in boxes" :key="roomID" class="col-md-4 mb-4">
           <div class="card">
@@ -47,16 +55,16 @@
                     <th class="rounded-top-1 rounded-end-0"
                         @click="sortBy('picoID')"
                         style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
-                      picoID <span>{{ getArrows('picoID') }}</span>
+                      picoID <span v-html="getArrows('picoID')"></span>
                     </th>
                     <th @click="sortBy('type')"
                         style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
-                      Type <span>{{ getArrows('type') }}</span>
+                      Type <span v-html="getArrows('type')"></span>
                     </th>
                     <th class="rounded-top-1 rounded-start-0"
                         @click="sortBy('cameFrom')"
                         style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
-                      Came From <span>{{ getArrows('cameFrom') }}</span>
+                      Came From <span v-html="getArrows('cameFrom')"></span>
                     </th>
                   </tr>
                 </thead>
@@ -131,7 +139,7 @@ import type { Record } from 'vue';
 import type { presetListType, preset, boxType } from '@/utils/mapTypes';
 import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModal.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
 const showModal = ref(false);
 const isLoading = ref(false);
@@ -170,7 +178,27 @@ const fetchMovementData = async () => {
 
 const timeKeys = computed(() => Object.keys(movementData.value));
 const selectedTimeIndex = ref(0);
-const selectedTime = computed(() => timeKeys.value[selectedTimeIndex.value]);
+
+const uniqueDays = computed(() => {
+  const days = timeKeys.value.map(t => new Date(t).toISOString().slice(0,10));
+  return [...new Set(days)];
+});
+const selectedDay = ref(uniqueDays.value[0] || '');
+
+// Add watcher so the day defaults to the first one when uniqueDays changes
+watch(uniqueDays, (newDays) => {
+  if(newDays.length > 0) {
+    selectedDay.value = newDays[0];
+  }
+});
+
+const dayTimeKeys = computed(() => timeKeys.value.filter(t => t.startsWith(selectedDay.value)));
+const selectedDayTimeIndex = ref(0);
+const selectedTime = computed(() => dayTimeKeys.value[selectedDayTimeIndex.value]);
+
+watch(selectedDay, () => {
+  selectedDayTimeIndex.value = 0;
+});
 
 const previousLocation = computed(() => {
   const result: Record<string, Record<string, string>> = {};
@@ -237,7 +265,7 @@ const deactivated = computed(() => {
 
 const formatTime = (time: string) => {
   const date = new Date(time);
-  return window.innerWidth <= 768 ? date.toLocaleTimeString() : date.toLocaleString();
+  return date.toLocaleTimeString().slice(0,5);
 };
 
 let labelIndex = 0;
@@ -361,6 +389,22 @@ const sortBy = (col: string) => {
     sortDirection.value = 'asc';
   }
 };
+
+// New functions for day navigation
+const prevDay = () => {
+  const days = uniqueDays.value;
+  const idx = days.indexOf(selectedDay.value);
+  if (idx > 0) {
+    selectedDay.value = days[idx - 1];
+  }
+};
+const nextDay = () => {
+  const days = uniqueDays.value;
+  const idx = days.indexOf(selectedDay.value);
+  if (idx < days.length - 1) {
+    selectedDay.value = days[idx + 1];
+  }
+};
 </script>
 
 <style scoped>
@@ -422,8 +466,9 @@ const sortBy = (col: string) => {
 
 .range-selector {
   display: flex;
-  align-items: end;
+  align-items: center;
   gap: 20px;
+  text-align: center;
 }
 
 .card {
@@ -464,5 +509,9 @@ const sortBy = (col: string) => {
 
 .deactivated-data th {
   background-color: var(--primary-light-bg);
+}
+
+#day-select {
+  width: 150px;
 }
 </style>
