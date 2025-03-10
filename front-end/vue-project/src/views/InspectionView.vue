@@ -16,10 +16,10 @@
               <option v-for="day in uniqueDays" :key="day" :value="day">{{ day }}</option>
             </select>
             <div class="d-flex align-items-center justify-content-center" style="min-width: 4rem;">
-              <button @mousedown="startHold(prevDay)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart="startHold(prevDay)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn-sm btn btn-secondary me-1">
+              <button @mousedown.prevent.stop="startHold(prevDay)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart.prevent.stop="startHold(prevDay)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn-sm btn btn-secondary me-1">
                 <font-awesome-icon :icon="faChevronLeft" />
               </button>
-              <button @mousedown="startHold(nextDay)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart="startHold(nextDay)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn btn-sm btn-secondary">
+              <button @mousedown.prevent.stop="startHold(nextDay)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart.prevent.stop="startHold(nextDay)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn btn-sm btn-secondary">
                 <font-awesome-icon :icon="faChevronRight" />
               </button>
             </div>
@@ -27,11 +27,11 @@
         </div>
         <div class="row col-xxl-6 col-12 mt-2 mt-xxl-0">
           <div class="range-selector">
-            <button @mousedown="startHold(decrementTimeIndex)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart="startHold(decrementTimeIndex)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn-sm btn btn-secondary me-1">
+            <button @mousedown.prevent.stop="startHold(decrementTimeIndex)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart.prevent.stop="startHold(decrementTimeIndex)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn-sm btn btn-secondary me-1">
               <font-awesome-icon :icon="faChevronLeft" />
             </button>
             <input id="time-range" type="range" :min="0" :max="dayTimeKeys.length - 1" v-model="selectedDayTimeIndex" class="form-range">
-            <button @mousedown="startHold(incrementTimeIndex)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart="startHold(incrementTimeIndex)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn btn-sm btn-secondary">
+            <button @mousedown.prevent.stop="startHold(incrementTimeIndex)" @mouseup="stopHold" @mouseleave="stopHold" @touchstart.prevent.stop="startHold(incrementTimeIndex)" @touchend="stopHold" @touchcancel="stopHold" @contextmenu.prevent class="btn btn-sm btn-secondary">
               <font-awesome-icon :icon="faChevronRight" />
             </button>
             <span style="min-width: 7rem" v-if="dayTimeKeys.length" class="align-middle">{{ formatTime(dayTimeKeys[0]) }} - {{ formatTime(dayTimeKeys[dayTimeKeys.length - 1]) }}</span>
