@@ -81,10 +81,9 @@ const getUpdatesForArea = (areaKey) => {
   const filteredUpdates: Record<number, { logged_at: string; roomID: number }[]> = {};
 
   Object.entries(props.updates).forEach(([userId, userUpdates]) => {
-    const relevantUpdates = userUpdates.filter(update => update.roomID.toString() === areaKey);
-    if (relevantUpdates.length) {
-      filteredUpdates[Number(userId)] = relevantUpdates;
-    }
+    const relevantUpdates = userUpdates.filter(update => update.roomID === areaKey);
+    filteredUpdates[Number(userId)] = relevantUpdates;
+    
   });
 
   return filteredUpdates;
@@ -261,6 +260,7 @@ onUnmounted(() => {
           <LiveUpdates 
             :userIds="userIds" 
             :areaKey="key"
+            :dataLabel="data.label"
             :updates="getUpdatesForArea(key)" 
             :fullUpdates="updates"
           />
