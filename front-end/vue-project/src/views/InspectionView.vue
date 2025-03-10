@@ -222,7 +222,7 @@
                 <thead>
                   <tr>
                     <th>picoID</th>
-                    <th>Type</th>
+                    <th>Last Type</th>
                     <th>Last Seen</th>
                     <th>Last Room</th>
                   </tr>
@@ -230,8 +230,8 @@
                 <tbody>
                   <tr v-for="([picoID, lastRoom]) in filteredDeactivatedDevices" :key="picoID">
                     <td>{{ picoID }}</td>
-                    <td>{{ movementData[selectedTime][picoID]?.type || 'Unknown' }}</td>
-                    <td>{{ formatTime(selectedTime) }}</td>
+                    <td>{{ movementData[dayTimeKeys[selectedDayTimeIndex - 1 > -1 ? selectedDayTimeIndex - 1 : 0]][lastRoom][picoID] }}</td>
+                    <td>{{ formatTime(dayTimeKeys[selectedDayTimeIndex - 1 > -1 ? selectedDayTimeIndex - 1 : 0]) }}</td>
                     <td :style="{backgroundColor: boxes[lastRoom]?.colour || '#FFFFFF'}">{{ boxes[lastRoom]?.label || lastRoom }}</td>
                   </tr>
                 </tbody>
@@ -343,7 +343,6 @@ const fetchMovementData = async () => {
 };
 
 const timeKeys = computed(() => Object.keys(movementData.value));
-const selectedTimeIndex = ref(0);
 
 const uniqueDays = computed(() => {
   const days = timeKeys.value.map(t => new Date(t).toISOString().slice(0,10));
@@ -453,7 +452,7 @@ const formatTime = (time: string) => {
 let labelIndex = 0;
 const generateTempLabel = () => {
   const callsigns = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"];
-  return `%${callsigns[labelIndex++]}`;
+  return `%${callsigns[labelIndex++]}%`;
 };
 
 let colorIndex = 0;
@@ -511,6 +510,8 @@ const fetchUserMovementData = async () => {
         roomLabel: roomID as string, // he hard coded the area names... bad coding practice- will bring this up
         loggedAt: timestamp,
       }));
+      // Add console.log to see the object
+      console.log('Object:', movementData.value[new Date(new Date(selectedTime.value).getTime() - 60000).toISOString()][lastRoom][picoID]);
     } catch (error) {
       console.error('Error fetching user movement data:', error);
     }
