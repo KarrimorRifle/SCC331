@@ -53,7 +53,6 @@
     <div v-else class="movement-data p-3 pb-4 pb-md-0" style="flex-grow: 1; overflow: auto; padding-bottom: 60px;" @scroll="handleScroll" @click="hideDateTimeSelector">
       <div class="d-flex justify-content-between align-items-center">
         <h4 class="current-time me-2">{{ formatTime(selectedTime) }}</h4>
-        <!-- New filter summary display -->
         <div class="selected-filters" v-if="selectedFilterPicoIDs.length || selectedFilterTypes.length || selectedFilterRooms.length" style="margin-bottom: 10px;">
           <div v-if="selectedFilterPicoIDs.length">
             PicoIDs:
@@ -134,11 +133,23 @@
       <div class="row">
         <div v-for="(box, roomID) in boxes" :key="roomID" :id="'room-' + roomID" class="col-md-4 mb-4">
           <div class="card">
-            <div class="card-header text-dark" :style="{backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor()}" :title="box.label.startsWith('%') ? 'Temporary value as no label available' : ''">
-              {{ box.label || generateTempLabel() }}
+            <div @click="showTable[roomID] = !(showTable[roomID] ?? true)" class="card-header text-dark d-flex justify-content-between align-middle" :style="{backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor()}" :title="box.label.startsWith('%') ? 'Temporary value as no label available' : ''">
+              <div class="fw-bold">{{ box.label || generateTempLabel() }}</div>
+              <font-awesome-icon v-if="showTable[roomID] ?? true" :icon="faChevronUp" />
+              <font-awesome-icon v-else :icon="faChevronDown" />
             </div>
             <div class="card-body">
-              <table class="table rounded-top-1">
+              <!-- New statistical counter -->
+              <div class="stats mb-2">
+                <div class="d-inline-block rounded me-2 p-1">Total: {{ Object.keys(movementData[selectedTime]?.[roomID] || {}).length }}</div>
+                <div class="d-inline-block rounded me-2 p-1" v-for="(box, roomID) in boxes" :key="roomID" :style="{'background-color': box.colour}">{{box.label}}: {{ Object.entries(movementData[selectedTime][roomID] || {}).reduce((total, obj) => {
+                  if(previousLocation[selectedTime][obj[0]] == roomID)
+                    return total? total + 1 : 1;
+                  return total? total : 0;
+                }, 0) }}</div>
+                <div class="d-inline-block rounded me-2 p-1">New: {{ Object.values(previousLocation[selectedTime]).filter(location => location === 'NEW').length }}</div>
+              </div>
+              <table class="table rounded-top-1" v-show="showTable[roomID] ?? true">
                 <thead class="rounded-top-1">
                   <tr class="rounded-top-1">
                     <th class="rounded-top-1 rounded-end-0"
@@ -193,11 +204,21 @@
       <div class="row">
         <div id="deactivated-devices" class="col-md-12 mb-4">
           <div class="card">
-            <div class="card-header">
-              Deactivated Devices
+            <div class="card-header d-flex justify-content-between" @click="showTable['deactivated'] = !(showTable['deactivated'] ?? true)">
+              <div class="fw-bold">Deactivated Devices</div>
+              <font-awesome-icon v-if="showTable['deactivated'] ?? true" :icon="faChevronUp" />
+              <font-awesome-icon v-else :icon="faChevronDown" />
             </div>
             <div class="card-body">
-              <table class="table">
+              <div class="stats mb-2">
+                <div class="d-inline rounded me-2 p-1">Total: {{ Object.keys(filteredDeactivatedDevices || {}).length }}</div>
+                <div class="d-inline rounded me-2 p-1" v-for="(box, roomID) in boxes" :key="roomID" :style="{'background-color': box.colour}">{{box.label}}: {{ Object.entries(movementData[selectedTime][roomID] || {}).reduce((total, obj) => {
+                  if(previousLocation[selectedTime][obj[0]] == roomID)
+                    return total? total + 1 : 1;
+                  return total? total : 0;
+                }, 0) }}</div>
+              </div>
+              <table class="table" v-show="showTable['deactivated'] ?? true">
                 <thead>
                   <tr>
                     <th>picoID</th>
@@ -221,7 +242,6 @@
       </div>
     </div>
 
-    <!-- Quick Selects for small screens -->
     <div class="quick-selects d-md-none fixed-bottom bg-light p-2 border-top" style="overflow-x: auto;">
       <div class="container-fluid">
         <div class="d-flex flex-nowrap justify-content-start">
@@ -230,12 +250,12 @@
                   @click="scrollToRoom(roomID)"
                   class="btn btn-sm text-dark me-2"
                   :style="{ backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor(), color: 'white' }">
-            {{ box.label }}
+            {{ box.label }} ({{ Object.keys(movementData[selectedTime]?.[roomID] || {}).length }})
           </button>
           <button @click="scrollToDeactivated"
                   class="btn btn-sm text-dark me-2"
                   style="background-color: #568EA6; border-color: #568EA6; color: white;">
-            Deactivated
+            Deactivated ({{ Object.keys(filteredDeactivatedDevices).length }})
           </button>
         </div>
       </div>
@@ -254,6 +274,8 @@ import type { presetListType, preset, boxType } from '@/utils/mapTypes';
 import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModal.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion, faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL } from '@fortawesome/free-solid-svg-icons';
+
+const showTable = ref<Record<string, boolean>>({});
 
 // New reactive state for date-time selector
 const showDateTimeSelector = ref(true);
@@ -292,7 +314,28 @@ const fetchMovementData = async () => {
     const response = await axios.get('http://localhost:5003/movement', {
       withCredentials: true
     });
-    movementData.value = response.data;
+
+    // Detect and fill gaps in timestamps
+    const temp = response.data;
+    const timestamps = Object.keys(temp).sort();
+    for (let i = 1; i < timestamps.length; i++) {
+      const prevTime = new Date(timestamps[i - 1]);
+      const currTime = new Date(timestamps[i]);
+      const diff = (currTime.getTime() - prevTime.getTime()) / 1000; // difference in seconds
+
+      if (diff > 60) { // assuming a gap is more than 60 seconds
+        const newTime = new Date(prevTime.getTime() + 60000).toISOString(); // add 1 minute
+        temp[newTime] = {}; // add empty data for the new timestamp
+      }
+    }
+
+    const sortedTemp = Object.keys(temp).sort().reduce((acc, key) => {
+      acc[key] = temp[key];
+      return acc;
+    }, {});
+
+    movementData.value = sortedTemp;
+
     console.log(response)
   } catch (error) {
     console.error('Error fetching movement data:', error);
@@ -416,7 +459,7 @@ const generateTempLabel = () => {
 let colorIndex = 0;
 const generateMutedColor = () => {
   const mutedColors = ["#b0c4de", "#d3d3d3", "#add8e6", "#e0ffff", "#f0e68c", "#dda0dd", "#ffb6c1"];
-  return mutedColors[colorIndex++];
+  return mutedColors[colorIndex++ % mutedColors.length];
 };
 
 onMounted(async () => {
