@@ -51,7 +51,7 @@ const router = createRouter({
     },
     {
       path: '/change-domain',
-      name: 'inspection',
+      name: 'super admin',
       component: () => import('../views/SuperAdminView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
     },

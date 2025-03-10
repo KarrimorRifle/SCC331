@@ -3,7 +3,7 @@
     <div class="super-admin-view-header">
       <h1>Update Configuration</h1>
       <button type="submit" class="update-button" @click="handleSubmit">
-        Update Configuration
+        Update
       </button>
     </div>
 

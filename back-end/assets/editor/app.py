@@ -48,7 +48,7 @@ def validate_session_cookie(request):
         return {"error": "Invalid cookie"}, 401 #, "message": r.text
     
     data = r.json()
-    if data.get("authority") != "Admin":
+    if data.get("authority") != "Admin" and data.get("authority") != "Super Admin" :
         print("ERR: Non-admin cookie")
         return {"error": "Forbidden", "message": "User isn't a valid admin"}, 403
     
