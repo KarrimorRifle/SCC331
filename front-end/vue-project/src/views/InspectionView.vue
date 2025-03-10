@@ -38,7 +38,7 @@
       <div class="row">
         <div v-for="(box, roomID) in boxes" :key="roomID" class="col-md-4 mb-4">
           <div class="card">
-            <div class="card-header text-dark" :style="{backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor()}" :title="box.label.startsWith('%') ? 'Temporary value as no label available' : ''">
+            <div class="card-header" :style="{backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor(),  color: getTextColour(box.colour || generateMutedColor())}" :title="box.label.startsWith('%') ? 'Temporary value as no label available' : ''">
               {{ box.label || generateTempLabel() }}
             </div>
             <div class="card-body">
@@ -104,6 +104,7 @@ import axios from 'axios';
 import type { Record } from 'vue';
 import type { presetListType, preset, boxType } from '@/utils/mapTypes';
 import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModal.vue';
+import { getTextColour } from '../utils/helper/colorUtils';
 
 const showModal = ref(false);
 const isLoading = ref(false);
@@ -269,16 +270,23 @@ const fetchUserMovementData = async () => {
     try {
       const response = await axios.get(`http://localhost:5003/pico/${userID.value}`, { data: {time: selectedTime.value},withCredentials: true });
       const picoMovementData = response.data.movement;
-      userMovementHistory.value = Object.entries(picoMovementData).map(([timestamp, roomID]) => ({
-        roomLabel: roomID as string, // he hard coded the area names... bad coding practice- will bring this up
-        loggedAt: timestamp,
-      }));
+      userMovementHistory.value = Object.entries(picoMovementData).map(([timestamp, roomID]) => {
+        const mappedRoom = boxData.value[roomID as string]; 
+        return {
+          roomLabel: mappedRoom?.position.label || `Room ${roomID}`,
+          roomColor: mappedRoom?.position.colour || 'lightgray',
+          loggedAt: timestamp,
+        };
+      });
+
     } catch (error) {
       console.error('Error fetching user movement data:', error);
     }
   }
 };
-
+onMounted(async()=>{
+  fetchUserMovementData();
+})
 watch([selectedTime, userID], fetchUserMovementData);
 </script>
 

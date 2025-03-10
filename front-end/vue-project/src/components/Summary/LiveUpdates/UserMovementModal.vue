@@ -14,6 +14,7 @@ const props = defineProps({
     required: true,
   },
 });
+console.log("jf: ", props.userRoomHistory);
 const emit = defineEmits(['close']);
 
 const presetStore = usePresetStore();
