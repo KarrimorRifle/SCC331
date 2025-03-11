@@ -330,10 +330,11 @@ def summary_average():
             return jsonify({"error": "Missing or invalid parameters: rooms list is empty"}), 400
 
     now = datetime.utcnow()
-    start_time_str = req_data.get("start_time")
-    end_time_str = req_data.get("end_time")
-    period_str = req_data.get("time_periods", "1hr")
-    rooms = req_data.get("rooms")  # Optional room filter
+    # Updated: check start_time and end_time from JSON first, then from query parameters.
+    start_time_str = req_data.get("start_time") or request.args.get("start_time")
+    end_time_str = req_data.get("end_time") or request.args.get("end_time")
+    period_str = req_data.get("time_periods") or request.args.get("time_periods", "1hr")
+    rooms = req_data.get("rooms") or request.args.getlist("rooms")
 
     try:
         period_seconds = parse_period(period_str)
