@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
 import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
@@ -68,7 +68,7 @@ const openGraph = async(areaLabel) => {
       const roomData = (rooms as any)[id];
       if (roomData) {
         let object = {
-          timestamp: time.slice(11,17),
+          timestamp: time.slice(11,16),
           light: 0,
           IAQ: 0,
           sound: 0,
@@ -112,6 +112,10 @@ watch(presetData, (newVal, oldVal) => {
       selectedAreas.value.push(area.label);
     }
   });
+});
+
+onMounted(() => {
+  selectedAreas.value = presetData.value.map(area => area.label);
 });
 
 </script>
