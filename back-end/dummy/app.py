@@ -116,13 +116,12 @@ def insert_pico_environment(conn, data):
     cursor.close()
 
 def generate_dummy_environment_data():
-    # Generate dummy environment data for rooms 1, 2, and 3; 30 entries per room leading up to now
+    # Generate dummy environment data for rooms 1, 2, and 3; 60 entries per room leading up to now
     data = []
     base_time = datetime.now().replace(second=0, microsecond=0)
-    entries = 30  # per room
+    entries = 60  # per room
     for room in ['d83add67ed84', 'd83add41a997', 'd83add8af3cf']:
         for i in range(entries):
-            # Create timestamps from (now - 29 mins) up to now.
             logged_at = base_time - timedelta(minutes=(entries - 1 - i))
             picoID = f'PICO-{room}-{i+1}'
             # Generate realistic measurement values
@@ -137,13 +136,13 @@ def generate_dummy_environment_data():
     return data
 
 def generate_dummy_users_data():
-    # Generate tracking data for 10 users over the past 30 minutes (1 record per minute)
+    # Generate tracking data for 10 users over the past hour (1 record per minute)
     data = []
-    base_time = datetime.now().replace(second=0, microsecond=0) - timedelta(minutes=29)
+    base_time = datetime.now().replace(second=0, microsecond=0) - timedelta(minutes=59)
     for d in range(1, 11):
         picoID = f"PICO-User-{d}"
         current_room = random.choice(['d83add67ed84', 'd83add41a997', 'd83add8af3cf'])
-        for m in range(30):
+        for m in range(60):
             time_stamp = base_time + timedelta(minutes=m)
             # With 30% chance, change room (choose from the other two)
             if random.random() < 0.3:
@@ -156,8 +155,8 @@ def generate_dummy_device_data(device_count, device_type):
     base_time = datetime.now().replace(second=0, microsecond=0)
     for d in range(1, device_count + 1):
         skip_next = False
-        for m in range(30):
-            current_time = base_time - timedelta(minutes=(29 - m))
+        for m in range(60):
+            current_time = base_time - timedelta(minutes=(59 - m))
             if skip_next:
                 skip_next = False
                 continue

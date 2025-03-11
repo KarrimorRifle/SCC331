@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faXmark, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { defineProps, ref, watch, onMounted, onBeforeUnmount, computed, type PropType } from 'vue';
 import { Chart, registerables } from 'chart.js';
 import axios from 'axios';
@@ -96,8 +96,10 @@ interface EnvironmentData {
 
 const environmentData = ref<EnvironmentData[]>([]);
 
-const renderChart = async() => {
+const loading = ref<boolean>(false);
 
+const renderChart = async() => {
+  loading.value = true;
   const now = new Date(currentUpperTime.value);
   const oneHourAgo = new Date(currentUpperTime.value - totalTime.value);
   const request = await axios.get('/summary/average', {
@@ -250,16 +252,24 @@ const renderChart = async() => {
       },
     });
   }
+  loading.value = false;
 };
 
-// Watch for changes and update chart
-// watch(() => environmentData.value, renderChart, { deep: true });
+// Replace watchers
+let debounceTimer: number | null = null;
+const debouncedRender = () => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    renderChart();
+    debounceTimer = null;
+  }, 180);
+};
 
-watch(visibleDatasets, renderChart, { deep: true });
-watch(currentLabel, renderChart)
-watch(selectedTimeRange, renderChart)
-watch(sampleSize, renderChart )
-watch(currentUpperTime, renderChart)
+watch(visibleDatasets, debouncedRender, { deep: true });
+watch(currentLabel, debouncedRender);
+watch(selectedTimeRange, debouncedRender);
+watch(sampleSize, debouncedRender);
+watch(currentUpperTime, debouncedRender);
 onMounted(() => {
   let now = new Date();
   currentUpperTime.value = now.getTime()
@@ -303,8 +313,14 @@ onBeforeUnmount(() => {
               <label class="px-2" style="border-radius: 4px; background-color: rgba(153,102,255,0.2)"><input type="checkbox" v-model="visibleDatasets.pressure" /> Pressure</label>
               <label class="px-2" style="border-radius: 4px; background-color: rgba(0,255,255,0.2)"><input type="checkbox" v-model="visibleDatasets.humidity" /> Humidity</label>
             </div>
-            <div class="chart-container">
+            <div v-if="!loading && environmentData.length === 0">
+              No data to display
+            </div>
+            <div v-show="!loading && environmentData.length !== 0" class="chart-container">
               <canvas ref="chartCanvas"></canvas>
+            </div>
+            <div v-if="loading" class="spinner-container">
+              <font-awesome-icon :icon="faSpinner" spin size="2x" />
             </div>
           </div>
           <div class="button-container d-flex justify-content-center">
@@ -314,7 +330,7 @@ onBeforeUnmount(() => {
             <div class="d-inline-block me-2 align-bottom">
               {{ (new Date(currentUpperTime - totalTime)).toLocaleTimeString() }} - {{(new Date(currentUpperTime)).toLocaleTimeString() }}
             </div>
-            <button class="btn btn-secondary btn-sm" @click="currentUpperTime += totalTime">
+            <button class="btn btn-secondary btn-sm" @click="currentUpperTime = Math.min(currentUpperTime + totalTime, Date.now())">
               >
             </button>
             <select v-model="selectedTimeRange" class="form-select form-select-sm" style="width: auto; margin: 0 0.5rem;" limit="3">
@@ -429,5 +445,13 @@ onBeforeUnmount(() => {
 .toggle-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.spinner-container {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 </style>
