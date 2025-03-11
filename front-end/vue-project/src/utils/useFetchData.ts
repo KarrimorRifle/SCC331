@@ -1,59 +1,12 @@
-import { ref, reactive, watch, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import axios from "axios";
 
-const LOCAL_STORAGE_KEY = 'overlayAreas';
-
-// Function to load overlay areas from local storage or default values
-const loadOverlayAreas = () => {
-  const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-  return storedData ? JSON.parse(storedData) : [
-    { label: "Area 1", color: "#F18C8E"},
-    { label: "Area 2", color: "#F0B7A4"},
-    { label: "Area 3", color: "#F1D1B5"},
-    { label: "Area 4", color: "#568EA6"}
-  ];
-};
-
-export function useFetchData(picoIds) {
+export function useFetchData(picoIds: any) {
   // Reactive state
-  const overlayAreasConstant = reactive(loadOverlayAreas());
-  const overlayAreasData = ref([]);
   const updates = ref({});
-  const environmentHistory = ref({});
   const warnings = ref([]);
-  let pollingInterval = null;
-  let warningInterval = null;
-
-  const updateOverlayAreaColor = (roomID: string, newColor: string) => {
-    const area = overlayAreasConstant.find(area => area.label === `Area ${roomID}`);
-    if (area) {
-      area.color = newColor; // Update color in the reactive state
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(overlayAreasConstant)); // Save to localStorage
-    }
-  };
-  
-  const updateAllOverlayAreas = (newOverlayAreas) => {
-    overlayAreasConstant.splice(0, overlayAreasConstant.length, ...newOverlayAreas); // Update reactive state
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newOverlayAreas)); // Persist changes
-  };
-
-  // Function to track environment data
-  const trackEnvironmentData = (label, data) => {
-    if (!data) return;
-    const timestamp = Date.now();
-    if (!environmentHistory.value[label]) {
-      environmentHistory.value[label] = [];
-    }
-    environmentHistory.value[label].push({
-      timestamp,
-      temperature: data.temperature,
-      sound: data.sound,
-      light: data.light,
-    });
-    if (environmentHistory.value[label].length > 20) {
-      environmentHistory.value[label].shift();
-    }
-  };
+  let pollingInterval: number | null | undefined = null;
+  let warningInterval: number | null | undefined = null;
 
   const fetchWarnings = async () => {
     try {
@@ -73,25 +26,7 @@ export function useFetchData(picoIds) {
 
   // Function to fetch data
   const fetchData = async () => {
-        try {
-      // Fetch overlay data
-      const summaryResponse = await axios.get("/summary", {withCredentials: true});
-      const summaryData = summaryResponse.data;
-
-      // Track environment data
-      Object.entries(summaryData).forEach(([key, area]) => {
-        if (area.environment && Object.keys(area.environment).length > 0) {
-          trackEnvironmentData(key, area.environment);
-        } else {
-          console.warn(`Empty or missing environment data for Key: ${key}`);
-        }
-      });
-
-      if (JSON.stringify(summaryData) !== JSON.stringify(overlayAreasData.value)) {
-        //console.log('Overlay areas updated:', summaryData);
-        overlayAreasData.value = summaryData;
-      }
-
+    try {
       // Fetch updates from multiple Pico IDs
       for (const PICO_ID of picoIds) {
         const picoResponse = await axios.get(`/pico/${PICO_ID}`, {withCredentials: true});
@@ -134,18 +69,8 @@ export function useFetchData(picoIds) {
     if (warningInterval) clearInterval(warningInterval);
   });
 
-  // Watch for overlay area changes and save to localStorage
-  watch(overlayAreasConstant, (newValue) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newValue));
-  }, { deep: true });
-
   return {
-    overlayAreasConstant,
-    overlayAreasData,
-    updateOverlayAreaColor,
-    updateAllOverlayAreas,
     updates,
-    environmentHistory,
     warnings,
   };
 }

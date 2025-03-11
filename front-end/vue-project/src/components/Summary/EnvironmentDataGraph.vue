@@ -12,7 +12,7 @@ const props = defineProps({
     required: true,
   },
   environmentData: {
-    type: Array,
+    type: Object,
     required: true, // Array of { temperature, sound, light, timestamp }
   },
   showModal: {
@@ -21,6 +21,7 @@ const props = defineProps({
   },
 });
 
+console.log(props.environmentData);
 const emit = defineEmits(['close']); // Emits close event
 
 const chartCanvas = ref(null);
@@ -33,33 +34,58 @@ const renderChart = () => {
 
   if (chartCanvas.value) {
     chartInstance = new Chart(chartCanvas.value, {
-      type: 'line',
+      type: 'line', // Change to line chart
       data: {
-        labels: props.environmentData.map((d) => new Date(d.timestamp).toLocaleTimeString()), // X-axis timestamps
+        labels: ['Current'], // No timestamps, just a single label
         datasets: [
           {
             label: '🌡️ Temperature (°C)',
-            data: props.environmentData.map((d) => d.temperature),
+            data: [props.environmentData?.temperature], // Direct access instead of map()
             borderColor: 'red',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderWidth: 2,
             fill: false,
+            tension: 0.4, // Smooth curve
           },
           {
             label: '🔊 Sound (dB)',
-            data: props.environmentData.map((d) => d.sound),
+            data: [props.environmentData?.sound], // Direct access
             borderColor: 'blue',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderWidth: 2,
             fill: false,
+            tension: 0.4,
           },
           {
             label: '💡 Light (lux)',
-            data: props.environmentData.map((d) => d.light),
+            data: [props.environmentData?.light], // Direct access
             borderColor: 'yellow',
+            backgroundColor: 'rgba(255, 206, 86, 0.2)',
+            borderWidth: 2,
             fill: false,
+            tension: 0.4,
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        scales: {
+          x: {
+            display: false, // Hide x-axis since it's just one value
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 5, // Adjust step size for better readability
+            },
+          },
+        },
+        elements: {
+          point: {
+            radius: 5, // Increase point size
+          },
+        },
       },
     });
   }
@@ -109,14 +135,14 @@ onBeforeUnmount(() => {
 
 /* Modal Content */
 .modal-content {
-  background: white;
+  background: var(--primary-light-bg);
   padding: 20px;
   width: 600px;
   height: 400px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   position: relative;
-  color: black;
+  color: var(--primary-dark-text);
 }
 
 .modal-graph-header{

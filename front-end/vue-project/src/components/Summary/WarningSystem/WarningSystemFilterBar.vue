@@ -39,7 +39,7 @@ onMounted(() => {
   justify-content: space-between;
   gap: 15px;
   padding: 8px 12px;
-  background: #ffffff;
+  background: var(--primary-light-bg);
   border-radius: 10px;
   border: 2px solid #568EA6;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
@@ -51,7 +51,7 @@ onMounted(() => {
 label {
   font-size: 16px;
   font-weight: bold;
-  color: #305f72;
+  color: var(--primary-dark-text);
   white-space: nowrap;
 }
 
@@ -63,21 +63,11 @@ select {
   border: 2px solid #ccc;
   border-radius: 8px;
   outline: none;
-  background: white;
+  background: var(--primary-light-bg);
   cursor: pointer;
   transition: all 0.3s ease-in-out;
-  color: #305f72;
+  color: var(--primary-dark-text);
   font-weight: bold;
 }
 
-/* Dropdown Hover Effect */
-select:hover {
-  border-color: #305f72;
-}
-
-/* Dropdown Focus Effect */
-select:focus {
-  border-color: #568EA6;
-  box-shadow: 0px 0px 6px rgba(86, 142, 166, 0.5);
-}
 </style>

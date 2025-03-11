@@ -53,7 +53,7 @@ const selectedTab = ref("map");
 .tab-bar {
   display: flex;
   justify-content: space-around;
-  background: #305f72;
+  background: var(--primary-dark-bg);
   padding: 12px;
   position: fixed;
   bottom: 0;
@@ -69,17 +69,13 @@ const selectedTab = ref("map");
   border: none;
   padding: 12px;
   font-size: 18px;
-  color: white;
+  color: var(--primary-light-text);
   cursor: pointer;
   transition: 0.3s;
 }
 
 .tab-bar button.active {
-  border-bottom: 3px solid #f18c8e;
+  border-bottom: 3px solid var(--active);
   font-weight: bold;
-}
-
-.tab-bar button:hover {
-  background: rgba(255, 255, 255, 0.2);
 }
 </style>

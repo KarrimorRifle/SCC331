@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 import requests
 import time
+import base64
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -132,7 +133,7 @@ def get_preset_details(preset_id):
             print(preset_row["image_data"])
             image = {
                 "name": preset_row["image_name"],
-                "data": preset_row["image_data"].decode('utf-8')
+                "data": base64.b64encode(preset_row["image_data"]).decode('utf-8')
             }
 
         # Minimal representation of "permission"
@@ -153,6 +154,55 @@ def get_preset_details(preset_id):
 
     except Error as e:
         print(f"ERR: Error encountered retrieving preset data: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/home', methods=['GET'])
+def get_front_page():   
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "DB connection unavailable"}), 500
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT domain, loginText, hero_title, hero_subtitle, image_name, image_data FROM config WHERE id=1")
+        config_row = cursor.fetchone()
+        # Changed code: decode image_data if present
+        image_data = config_row.get("image_data")
+        if image_data and isinstance(image_data, bytes):
+            image_data = base64.b64encode(image_data).decode('utf-8')
+        config = {
+            "domain": config_row.get("domain"),
+            "loginText": config_row.get("loginText"),
+            "hero": {
+                "title": config_row.get("hero_title"),
+                "subtitle": config_row.get("hero_subtitle"),
+                "image": {
+                    "name": config_row.get("image_name"),
+                    "data": image_data
+                }
+            }
+        }
+        cursor.execute("SELECT title, description, icon FROM features")
+        features = cursor.fetchall()
+        cursor.execute("SELECT * FROM how_it_works")
+        howItWorks = cursor.fetchall()
+        cursor.execute("""
+            SELECT primaryDarkBg, primaryDarkText, primarySecondaryBg, primarySecondaryText, 
+                   primaryLightBg, primaryLightText, accent, accentHover 
+            FROM theme_colours WHERE id=1
+        """)
+        theme = cursor.fetchone()
+        
+        front_page = {
+            "config": config,
+            "features": features,
+            "howItWorks": howItWorks,
+            "theme": theme
+        }
+        return jsonify(front_page), 200
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()

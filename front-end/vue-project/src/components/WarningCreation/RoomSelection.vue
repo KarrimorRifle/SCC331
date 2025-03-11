@@ -56,8 +56,8 @@ const toggleRoomSelection = (room: any) => {
 /* Overall Room Selection Container */
 
 .warning-message {
-  background: #FF6B6B !important;
-  color: white !important;
+  background: var(--warning-bg) !important;
+  color: var(--primary-light-text) !important;
   border: none;
   cursor: pointer;
   font-weight: bold;
@@ -107,7 +107,7 @@ input[type="checkbox"] {
 
 label {
   font-size: 18px;
-  color: white;
+  color: var(--primary-light-text);
   cursor: pointer;
   display: flex;
   align-items: center;
