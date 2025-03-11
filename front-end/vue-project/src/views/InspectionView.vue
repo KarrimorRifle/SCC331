@@ -260,7 +260,7 @@
       </div>
     </div>
 
-    <div class="quick-selects d-md-none fixed-bottom bg-light p-2 border-top" style="overflow-x: auto;">
+    <div class="quick-selects d-md-none fixed-bottom bg-light p-2 border-top" style="overflow-x: auto; z-index: 4;">
       <div class="container-fluid">
         <div class="d-flex flex-nowrap justify-content-start">
           <button v-for="(box, roomID) in boxes"
