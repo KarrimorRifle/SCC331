@@ -18,7 +18,7 @@
 
 class BluetoothSensor : public SensorType {
     public:
-        BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds, uint16_t BluetoothID, String TrackerGroup, String* ReadableID);
+        BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds, String TrackerGroup, String* ReadableID);
 
         virtual void setup();
         virtual void loop();
@@ -42,7 +42,6 @@ class BluetoothSensor : public SensorType {
         unsigned long lastActionTime;
         bool isScanning;
         bool currentlySetUp;
-        uint16_t bluetoothID; // The room the user / luggage is currently in, according to the majorID picked up
 
         MqttSubscription globalWarningSubscription;
         MqttSubscription warningSubscription;

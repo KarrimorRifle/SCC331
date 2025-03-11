@@ -95,7 +95,6 @@ CREATE TABLE IF NOT EXISTS tracking_groups {
 CREATE TABLE IF NOT EXISTS bluetooth_tracker {
 	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
 	trackingGroupID INT,
-	logged_at TIMESTAMP NOT NULL,
 	FOREIGN KEY (picoID) REFERENCES picoDevice(picoID) ON DELETE CASCADE,
 	FOREIGN KEY (trackingGroupID) REFERENCES tracking_groups(groupID) ON DELETE SET NULL
 }
@@ -125,7 +124,7 @@ CREATE TABLE IF NOT EXISTS environment_sensor_data  --1 to 1 relationship with p
 
 
 -- Test Data 
-INSERT INTO pico_device(picoID, )
+-- INSERT INTO pico_device(picoID, )
 
 --
 

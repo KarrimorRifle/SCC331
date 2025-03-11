@@ -30,9 +30,9 @@ Adafruit_NeoPixel led(3, 6, NEO_GRB + NEO_KHZ800); // LEDs
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 UnassignedSensor configUnassigned = UnassignedSensor();
-SensorType *currentSensorConfig;
+SensorType *currentSensorConfig = &configUnassigned;
 RoomSensor roomSensorConfig = RoomSensor(&display, &mqtt, bluetoothID);
-BluetoothSensor bluetoothSensorConfig = BluetoothSensor(&display, &mqtt, &led, bluetoothID, "", &readableID);
+BluetoothSensor bluetoothSensorConfig = BluetoothSensor(&display, &mqtt, &led, "", &readableID);
 
 
 void setupDisplay() {
@@ -170,28 +170,13 @@ void handleConfigMessage(String message) {
 
 	if (doc.containsKey("BluetoothID")) {
 		bluetoothID = doc["BluetoothID"].as<uint16_t>();
-
-		//TODO - SET BLUETOOTH ID FOR ROOM SENSORS
-
-		String bluetoothTrackerGroup = "";
-
-		if (doc.containsKey("TrackerGroup")) {
-			bluetoothTrackerGroup = doc["TrackerGroup"].as<String>();
-		}
 		
-		if (!bluetoothTrackerGroup.equals(bluetoothSensorConfig.getCurrentTrackerGroup())) {
-			bluetoothSensorConfig.setCurrentTrackerGroup(bluetoothTrackerGroup);
-		}
+		roomSensorConfig.setBluetoothID(bluetoothID);
 	}
-	else {
-		display.clearDisplay();
-		display.setCursor(0, 0);
-		display.println("Invalid BT ID Recieved.");
-		display.println("Irrecoverable Error, exiting.");
-		display.println("Hardware ID: " + hardwareID);
-		display.display(); 
 
-		exit(0);
+	if (doc.containsKey("TrackerGroup")) {
+		String bluetoothTrackerGroup = doc["TrackerGroup"].as<String>();
+		bluetoothSensorConfig.setCurrentTrackerGroup(bluetoothTrackerGroup);
 	}
 }
 

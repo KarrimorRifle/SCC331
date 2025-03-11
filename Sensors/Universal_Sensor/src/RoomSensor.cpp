@@ -12,8 +12,9 @@ RoomSensor::RoomSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, uint16_t
     display = Display;
     mqtt = Mqtt;
     lastActionTime = millis();
-    bluetoothID = 1;
+    bluetoothID = BluetoothID;
 }
+
 
 void RoomSensor::setup() {
   // Initialise Climate Sensors:
@@ -77,7 +78,18 @@ void RoomSensor::loop() {
 
 
 void RoomSensor::unsetup() {
+  BTstack.stopAdvertising();
+}
 
+
+void RoomSensor::setBluetoothID(uint16_t newBluetoothID) {
+  if (newBluetoothID != bluetoothID) {
+    bluetoothID = newBluetoothID;
+
+    BTstack.stopAdvertising();
+    BTstack.iBeaconConfigure(&ROOM_UUID, bluetoothID, 0);
+    BTstack.startAdvertising();
+  }
 }
 
 

@@ -9,7 +9,7 @@ int BluetoothSensor::strongestScanBluetoothID = -1;
 int BluetoothSensor::strongestRSSI = -10000;
 
 
-BluetoothSensor::BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds, uint16_t BluetoothID, String TrackerGroup, String* ReadableID) {
+BluetoothSensor::BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds, String TrackerGroup, String* ReadableID) {
   display = Display;
   mqtt = Mqtt;
   leds = Leds;
@@ -18,7 +18,6 @@ BluetoothSensor::BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt
   lastActionTime = 0;
   isScanning = false;
   currentlySetUp = false;
-  bluetoothID = BluetoothID;
   trackerGroup = TrackerGroup;
   readableID = ReadableID;
   warningSubscription = MqttSubscription();

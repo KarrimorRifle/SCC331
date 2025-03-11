@@ -20,6 +20,7 @@ class RoomSensor : public SensorType {
         virtual void loop();
         virtual void unsetup();
         virtual int getSensorType();
+        void setBluetoothID(uint16_t newBluetoothID);
 
     private:
         Adafruit_SSD1306* display;
