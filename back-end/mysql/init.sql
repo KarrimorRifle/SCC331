@@ -339,6 +339,8 @@ FLUSH PRIVILEGES;
 
 CREATE USER IF NOT EXISTS 'dummy'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'dummy';
 GRANT SELECT, INSERT ON pico.* TO 'dummy'@'%';
+GRANT SELECT, INSERT, UPDATE ON assets.* TO 'dummy'@'%';
+GRANT SELECT, INSERT, UPDATE ON accounts.* TO 'dummy'@'%';
 
 -- =============================================
 -- Security Hardening
