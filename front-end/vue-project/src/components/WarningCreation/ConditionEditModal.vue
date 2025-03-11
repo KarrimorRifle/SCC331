@@ -66,7 +66,7 @@ const saveChanges = () => {
 }
 
 .modal-content {
-  background: white;
+  background: var(--primary-light-bg);
   padding: 20px;
   border-radius: 8px;
   width: 400px;
@@ -80,8 +80,8 @@ const saveChanges = () => {
 }
 
 button {
-  background: #568EA6;
-  color: white;
+  background: var(--primary-bg);
+  color: var(--primary-light-text);
   border: none;
   padding: 8px 12px;
   font-weight: bold;
@@ -91,7 +91,7 @@ button {
 }
 
 button:hover {
-  background: #305F72;
+  background: var(--primary-bg-hover);
 }
 
 </style>

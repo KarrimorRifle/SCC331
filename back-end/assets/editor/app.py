@@ -108,6 +108,19 @@ def validate_owner_or_trusted_cookie(request, owner, trustees):
 
     return None
 
+def validate_super_admin(request):
+    VALIDATION_SITE = "http://account_login:5002/validate_cookie"
+    cookie = request.cookies.get("session_id")
+    if not cookie:
+        return {"error": "Invalid cookie", "message": "Cookie missing"}, 401
+    r = requests.get(VALIDATION_SITE, headers={"session-id": cookie})
+    if r.status_code != 200:
+        return {"error": "Invalid cookie"}, 401
+    data = r.json()
+    if data.get("authority") != "Super Admin":
+        return {"error": "Forbidden", "message": "User isn't a super admin"}, 403
+    return data
+
 @app.route('/presets', methods=['POST'])
 def presets():
     cookie_res = validate_session_cookie(request)
@@ -349,6 +362,78 @@ def delete_preset(preset_id):
     finally:
         cursor.close()
         connection.close()
+
+@app.route('/home', methods=['PATCH'])
+def update_front_page():
+    # Check if the user is a super admin
+    super_admin = validate_super_admin(request)
+    if isinstance(super_admin, tuple):  # error returned
+        return super_admin[0], super_admin[1]
+    
+    data = request.get_json()
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    cursor = conn.cursor()
+    try:
+        # Update config using front page config data; hero data is nested
+        hero = data["config"].get("hero", {})
+        image_name = hero.get("image", {}).get("name")
+        image_data = hero.get("image", {}).get("data")
+        cursor.execute("""
+            UPDATE config 
+            SET domain = %s, loginText = %s, hero_title = %s, hero_subtitle = %s, image_name = %s, image_data = %s 
+            WHERE id = 1
+        """, (
+            data["config"]["domain"],
+            data["config"]["loginText"],
+            hero.get("title"),
+            hero.get("subtitle"),
+            image_name,
+            image_data
+        ))
+        
+        # Refresh features: delete and insert new rows
+        cursor.execute("DELETE FROM features")
+        for feature in data["features"]:
+            cursor.execute("""
+                INSERT INTO features (icon, title, `description`)
+                VALUES (%s, %s, %s)
+            """, (feature["icon"], feature["title"], feature["description"]))
+        
+        # Refresh how_it_works: delete and insert new rows
+        cursor.execute("DELETE FROM how_it_works")
+        for step in data["howItWorks"]:
+            cursor.execute("""
+                INSERT INTO how_it_works (step, title, `description`)
+                VALUES (%s, %s, %s)
+            """, (step["step"], step["title"], step["description"]))
+        
+        # Update theme_colours with provided theme values
+        theme = data["theme"]
+        cursor.execute("""
+            UPDATE theme_colours 
+            SET primaryDarkBg = %s, primaryDarkText = %s, primarySecondaryBg = %s, primarySecondaryText = %s, 
+                primaryLightBg = %s, primaryLightText = %s, accent = %s, accentHover = %s 
+            WHERE id = 1
+        """, (
+            theme["primaryDarkBg"],
+            theme["primaryDarkText"],
+            theme["primarySecondaryBg"],
+            theme["primarySecondaryText"],
+            theme["primaryLightBg"],
+            theme["primaryLightText"],
+            theme["accent"],
+            theme["accentHover"]
+        ))
+        conn.commit()
+        return jsonify({"message": "Front page updated"}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 if __name__ == '__main__':
     get_db_connection()  # Ensure the connection is established at startup

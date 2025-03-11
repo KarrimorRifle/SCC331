@@ -21,10 +21,6 @@ const props = defineProps({
   fullUpdates: {  // Pass all updates for accurate modal data
     type: Object as PropType<Record<number, { logged_at: string; roomID: number }[]>>,
   },
-  overlayAreasConstant: {
-    type: Array as PropType<{ label: string; color: string; position: object }[]>,
-    required: true,
-  },
 });
 const presetStore = usePresetStore();
 const presetData = computed(() => Object.values(presetStore.boxes_and_data));
@@ -102,7 +98,6 @@ const groupedUsersByRoom = computed(() => {
     presetData.value.filter(area => area.label === `${props.areaKey}`) : 
     presetData.value;
 
-  console.log("area to show: ", areasToShow);
   // Populate roomMap **only for the filtered users of the area**
   Object.entries(props.updates).forEach(([userId, userUpdates]) => {
     try{
@@ -218,7 +213,6 @@ watch(
     <!-- User Movement Modal -->
     <UserMovementModal
       :showModal="showModal"
-      :overlayAreasConstant="overlayAreasConstant"
       :selectedUserId="selectedUserId"
       :userRoomHistory="userRoomHistory"
       @close="closeModal"
@@ -230,9 +224,9 @@ watch(
 <style scoped>
 .live-updates {
   padding: 20px;
-  background-color: #f8f8ff;
+  background-color: var(--primary-light-bg);
   border-top: 1px solid #ccc;
-  color: black;
+  color: var(--primary-light-text);
 }
 
 .loading-throbber {
@@ -245,7 +239,7 @@ watch(
 
 .spinner {
   border: 4px solid rgba(0, 0, 0, 0.1);
-  border-top: 4px solid #568EA6;
+  border-top: 4px solid var(--primary-bg);
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -264,8 +258,8 @@ watch(
   gap: 20px;
   margin-bottom: 20px;
   padding: 15px;
-  background: #ffffff;
-  border: 2px solid #568EA6;
+  background: var(--primary-light-bg);
+  border: 2px solid var(--primary-bg);
   border-radius: 10px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -273,7 +267,7 @@ watch(
 .date-time-filter label {
   font-weight: bold;
   font-size: 14px;
-  color: #305F72;
+  color: var(--primary-dark-text);
   margin-bottom: 5px;
 }
 
@@ -288,8 +282,7 @@ watch(
 }
 
 .date-time-filter input:focus {
-  border-color: #568EA6;
-  box-shadow: 0 0 5px rgba(86, 142, 166, 0.5);
+  border-color: var(--primary-bg);
 }
 
 .room-list {
@@ -300,15 +293,15 @@ watch(
 }
 
 .room-card {
-  border: 2px solid #568EA6;
+  border: 2px solid var(--primary-bg);
   border-radius: 10px;
   padding: 15px;
-  background: white;
+  background: var(--primary-light-bg);
   text-align: center;
 }
 
 h3 {
-  color: white;
+  color: var(--primary-light-text);
   margin-bottom: 10px;
   padding: 10px;
   border-radius: 5px;
@@ -317,12 +310,12 @@ h3 {
 .hour-group {
   margin-top: 15px;
   padding: 10px;
-  background: #f0f0f0;
+  background: var(--primary-light-bg);
   border-radius: 5px;
 }
 
 .hour-title {
-  color: #F18C8E;
+  color: var(--active-text);
   font-size: 16px;
   margin-bottom: 5px;
 }
@@ -335,7 +328,7 @@ h3 {
 
 .user-item {
   cursor: pointer;
-  background: #f1f1f1;
+  background: var(--primary-light-bg);
   margin-bottom: 5px;
   padding: 8px;
   border-radius: 5px;
@@ -346,7 +339,7 @@ h3 {
 
 .timestamp {
   font-weight: bold;
-  color: #568EA6;
+  color: var(--primary-text);
   margin-left: 5px;
 }
 
@@ -354,7 +347,7 @@ h3 {
   grid-column: 1 / -1;
   text-align: center;
   font-size: 16px;
-  color: #999;
+  color: var(--negative-text);
   margin-top: 20px;
 }
 </style>

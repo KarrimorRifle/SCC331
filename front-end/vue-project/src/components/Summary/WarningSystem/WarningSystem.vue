@@ -11,14 +11,9 @@ const props = defineProps({
     type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
     required: true,
   },
-  overlayAreasConstant: {
-    type: Array as PropType<{ label: string; color: string; position: object }[]>,
-    required: true,
-  },
 });
 const presetStore = usePresetStore();
 const presetData = presetStore.boxes_and_data;
-console.log(presetData);
 // **Reactive filter state**
 const selectedSeverity = ref("all");
 
@@ -30,12 +25,12 @@ const filteredWarnings = computed(() => {
   return props.warnings.filter((warning) => warning.Severity.toLowerCase() === selectedSeverity.value);
 });
 
-// **Ensure all areas are displayed, even if they have no warnings**
+// **Ensure all preset areas are displayed, even if they have no warnings**
 const groupedWarnings = computed(() => {
   const grouped: Record<string, typeof props.warnings> = {};
 
-  // Initialize all areas with empty arrays
-  props.overlayAreasConstant.forEach((area) => {
+  // Initialize all preset areas with empty arrays
+  Object.entries(presetData).forEach(([key, area]) => {
     grouped[area.label] = [];
   });
 
@@ -50,11 +45,12 @@ const groupedWarnings = computed(() => {
   return grouped;
 });
 
-// **Get Area Color Based on overlayAreasConstant**
+// **Get Area Color Based on presetData**
 const getAreaColor = (location: string): string => {
-  const area = props.overlayAreasConstant.find(area => area.label === location);
-  return area ? area.color : "#ccc"; // Default gray if not found
+  const area = Object.values(presetData).find(area => area.label === location);
+  return area ? area.box.colour : "#ccc"; // Default gray if not found
 };
+
 
 // **Handle Filter Update**
 const updateFilter = (severity: string) => {
@@ -68,10 +64,6 @@ const updateFilter = (severity: string) => {
     <div class="header-container">
       <h2>⚠️ Warning System</h2>
       <WarningSystemFilterBar @update:filter="updateFilter" />
-    </div>
-
-    <div v-if="props.overlayAreasConstant.length === 0" class="no-warnings">
-      ✅ No active areas available.
     </div>
 
     <div class="grid-container">
@@ -112,9 +104,9 @@ const updateFilter = (severity: string) => {
 <style scoped>
 .warnings-container {
   padding: 20px;
-  background-color: #f8f8ff;
+  background-color: var(--primary-light-bg);
   border-top: 1px solid #ccc;
-  color: black;
+  color: var(--primary-dark-text);
 }
 
 /* Header & Filter Bar Flexbox */
@@ -146,14 +138,14 @@ const updateFilter = (severity: string) => {
 .area-group {
   padding: 15px;
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--primary-light-bg);
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
   border: 2px solid #568EA6;
 }
 
 /* Area Title */
 .area-title {
-  color: white;
+  color: var(--primary-light-text);
   margin-bottom: 10px;
   padding: 10px;
   border-radius: 5px;
@@ -170,16 +162,16 @@ const updateFilter = (severity: string) => {
 /* Individual Warning Cards */
 .warning-card {
   padding: 15px;
-  background: white;
+  background: var(--primary-light-bg);
   border-radius: 5px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  color: white; /* Text contrast for colored backgrounds */
+  color: var(--primary-light-text); /* Text contrast for colored backgrounds */
 }
 
 /* Warning Title */
 .warning-card h3 {
   margin: 0;
-  color: white;
+  color: var(--primary-light-text);
   font-size: 18px;
   font-weight: bold;
   border-radius: 5px 5px 0 0;
@@ -190,8 +182,8 @@ const updateFilter = (severity: string) => {
   padding: 10px;
   text-align: center;
   font-size: 14px;
-  color: #666;
-  background: #e8e8e8;
+  color: var(--negative-text);
+  background: var(--not-active-bg);
   border-radius: 5px;
 }
 

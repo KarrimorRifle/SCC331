@@ -2,7 +2,7 @@
 import SummaryHeader from '../components/Summary/SummaryHeader.vue';
 import SummaryTable from '../components/Summary/SummaryTable/SummaryTable.vue';
 import LiveUpdates from '../components/Summary/LiveUpdates/LiveUpdates.vue';
-import WarningSystem from '../components/Summary/WarningSystem/WarningSystem.vue'; // Import new warning system component
+import WarningSystem from '../components/Summary/WarningSystem/WarningSystem.vue';
 import { ref, PropType } from 'vue';
 
 const props = defineProps({
@@ -10,14 +10,6 @@ const props = defineProps({
     type: Array, 
     required: true,
   }, 
-  overlayAreasConstant: {
-    type: Array,
-    required: true,
-  },
-  overlayAreasData: {
-    type: Object,
-    required: true,
-  },
   updates: {
     type: Object,
     required: true,
@@ -53,20 +45,16 @@ const activeSection = ref("all");
       
       <SummaryTable 
         v-if="activeSection === 'summary' || activeSection === 'all'"
-        :data="overlayAreasData" 
-        :overlayAreasConstant="overlayAreasConstant"
         :environmentHistory="environmentHistory"
       />
       <LiveUpdates 
         v-if="activeSection === 'updates' || activeSection === 'all'"
         :userIds="picoIds" 
         :updates="updates"
-        :overlayAreasConstant="overlayAreasConstant"
       />
       <WarningSystem
         v-if="activeSection === 'warnings' || activeSection === 'all'"
         :warnings="warnings"
-        :overlayAreasConstant="overlayAreasConstant"
       />
     </div>
   </div>
@@ -76,14 +64,14 @@ const activeSection = ref("all");
 /* Layout */
 .summary-container {
   display: flex;
-  background-color: #f8f8ff;
+  background-color: var(--primary-light-bg);
 }
 
 .sidebar {
   width: 200px;
   padding: 20px;
-  background-color: #305F72;
-  color: white;
+  background-color: var(--primary-dark-bg);
+  color: var(--primary-light-text);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -92,7 +80,7 @@ const activeSection = ref("all");
 .sidebar button {
   background: none;
   border: none;
-  color: white;
+  color: var(--primary-light-text);
   font-size: 16px;
   cursor: pointer;
   padding: 10px;
@@ -103,7 +91,7 @@ const activeSection = ref("all");
 
 .sidebar button:hover,
 .sidebar button.active {
-  background: #568EA6;
+  background: var(--primary-dark-bg-hover);
 }
 
 .summary-content {

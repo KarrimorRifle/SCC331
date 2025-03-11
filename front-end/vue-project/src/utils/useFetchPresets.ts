@@ -6,10 +6,6 @@ import type { Timeout } from "node:timers";
 import type { presetListType, preset, summaryType, boxAndData, boxType, dataObject, environmentData } from "../utils/mapTypes";
 
 export const usePresetStore = defineStore("presetStore", () => {
-    const overlayAreasConstant = ref<any[]>([]);
-    let updateOverlayAreasCallback: (data: any) => void = () => {};
-    let updateOverlayAreaColorCallback: (data: any) => void = () => {};
-
     let pollingInterval: Timeout;
     let summary = ref<summaryType>(<summaryType>{});
     let presetList = ref<presetListType>(<presetListType>{});
@@ -28,17 +24,6 @@ export const usePresetStore = defineStore("presetStore", () => {
     });
     let fetchSummaryRetry:number = 3;
     
-    function setOverlayAreasConstant(data: any) {
-        overlayAreasConstant.value = data;
-    }
-    function setUpdateOverlayAreasCallback(callback: (data: any) => void) {
-      updateOverlayAreasCallback = callback;
-    }
-
-    function setUpdateOverlayAreaColorCallback(callback: (data: any) => void) {
-      updateOverlayAreaColorCallback = callback;
-  }
-
     async function validateUser() {
       try {
         let userValidationRequest = await axios.get("http://localhost:5002/validate_cookie", {
@@ -190,26 +175,7 @@ export const usePresetStore = defineStore("presetStore", () => {
           withCredentials: true
         });
         alert("Default preset set successfully");
-        await fetchPresets();
-    
-        if (presetData.value.boxes) {
-          console.log("Updating overlay areas with preset colors...");
-  
-          console.log(overlayAreasConstant);
-          // Update overlayAreasConstant with new colors from the preset
-          const updatedOverlayAreas = overlayAreasConstant.value.map(area => {
-            const matchingBox = presetData.value.boxes.find(box => box.roomID === area.label.replace("Area ", ""));
-            return matchingBox ? { ...area, color: matchingBox.colour } : area;
-          });
-    
-          console.log("Updated overlayAreasConstant:", updatedOverlayAreas);
-    
-          // Emit event to App.vue to update global state & localStorage
-          if (typeof updateOverlayAreasCallback === "function") {
-            updateOverlayAreasCallback(updatedOverlayAreas);
-          }
-        }
-    
+        await fetchPresets();    
       } catch (error) {
         console.error("Error setting default preset:", error);
         alert("Failed to set default preset");
@@ -273,9 +239,6 @@ export const usePresetStore = defineStore("presetStore", () => {
         height: 100,
         colour: randomColor,
       };
-      if (typeof updateOverlayAreaColorCallback === "function") {
-        updateOverlayAreaColorCallback({ roomID, colour: randomColor });
-      }
     }
     
     const changeBoxColour =  (roomID: number | string, colour: string) => {
@@ -332,11 +295,19 @@ export const usePresetStore = defineStore("presetStore", () => {
       create_data();
       editMode.value = false;
     }
-    
-    const updateOverlayAreaColor = (roomID: string, newColor: string) => {
-      const area = overlayAreasConstant.value.find(area => area.label === `Area ${roomID}`);
-      if (area) {
-        area.color = newColor; 
+
+    const reloadPresets = async () => {
+      try {
+        await fetchPresets(); // Fetch the updated list of presets
+        if (presetList.value.presets.length > 0) {
+          // Ensure current preset is valid
+          if (!presetList.value.presets.some(p => p.id === currentPreset.value)) {
+            currentPreset.value = presetList.value.default || presetList.value.presets[0].id;
+          }
+        }
+        await fetchPreset();
+      } catch (error) {
+        console.error("Error reloading presets:", error);
       }
     };
     
@@ -345,23 +316,10 @@ export const usePresetStore = defineStore("presetStore", () => {
     
       // Update box color logic
       changeBoxColour(roomID, newColor);
-    
-      console.log("current preset: ", currentPreset.value);
-      console.log("default preset: ", defaultPresetId.value);
-    
-      if (currentPreset.value == defaultPresetId.value) {
-        // Update overlay areas constant (this is to updates globally);
-        updateOverlayAreaColor(roomID, newColor);
-        if (typeof updateOverlayAreaColorCallback === "function") {
-          updateOverlayAreaColorCallback({ roomID, colour: newColor });
-        }
-      }else{
-        console.log("doesn't match");
-    
-      }
     };
     
     watch(currentPreset, async () => {
+      console.log("Preset changed to: ", currentPreset.value);
       await fetchPreset();
       create_data();
       validateUser();
@@ -380,7 +338,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         // Grab default preset and set it to the current one
         if (presetList.value?.default) {
           currentPreset.value = presetList.value.default;
-        } else if (presetList.value.presets.length > 0) {
+        } else if (presetList?.value?.presets?.length > 0) {
           currentPreset.value = presetList.value.presets[0].id;
           await setDefaultPreset();
         }
@@ -410,6 +368,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         canDelete,
         settable,
         editMode, 
+        reloadPresets,
         fetchPresets,
         fetchPreset,
         processPresetImage,
@@ -421,9 +380,6 @@ export const usePresetStore = defineStore("presetStore", () => {
         handleColourChange,
         setDefaultPreset,
         deletePreset,
-        handleSelectPreset, 
-        setOverlayAreasConstant,
-        setUpdateOverlayAreasCallback,
-        setUpdateOverlayAreaColorCallback,
+        handleSelectPreset,
     };
 });

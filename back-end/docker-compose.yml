@@ -12,6 +12,7 @@ services:
       - "3306:3306" # Remove so its only accessible by other containers later
     volumes:
       - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./mysql/base64_airportimg.txt:/var/lib/mysql-files/base64_airportimg.txt  # changed path for secure_file_priv
       - mysql_data:/var/lib/mysql
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
@@ -238,6 +239,21 @@ services:
     networks:
       - my_network
     profiles: ["test"]
+
+  dummy:
+    build: ./dummy
+    container_name: dummy
+    environment:
+      DB_HOST: mysql
+      DB_USER: dummy
+      DB_PASSWORD: dummy
+      DB_NAME: pico
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+    profiles: ["dummy"]
 
 networks:
   my_network:
