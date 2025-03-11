@@ -255,7 +255,7 @@
 
   <!-- Modal -->
   </div>
-  <user-movement-modal class="text-dark" :show-modal="showModal" :selected-user-id="Number.parseInt(userID)" :overlay-areas-constant="boxData" :user-room-history="userMovementHistory" @close="showModal = false"/>
+  <user-movement-modal class="text-dark" :show-modal="showModal" :selected-user-id="Number.parseInt(userID)" :user-room-history="userMovementHistory" @close="showModal = false"/>
 </template>
 
 <script setup lang="ts">
@@ -282,7 +282,6 @@ const boxes = ref<Record<string, { label: string; colour: string }>>({});
 
 const userID = ref<string>("");
 const userMovementHistory = ref<{ roomLabel: string; loggedAt: string }[]>([]);
-const boxData = ref<{ label: string; color: string; position: object }[]>([]);
 
 const hideHeader = ref(false);
 let lastScrollTop = 0;
@@ -448,7 +447,7 @@ const formatTime = (time: string) => {
 let labelIndex = 0;
 const generateTempLabel = () => {
   const callsigns = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"];
-  return `%${callsigns[labelIndex++]}%`;
+  return `%${callsigns[labelIndex++]}`;
 };
 
 let colorIndex = 0;
@@ -475,7 +474,6 @@ onMounted(async () => {
       boxes.value[box.roomID] = {
         label: box.label,
         colour: box.colour,
-        position: {...box}
       };
     });
 
@@ -492,16 +490,6 @@ onMounted(async () => {
     }
   });
 
-  boxData.value = [...Object.values(boxes.value).map(box => ({
-    label: box.label,
-    color: box.colour,
-    position: {
-      ...box.position
-    }
-  }))]
-
-  console.log(boxes.value)
-  console.log(boxData.value);
   isLoading.value = false;
 });
 
@@ -510,12 +498,12 @@ const fetchUserMovementData = async () => {
     try {
       const response = await axios.get(`http://localhost:5003/pico/${userID.value}`, { data: {time: selectedTime.value},withCredentials: true });
       const picoMovementData = response.data.movement;
+      // Add console.log to see the object
       userMovementHistory.value = Object.entries(picoMovementData).map(([timestamp, roomID]) => ({
-        roomLabel: roomID as string, // he hard coded the area names... bad coding practice- will bring this up
+        roomLabel: boxes.value[roomID as string].label, // he hard coded the area names... bad coding practice- will bring this up
         loggedAt: timestamp,
       }));
-      // Add console.log to see the object
-      console.log('Object:', movementData.value[new Date(new Date(selectedTime.value).getTime() - 60000).toISOString()][lastRoom][picoID]);
+      // console.log('Object:', movementData.value[new Date(new Date(selectedTime.value).getTime() - 60000).toISOString()][lastRoom][picoID]);
     } catch (error) {
       console.error('Error fetching user movement data:', error);
     }
