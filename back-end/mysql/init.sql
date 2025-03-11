@@ -80,35 +80,35 @@ CREATE TABLE IF NOT EXISTS messages (
 -- new pico 
 USE pico;
 
-CREATE TABLE IF NOT EXISTS pico_device {
-	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+CREATE TABLE IF NOT EXISTS pico_device (
+	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  -- Mac addresses have a maximum length of 17 characters, storing more is unnecessary
 	readablePicoID VARCHAR(50) NOT NULL UNIQUE,
-	bluetoothID INT UNIQUE,   --may be null for a un-activated pico and in which case it will be sent out as 0
-	picoType INT DEFAULT 0,  --may 0 is unassigned, 1 is environment, 2 is bluetooth tracker
-}
-
-CREATE TABLE IF NOT EXISTS tracking_groups {
-	groupID INT AUTO_INCREMENT PRIMARY KEY,
-	groupName VARCHAR(50) NOT NULL UNIQUE
-}
-
-CREATE TABLE IF NOT EXISTS bluetooth_tracker {
-	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
-	trackingGroupID INT,
-	FOREIGN KEY (picoID) REFERENCES picoDevice(picoID) ON DELETE CASCADE,
-	FOREIGN KEY (trackingGroupID) REFERENCES tracking_groups(groupID) ON DELETE SET NULL
-}
-
-CREATE TABLE IF NOT EXISTS bluetooth_tracker_data --1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
-(
-	databaseID INT AUTO_INCREMENT PRIMARY KEY,
-	picoID VARCHAR(17) NOT NULL,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
-	roomID VARCHAR(17) NOT NULL,  --Mac addresses have a maximum length of 17 characters, storing more is unnecessary
-	logged_at TIMESTAMP NOT NULL,
-	FOREIGN KEY (picoID) REFERENCES picoDevice(picoID) ON DELETE CASCADE
+	bluetoothID INT UNIQUE,   -- may be null for a un-activated pico and in which case it will be sent out as 0
+	picoType INT DEFAULT 0  -- may 0 is unassigned, 1 is environment, 2 is bluetooth tracker
 );
 
-CREATE TABLE IF NOT EXISTS environment_sensor_data  --1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
+CREATE TABLE IF NOT EXISTS tracking_groups (
+	groupID INT AUTO_INCREMENT PRIMARY KEY,
+	groupName VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS bluetooth_tracker (
+	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  -- Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+	trackingGroupID INT,
+	FOREIGN KEY (picoID) REFERENCES pico_device(picoID) ON DELETE CASCADE,
+	FOREIGN KEY (trackingGroupID) REFERENCES tracking_groups(groupID) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS bluetooth_tracker_data -- 1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
+(
+	databaseID INT AUTO_INCREMENT PRIMARY KEY,
+	picoID VARCHAR(17) NOT NULL,  -- Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+	roomID VARCHAR(17) NOT NULL,  -- Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+	logged_at TIMESTAMP NOT NULL,
+	FOREIGN KEY (picoID) REFERENCES pico_device(picoID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS environment_sensor_data  -- 1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
 (
 	databaseID INT AUTO_INCREMENT PRIMARY KEY,
 	picoID VARCHAR(17) NOT NULL,
@@ -118,8 +118,8 @@ CREATE TABLE IF NOT EXISTS environment_sensor_data  --1 to 1 relationship with p
 	temperature FLOAT NOT NULL,
 	IAQ FLOAT NOT NULL,
 	pressure FLOAT NOT NULL,
-	humidity FLOAT NOT NULL
-	FOREIGN KEY (picoID) REFERENCES picoDevice(picoID)
+	humidity FLOAT NOT NULL,
+	FOREIGN KEY (picoID) REFERENCES pico_device(picoID)
 );
 
 
