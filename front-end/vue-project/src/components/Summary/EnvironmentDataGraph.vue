@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
-import { defineProps, ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
+import { defineProps, ref, watch, onMounted, onBeforeUnmount, computed, type PropType } from 'vue';
 import { Chart, registerables } from 'chart.js';
+import axios from 'axios';
+import { usePresetStore } from '@/utils/useFetchPresets';
 
+const presetStore = usePresetStore();
 Chart.register(...registerables);
 
 const props = defineProps({
@@ -11,9 +14,9 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  environmentData: {
-    type: Array, // Changed from Object to Array
-    required: true, // Array of { temperature, sound, light, timestamp, pressure, humidity, IAQ }
+  areaLabels: {
+    type: Array as PropType<string[]>,
+    required: true
   },
   showModal: {
     type: Boolean,
@@ -21,8 +24,31 @@ const props = defineProps({
   },
 });
 
-console.log(props.environmentData);
 const emit = defineEmits(['close']); // Emits close event
+const currentLabel = ref<number>(0);
+const selectedTimeRange = ref('1min');
+const sampleSize = ref<number>(15);
+const currentUpperTime = ref<number>(0)
+
+const totalTime = computed(() => {
+  let rangeMs = 0;
+  switch(selectedTimeRange.value) {
+    case '7days': rangeMs = 7 * 24 * 3600 * 1000; break;
+    case '5days': rangeMs = 5 * 24 * 3600 * 1000; break;
+    case '2days': rangeMs = 2 * 24 * 3600 * 1000; break;
+    case '1day':  rangeMs = 24 * 3600 * 1000; break;
+    case '12hrs': rangeMs = 12 * 3600 * 1000; break;
+    case '6hrs':  rangeMs = 6 * 3600 * 1000; break;
+    case '3hrs':  rangeMs = 3 * 3600 * 1000; break;
+    case '1hr':   rangeMs = 3600 * 1000; break;
+    case '30min': rangeMs = 30 * 60 * 1000; break;
+    case '15min': rangeMs = 15 * 60 * 1000; break;
+    case '5min':  rangeMs = 5 * 60 * 1000; break;
+    case '1min':  rangeMs = 60 * 1000; break;
+    default:      rangeMs = 60 * 1000;
+  }
+  return rangeMs * (sampleSize.value || 1);
+});
 
 const chartCanvas = ref(null);
 let chartInstance = null;
@@ -58,9 +84,65 @@ const toggleAll = () => {
   visibleDatasets.value.humidity = newValue;
 };
 
-const selectedTimeRange = ref('1min');
+interface EnvironmentData {
+  timestamp: string;
+  light: number;
+  IAQ: number;
+  sound: number;
+  temperature: number;
+  pressure: number;
+  humidity: number;
+}
 
-const renderChart = () => {
+const environmentData = ref<EnvironmentData[]>([]);
+
+const renderChart = async() => {
+
+  const now = new Date();
+  const oneHourAgo = new Date(now.getTime() - totalTime.value);
+  const request = await axios.get('/summary/average', {
+    withCredentials: true,
+    params: {
+      start_time: oneHourAgo.toISOString(),
+      end_time: now.toISOString(),
+      time_periods: selectedTimeRange.value
+    }
+  });
+
+  // Translate roomLabel to roomID:
+  const entry = Object.entries(presetStore.boxes_and_data).find(([id, object]) =>
+    object.label === props.areaLabels[currentLabel.value]
+  );
+  let id = entry ? entry[0] : 0;
+
+  let env: any[] = [];
+
+  if (request.data) {
+    Object.entries(request.data).forEach(([time, rooms]) => {
+      const roomData = (rooms as any)[id];
+      if (roomData) {
+        let object = {
+          timestamp: time.slice(11,16),
+          light: 0,
+          IAQ: 0,
+          sound: 0,
+          temperature: 0,
+          pressure: 0,
+          humidity: 0
+        };
+        object.light = roomData.light?.average ?? 0;
+        object.IAQ = roomData.IAQ?.average ?? 0;
+        object.sound = roomData.sound?.average ?? 0;
+        object.temperature = roomData.temperature?.average ?? 0;
+        object.pressure = roomData.pressure?.average ?? 0;
+        object.humidity = roomData.humidity?.average ?? 0;
+        env.push(object);
+      }
+    });
+  }
+
+  environmentData.value = env;
+
   if (chartInstance) {
     chartInstance.destroy(); // Clear previous chart
   }
@@ -71,7 +153,7 @@ const renderChart = () => {
     if (visibleDatasets.value.temperature) {
       datasets.push({
         label: '🌡️ Temperature (°C)',
-        data: props.environmentData.map(item => item.temperature),
+        data: environmentData.value.map(item => item.temperature),
         borderColor: 'red',
         backgroundColor: 'rgba(255, 99, 132, 0.2)',
         borderWidth: 2,
@@ -82,7 +164,7 @@ const renderChart = () => {
     if (visibleDatasets.value.sound) {
       datasets.push({
         label: '🔊 Sound (dB)',
-        data: props.environmentData.map(item => item.sound),
+        data: environmentData.value.map(item => item.sound),
         borderColor: 'blue',
         backgroundColor: 'rgba(54, 162, 235, 0.2)',
         borderWidth: 2,
@@ -93,7 +175,7 @@ const renderChart = () => {
     if (visibleDatasets.value.light) {
       datasets.push({
         label: '💡 Light (lux)',
-        data: props.environmentData.map(item => item.light),
+        data: environmentData.value.map(item => item.light),
         borderColor: 'yellow',
         backgroundColor: 'rgba(255, 206, 86, 0.2)',
         borderWidth: 2,
@@ -104,7 +186,7 @@ const renderChart = () => {
     if (visibleDatasets.value.IAQ) {
       datasets.push({
         label: '📊 IAQ',
-        data: props.environmentData.map(item => item.IAQ),
+        data: environmentData.value.map(item => item.IAQ),
         borderColor: 'green',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
         borderWidth: 2,
@@ -115,7 +197,7 @@ const renderChart = () => {
     if (visibleDatasets.value.pressure) {
       datasets.push({
         label: '⏱️ Pressure',
-        data: props.environmentData.map(item => item.pressure),
+        data: environmentData.value.map(item => item.pressure),
         borderColor: 'purple',
         backgroundColor: 'rgba(153, 102, 255, 0.2)',
         borderWidth: 2,
@@ -126,7 +208,7 @@ const renderChart = () => {
     if (visibleDatasets.value.humidity) {
       datasets.push({
         label: '💧 Humidity (%)',
-        data: props.environmentData.map(item => item.humidity),
+        data: environmentData.value.map(item => item.humidity),
         borderColor: 'cyan',
         backgroundColor: 'rgba(0, 255, 255, 0.2)',
         borderWidth: 2,
@@ -138,7 +220,7 @@ const renderChart = () => {
     chartInstance = new Chart(chartCanvas.value, {
       type: 'line', // Change to line chart
       data: {
-        labels: props.environmentData.map(item => item.timestamp),
+        labels: environmentData.value.map(item => item.timestamp),
         datasets: datasets,
       },
       options: {
@@ -171,10 +253,18 @@ const renderChart = () => {
 };
 
 // Watch for changes and update chart
-watch(() => props.environmentData, renderChart, { deep: true });
+// watch(() => environmentData.value, renderChart, { deep: true });
+
 watch(visibleDatasets, renderChart, { deep: true });
-onMounted(renderChart);
+watch(currentLabel, renderChart)
+watch(selectedTimeRange, renderChart)
+watch(sampleSize, renderChart )
+onMounted(() => {
+  renderChart();
+  currentLabel.value = props.areaLabels.findIndex(label => label === props.areaLabel);
+});
 onBeforeUnmount(() => {
+  currentUpperTime.value = (new Date()).getTime()
   if (chartInstance) {
     chartInstance.destroy();
   }
@@ -187,7 +277,11 @@ onBeforeUnmount(() => {
       <div style="height: 410px; background-color: white; border-radius: 1rem;">
         <div class="modal-content">
           <div class="modal-graph-header">
-              <h3>Environment for: {{ areaLabel }}</h3>
+              <div>
+                <button class="btn btn-sm btn-outline-primary me-2" @click="currentLabel = currentLabel - 1 < 0 ? areaLabels.length - 1 : currentLabel - 1"><</button>
+                <h3 class="d-inline-block align-top me-2 text-center" style="width: 15rem;">{{ areaLabels[currentLabel] }}</h3>
+                <button class="btn btn-sm btn-outline-primary" @click="currentLabel = ++currentLabel % areaLabels.length">></button>
+              </div>
               <button class="close-btn" @click="emit('close')">
                   <font-awesome-icon :icon="faXmark" />
               </button>
@@ -212,26 +306,30 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div class="button-container d-flex justify-content-center">
-            <button class="btn btn-secondary btn-sm">
+            <button class="btn btn-secondary btn-sm me-2">
               <
             </button>
-            <select v-model="selectedTimeRange" class="form-select form-select-sm" style="width: auto; margin: 0 0.5rem;" limit="3">
-              <option value="1min">1min</option>
-              <option value="5min">5min</option>
-              <option value="15min">15min</option>
-              <option value="30min">30min</option>
-              <option value="1hr">1hr</option>
-              <option value="3hrs">3hrs</option>
-              <option value="6hrs">6hrs</option>
-              <option value="12hrs">12hrs</option>
-              <option value="1day">1day</option>
-              <option value="2days">2days</option>
-              <option value="5days">5days</option>
-              <option value="7days">7days</option>
-            </select>
             <button class="btn btn-secondary btn-sm">
               >
             </button>
+            <select v-model="selectedTimeRange" class="form-select form-select-sm" style="width: auto; margin: 0 0.5rem;" limit="3">
+              <option value="7days">7days</option>
+              <option value="5days">5days</option>
+              <option value="2days">2days</option>
+              <option value="1day">1day</option>
+              <option value="12hrs">12hrs</option>
+              <option value="6hrs">6hrs</option>
+              <option value="3hrs">3hrs</option>
+              <option value="1hr">1hr</option>
+              <option value="30min">30min</option>
+              <option value="15min">15min</option>
+              <option value="5min">5min</option>
+              <option value="1min">1min</option>
+            </select>
+            <div class="input-group" style="max-width: fit-content;">
+              <span class="input-group-text">Sample</span>
+              <input v-model="sampleSize" style="width: 4rem;" class="form-control" type="number" value="20" name="sample" id="sample" min="15" max="99">
+            </div>
           </div>
         </div>
       </div>
