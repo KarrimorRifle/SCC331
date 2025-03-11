@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
 import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
@@ -55,6 +55,15 @@ const closeGraph = () => {
 
 // Computed property for filtered areas
 const filteredAreas = computed(() => presetData.value.filter(area => selectedAreas.value.includes(area.label)));
+
+watch(presetData, (newVal, oldVal) => {
+  // If newVal contains rooms not in selectedAreas, add them
+  newVal.forEach(area => {
+    if (!selectedAreas.value.includes(area.label)) {
+      selectedAreas.value.push(area.label);
+    }
+  });
+});
 
 </script>
 

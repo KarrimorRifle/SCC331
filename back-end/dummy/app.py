@@ -142,7 +142,7 @@ def generate_dummy_users_data():
     base_time = datetime.now().replace(second=0, microsecond=0) - timedelta(minutes=29)
     for d in range(1, 11):
         picoID = f"PICO-User-{d}"
-        current_room = random.choice(['1', '2', '3'])
+        current_room = random.choice(['d83add67ed84', 'd83add41a997', 'd83add8af3cf'])
         for m in range(30):
             time_stamp = base_time + timedelta(minutes=m)
             # With 30% chance, change room (choose from the other two)
