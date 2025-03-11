@@ -98,12 +98,12 @@ const environmentData = ref<EnvironmentData[]>([]);
 
 const renderChart = async() => {
 
-  const now = new Date();
-  const oneHourAgo = new Date(now.getTime() - totalTime.value);
+  const now = new Date(currentUpperTime.value);
+  const oneHourAgo = new Date(currentUpperTime.value - totalTime.value);
   const request = await axios.get('/summary/average', {
     withCredentials: true,
     params: {
-      start_time: oneHourAgo.toISOString(),
+      start_time:oneHourAgo.toISOString(),
       end_time: now.toISOString(),
       time_periods: selectedTimeRange.value
     }
@@ -259,12 +259,14 @@ watch(visibleDatasets, renderChart, { deep: true });
 watch(currentLabel, renderChart)
 watch(selectedTimeRange, renderChart)
 watch(sampleSize, renderChart )
+watch(currentUpperTime, renderChart)
 onMounted(() => {
+  let now = new Date();
+  currentUpperTime.value = now.getTime()
   renderChart();
   currentLabel.value = props.areaLabels.findIndex(label => label === props.areaLabel);
 });
 onBeforeUnmount(() => {
-  currentUpperTime.value = (new Date()).getTime()
   if (chartInstance) {
     chartInstance.destroy();
   }
@@ -306,10 +308,13 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div class="button-container d-flex justify-content-center">
-            <button class="btn btn-secondary btn-sm me-2">
+            <button class="btn btn-secondary btn-sm me-2" @click="currentUpperTime -= totalTime">
               <
             </button>
-            <button class="btn btn-secondary btn-sm">
+            <div class="d-inline-block me-2 align-bottom">
+              {{ (new Date(currentUpperTime - totalTime)).toLocaleTimeString() }} - {{(new Date(currentUpperTime)).toLocaleTimeString() }}
+            </div>
+            <button class="btn btn-secondary btn-sm" @click="currentUpperTime += totalTime">
               >
             </button>
             <select v-model="selectedTimeRange" class="form-select form-select-sm" style="width: auto; margin: 0 0.5rem;" limit="3">
