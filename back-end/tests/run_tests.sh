@@ -55,9 +55,13 @@ for TARGET in "${TARGET_ARRAY[@]}"; do
       echo "Running data tests..."
       python -m unittest discover -s tests -p "test_4_data.py" -v
       ;;
+    "hardware_config")
+      echo "Running data tests..."
+      python -m unittest discover -s tests -p "test_5_hardware_config.py" -v
+      ;;
     *)
       echo "Invalid test target: $TARGET"
-      echo "Valid targets: all,accounts,assets,warnings,data"
+      echo "Valid targets: all,accounts,assets,warnings,data,hardware_config"
       ;;
   esac
 done

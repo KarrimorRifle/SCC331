@@ -73,10 +73,12 @@ def send_individual_pico_message(pico_id, hardware_message):
 
     #connect
     client.connect("mqtt.flespi.io", 1883)
+    client.loop_start()
 
     publish_info = client.publish("hardware_config/server_message/" + pico_id, hardware_message, qos=2)
     publish_info.wait_for_publish()
 
+    client.loop_stop()
     client.disconnect()
 
 
@@ -102,6 +104,7 @@ def sync_tracking_grp_names_with_hardware(group_id, new_group_name = ""):
 
     #connect
     client.connect("mqtt.flespi.io", 1883)
+    client.loop_start()
 
     publishes_info = []
 
@@ -113,7 +116,8 @@ def sync_tracking_grp_names_with_hardware(group_id, new_group_name = ""):
     
     for publish_info in publishes_info:
         publish_info.wait_for_publish()
-
+    
+    client.loop_stop()
     client.disconnect()
 
 
@@ -276,6 +280,41 @@ def patch_config(pico_id = None):
                 hardware_message.update({"TrackerGroup" : tracking_group_data["trackingGroupID"]})
 
         send_individual_pico_message(pico_id, json.dumps(hardware_message))
+
+        connection.commit()
+
+        return jsonify({"message" : "success"}), 200
+    
+    except Error as e:
+        print(f"Error querying data: {e}")
+        connection.rollback()
+        return jsonify({"error": "Error querying data", "message": str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+
+# MUST ONLY BE USED IN TESTING
+@app.route("delete/device/config/<pico_id>")
+def delete_config(pico_id = None):
+    cookie_validation_error = validate_session_cookie(request)
+    if len(cookie_validation_error) == 2:
+        return jsonify(cookie_validation_error[0]), cookie_validation_error[1]
+    
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "MySQL connection unavailable"}), 500
+
+    if pico_id is None:
+        return jsonify({"error": "PicoID must be supplied in route"}), 400
+
+    data = request.json
+
+    cursor = connection.cursor(dictionary=True)
+    try:
+        delete_sql = """DELETE FROM pico_device WHERE picoID = %s"""
+
+        cursor.execute(delete_sql, (pico_id,))
 
         connection.commit()
 
