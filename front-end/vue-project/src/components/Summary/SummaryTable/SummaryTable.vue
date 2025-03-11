@@ -43,7 +43,7 @@ const openGraph = (areaLabel) => {
   if (selectedArea) {
     selectedEnvironmentData.value = selectedArea.tracker.environment;
   } else {
-    selectedEnvironmentData.value = {}; 
+    selectedEnvironmentData.value = {};
   }
   activeGraphArea.value = areaLabel;
   showModal.value = true;
@@ -54,10 +54,7 @@ const closeGraph = () => {
 };
 
 // Computed property for filtered areas
-const filteredAreas = computed(() => {
-  if (selectedAreas.value.length === 0) return presetData.value;
-  return presetData.value.filter(area => selectedAreas.value.includes(area.label));
-});
+const filteredAreas = computed(() => presetData.value.filter(area => selectedAreas.value.includes(area.label)));
 
 </script>
 
@@ -73,14 +70,20 @@ const filteredAreas = computed(() => {
       </button>
     </div>
     <!-- Import Filter Bar -->
-    <SummaryTableFilterBar 
+    <SummaryTableFilterBar
       v-if="showFilterBar"
-      :presetData="presetData" 
-      @update:selectedAreas="selectedAreas = $event"
+      v-model:selectedAreas="selectedAreas"
+      :presetData="presetData"
     />
 
+    <div class="text-center mt-2" v-if="presetData.length == 0">
+      There are no rooms available to display!
+    </div>
+    <div v-else-if="filteredAreas.length == 0" class="text-center mt-2">
+      You have nothing selected!
+    </div>
     <!-- Cards Layout -->
-    <div class="summary-grid">
+    <div class="summary-grid pb-3 px-1">
       <div v-for="(area, index) in filteredAreas" :key="index" class="summary-card">
         <div class="card-header" :style="{ backgroundColor: area.box?.colour, color: getTextColour(area.box?.colour) }">
           <h3>{{ area.label }}</h3>
@@ -132,7 +135,7 @@ const filteredAreas = computed(() => {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  background-color: var(--primary-light-bg); 
+  background-color: var(--primary-light-bg);
   border-top: 1px solid #ccc;
   color: var(--primary-dark-text);
 }
