@@ -121,7 +121,7 @@ def sync_tracking_grp_names_with_hardware(group_id, new_group_name = ""):
     client.disconnect()
 
 
-@app.route('get/device/configs', methods=['GET'])
+@app.route('/get/device/configs', methods=['GET'])
 def get_configs():
     cookie_validation_error = validate_session_cookie(request)
     if len(cookie_validation_error) == 2:
@@ -163,7 +163,7 @@ def get_configs():
         connection.close()
 
 
-@app.route('patch/device/config/<pico_id>', methods=['PATCH'])
+@app.route('/patch/device/config/<pico_id>', methods=['PATCH'])
 def patch_config(pico_id = None):
     cookie_validation_error = validate_session_cookie(request)
     if len(cookie_validation_error) == 2:
@@ -295,7 +295,7 @@ def patch_config(pico_id = None):
 
 
 # MUST ONLY BE USED IN TESTING
-@app.route("delete/device/config/<pico_id>")
+@app.route("/delete/device/config/<pico_id>")
 def delete_config(pico_id = None):
     cookie_validation_error = validate_session_cookie(request)
     if len(cookie_validation_error) == 2:
@@ -329,7 +329,7 @@ def delete_config(pico_id = None):
         connection.close()
 
 
-@app.route('get/tracking/groups', methods=['GET'])
+@app.route('/get/tracking/groups', methods=['GET'])
 def get_tracking_groups():
     cookie_validation_error = validate_session_cookie(request)
     if len(cookie_validation_error) == 2:
@@ -357,7 +357,7 @@ def get_tracking_groups():
         connection.close()
 
 
-@app.route('add/tracking/group', methods=['POST'])
+@app.route('/add/tracking/group', methods=['POST'])
 def add_tracking_group():
     cookie_validation_error = validate_session_cookie(request)
     if len(cookie_validation_error) == 2:
@@ -413,7 +413,7 @@ def add_tracking_group():
         connection.close()
 
 
-@app.route('patch/tracking/group/<int:group_id>', methods=['PATCH'])
+@app.route('/patch/tracking/group/<int:group_id>', methods=['PATCH'])
 def patch_tracking_group(group_id = None):
     cookie_validation_error = validate_session_cookie(request)
     if len(cookie_validation_error) == 2:
@@ -466,7 +466,7 @@ def patch_tracking_group(group_id = None):
         connection.close()
 
 
-@app.route('delete/tracking/group/<int:group_id>', methods=['DELETE'])
+@app.route('/delete/tracking/group/<int:group_id>', methods=['DELETE'])
 def delete_tracking_group(group_id = None):
     cookie_validation_error = validate_session_cookie(request)
     if len(cookie_validation_error) == 2:

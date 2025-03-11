@@ -20,6 +20,10 @@ echo "Running tests..."
 # Wait for warning_editor service to be available
 /wait-for-it.sh warning_editor 5004 -- echo "warning_editor is up"
 
+# Wait for hardware_editing service to be available
+/wait-for-it.sh hardware_editing 5006 -- echo "hardware_editing is up"
+
+
 # Grab the test target(s) from the first argument (default to "all" if none provided)
 TEST_TARGETS=$1
 if [ -z "$TEST_TARGETS" ]; then
