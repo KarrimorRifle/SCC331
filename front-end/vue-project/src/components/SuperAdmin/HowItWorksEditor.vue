@@ -84,7 +84,7 @@ function removeStep(index: number) {
   text-align: center;
   color: var(--home-primary-light-text);
   background: var(--home-primary-dark-bg);
-  padding: 1rem 0;
+  padding: 2rem 0;
 }
 
 .how-it-works h2 {

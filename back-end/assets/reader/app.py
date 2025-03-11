@@ -133,7 +133,7 @@ def get_preset_details(preset_id):
             print(preset_row["image_data"])
             image = {
                 "name": preset_row["image_name"],
-                "data": base64.b64encode(preset_row["image_data"]).decode('utf-8')
+                "data": preset_row["image_data"].decode('utf-8')
             }
 
         # Minimal representation of "permission"

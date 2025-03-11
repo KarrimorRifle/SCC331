@@ -41,7 +41,7 @@
               </div>
             </div>
             <div class="hero-preview-image">
-              <img :src="imageSrc" alt="hero image" />
+              <img :src="homeImage" alt="hero image" />
             </div>
           </header>
 
@@ -66,7 +66,7 @@
             </div>
             <div class="edit-field">
               <label>Upload Hero Image:</label>
-              <input type="file" @change="handleImageUpload" accept="image/*" />
+              <input type="file" @change="handleImageUpload"/>
               <div v-if="form.config.hero.image.name">
                 Current file: {{ form.config.hero.image.name }}
               </div>
@@ -176,12 +176,14 @@ const collapsed = ref({
   howItWorks: false
 });
 
+let homeImage = ref<string>("");
 // Fetch current configuration from the backend on mount.
 onMounted(async () => {
   try {
     const response = await axios.get('http://localhost:5010/home', { withCredentials: true });
     if (response.status === 200 && response.data) {
       form.value = response.data;
+      processHomeImage();
     }
   } catch (error) {
     console.error('Error fetching configuration:', error);
@@ -190,19 +192,15 @@ onMounted(async () => {
 
 const heroIcon = computed(() => getHeroIcon(form.value.config.domain));
 
-// Compute imageSrc for the hero image preview.
-const imageSrc = computed(() => {
-  const imageName = form.value.config.hero.image.name;
-  let base64 = form.value.config.hero.image.data;
-  if (base64) {
-    base64 = base64.replace(/\s/g, ''); // Remove extra spaces/newlines
+const processHomeImage = () => {
+  if (form.value.config.hero.image.data && form.value.config.hero.image.name) {
+    const decodedData = atob(form.value.config.hero.image.data); 
+    const imageType = form.value.config.hero.image.name.split('.').pop();
+    homeImage.value = `data:image/${imageType};base64,${decodedData}`;
+  } else {
+    homeImage.value = "";
   }
-  if (base64 && imageName && imageName.includes('.')) {
-    const imageType = imageName.split('.').pop();
-    return `data:image/${imageType};base64,${base64}`;
-  }
-  return '/newcastle-airport-image.webp';
-});
+};
 
 // Handle image upload event.
 function handleImageUpload(event: Event) {
@@ -211,14 +209,26 @@ function handleImageUpload(event: Event) {
     const file = target.files[0];
     form.value.config.hero.image.name = file.name;
     const reader = new FileReader();
+    
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      const base64Index = result.indexOf('base64,');
-      form.value.config.hero.image.data =
-        base64Index !== -1 ? result.substring(base64Index + 7) : result;
-      // Force reactivity update if necessary:
+      // Extract base64 content
+      const base64Data = result.split(',')[1];
+      form.value.config.hero.image.data = base64Data;
+
+      // Get file extension for MIME type
+      const imageType = file.name.split('.').pop();
+
+      // Update homeImage immediately for preview
+      homeImage.value = `data:image/${imageType};base64,${base64Data}`;
+
+      // Force reactivity update if necessary
       form.value = { ...form.value };
+      
+      console.log("Base64 Data Updated:", form.value.config.hero.image.data);
+      console.log("Preview Updated:", homeImage.value);
     };
+
     reader.readAsDataURL(file);
   }
 }
@@ -275,8 +285,9 @@ const handleSubmit = async () => {
   try {
     const response = await axios.patch('http://localhost:5011/home', form.value, { withCredentials: true });
     if (response.status === 200) {
+      console.log(form.value);
       alert('Configuration updated successfully.');
-      window.location.reload();
+      // window.location.reload();
     }
   } catch (error) {
     alert('Error updating configuration.');
@@ -371,17 +382,19 @@ const handleSubmit = async () => {
   font-size: 1.5rem;
   font-weight: bold;
   margin-bottom: 0.5rem;
-  color: var(--home-accent);
+  color: var(--home-primary-light-text);
 }
 .hero-preview-content p {
   font-size: 0.75rem;
   margin-bottom: 0.75rem;
+  color: var(--home-primary-light-text);
 }
 .cta-button-preview {
   display: inline-block;
   padding: 0.75rem 2rem;
   font-size: 1.2rem;
   background-color: var(--home-active);
+  color: var(--home-primary-light-text);
   border-radius: 10px;
   text-align: center;
   font-weight: bold;
