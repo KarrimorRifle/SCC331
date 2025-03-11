@@ -12,8 +12,8 @@ const props = defineProps({
     required: true,
   },
   environmentData: {
-    type: Object,
-    required: true, // Array of { temperature, sound, light, timestamp }
+    type: Array, // Changed from Object to Array
+    required: true, // Array of { temperature, sound, light, timestamp, pressure, humidity, IAQ }
   },
   showModal: {
     type: Boolean,
@@ -36,11 +36,11 @@ const renderChart = () => {
     chartInstance = new Chart(chartCanvas.value, {
       type: 'line', // Change to line chart
       data: {
-        labels: ['Current'], // No timestamps, just a single label
+        labels: props.environmentData.map(item => item.timestamp),
         datasets: [
           {
             label: '🌡️ Temperature (°C)',
-            data: [props.environmentData?.temperature], // Direct access instead of map()
+            data: props.environmentData.map(item => item.temperature),
             borderColor: 'red',
             backgroundColor: 'rgba(255, 99, 132, 0.2)',
             borderWidth: 2,
@@ -49,7 +49,7 @@ const renderChart = () => {
           },
           {
             label: '🔊 Sound (dB)',
-            data: [props.environmentData?.sound], // Direct access
+            data: props.environmentData.map(item => item.sound),
             borderColor: 'blue',
             backgroundColor: 'rgba(54, 162, 235, 0.2)',
             borderWidth: 2,
@@ -58,9 +58,36 @@ const renderChart = () => {
           },
           {
             label: '💡 Light (lux)',
-            data: [props.environmentData?.light], // Direct access
+            data: props.environmentData.map(item => item.light),
             borderColor: 'yellow',
             backgroundColor: 'rgba(255, 206, 86, 0.2)',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+          },
+          {
+            label: '📊 IAQ',
+            data: props.environmentData.map(item => item.IAQ),
+            borderColor: 'green',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+          },
+          {
+            label: '⏱️ Pressure',
+            data: props.environmentData.map(item => item.pressure),
+            borderColor: 'purple',
+            backgroundColor: 'rgba(153, 102, 255, 0.2)',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+          },
+          {
+            label: '💧 Humidity (%)',
+            data: props.environmentData.map(item => item.humidity),
+            borderColor: 'cyan',
+            backgroundColor: 'rgba(0, 255, 255, 0.2)',
             borderWidth: 2,
             fill: false,
             tension: 0.4,
@@ -72,7 +99,7 @@ const renderChart = () => {
         maintainAspectRatio: false,
         scales: {
           x: {
-            display: false, // Hide x-axis since it's just one value
+            display: true,
           },
           y: {
             beginAtZero: true,
@@ -104,16 +131,18 @@ onBeforeUnmount(() => {
 <template>
   <transition name="fade">
     <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content">
-        <div class="modal-graph-header">
-            <h3>Environment Data - Area {{ areaLabel }}</h3>
-            <button class="close-btn" @click="emit('close')">
-                <font-awesome-icon :icon="faXmark" />
-            </button>
-        </div>
+      <div style="height: 430px; background-color: white; border-radius: 1rem;">
+        <div class="modal-content">
+          <div class="modal-graph-header">
+              <h3>Environment Data - Area {{ areaLabel }}</h3>
+              <button class="close-btn" @click="emit('close')">
+                  <font-awesome-icon :icon="faXmark" />
+              </button>
+          </div>
 
-        <canvas ref="chartCanvas"></canvas>
-      </div>
+          <canvas ref="chartCanvas"></canvas>
+        </div>
+        </div>
     </div>
   </transition>
 </template>
@@ -140,7 +169,6 @@ onBeforeUnmount(() => {
   width: 600px;
   height: 400px;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   position: relative;
   color: var(--primary-dark-text);
 }

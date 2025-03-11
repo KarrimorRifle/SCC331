@@ -6,6 +6,8 @@ import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
 import LuggageMarker from '../../ObjectMarker/LuggageMarker.vue';
 import EnvironmentDataGraph from '../EnvironmentDataGraph.vue';
 import SummaryTableFilterBar from "./SummaryTableFilterBar.vue";
+import axios from 'axios';
+import { usePresetLocalCache } from '@/stores/presetLocalCache';
 
 const props = defineProps({
   data: {
@@ -36,15 +38,62 @@ const toggleFilterVisibility = () => {
   showFilterBar.value = !showFilterBar.value;
 };
 
+const environmentData = ref({})
+
 // Toggle modal for environment graph
-const openGraph = (areaLabel) => {
+const openGraph = async(areaLabel) => {
   const selectedArea = presetData.value?.find(area => area.label === areaLabel);
 
-  if (selectedArea) {
-    selectedEnvironmentData.value = selectedArea.tracker.environment;
-  } else {
-    selectedEnvironmentData.value = {};
+  const now = new Date();
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const request = await axios.get('/summary/average', {
+    withCredentials: true,
+    params: {
+      start_time: oneHourAgo.toISOString(),
+      end_time: now.toISOString(),
+      time_periods: '1min'
+    }
+  });
+
+  // Translate roomLabel to roomID:
+  const entry = Object.entries(presetStore.boxes_and_data).find(([id, object]) =>
+    object.label === areaLabel
+  );
+  let id = entry ? entry[0] : 0;
+
+  let env: any[] = [];
+
+  if (request.data) {
+    Object.entries(request.data).forEach(([time, rooms]) => {
+      const roomData = (rooms as any)[id];
+      if (roomData) {
+        let object = {
+          timestamp: time.slice(11,17),
+          light: 0,
+          IAQ: 0,
+          sound: 0,
+          temperature: 0,
+          pressure: 0,
+          humidity: 0
+        };
+        object.light = roomData.light?.average ?? 0;
+        object.IAQ = roomData.IAQ?.average ?? 0;
+        object.sound = roomData.sound?.average ?? 0;
+        object.temperature = roomData.temperature?.average ?? 0;
+        object.pressure = roomData.pressure?.average ?? 0;
+        object.humidity = roomData.humidity?.average ?? 0;
+        env.push(object);
+      }
+    });
+    if (selectedArea) {
+      selectedEnvironmentData.value = env;
+    } else {
+      selectedEnvironmentData.value = {};
+    }
   }
+
+  environmentData.value = env;
+
   activeGraphArea.value = areaLabel;
   showModal.value = true;
 };
@@ -131,7 +180,7 @@ watch(presetData, (newVal, oldVal) => {
     <EnvironmentDataGraph
       v-if="showModal"
       :areaLabel="activeGraphArea"
-      :environmentData="selectedEnvironmentData"
+      :environmentData="environmentData"
       :showModal="showModal"
       @close="closeGraph"
     />
