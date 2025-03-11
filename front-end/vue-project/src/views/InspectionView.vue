@@ -134,12 +134,27 @@
               <!-- New statistical counter -->
               <div class="stats mb-2">
                 <div class="d-inline-block rounded me-2 p-1">Total: {{ Object.keys(movementData[selectedTime]?.[roomID] || {}).length }}</div>
-                <button class="d-inline-block rounded me-2 p-1 border-0" @click="scrollToRoom(roomID)" v-for="(box, roomID) in boxes" :key="roomID" :style="{'background-color': box.colour}">{{box.label}}: {{ Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce((total, obj) => {
-                  if(previousLocation[selectedTime][obj[0]] == roomID)
-                    return total? total + 1 : 1;
-                  return total? total : 0;
-                }, 0) }}</button>
-                <div class="d-inline-block rounded me-2 p-1">New: {{ Object.values(previousLocation[selectedTime]).filter(location => location === 'NEW').length }}</div>
+                <button
+                  class="d-inline-block rounded me-2 p-1 border-0"
+                  @click="scrollToRoom(room)" v-for="(box, room) in boxes"
+                  :key="room"
+                  :style="{'background-color': box.colour}"
+                >
+                  {{box.label}}:
+                  {{
+                    //movementData = Record<timestamp, Record<picoID, type>>
+                    //previousLocation = Record<timestamp, record<picoID, locationInLast>>
+                    Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce(
+                      (total, obj) => {
+                        if(previousLocation[selectedTime][obj[0]] == room)
+                          return total? total + 1 : 1;
+                        return total? total : 0;
+                      }, 0)
+                  }}
+                </button>
+                <div class="d-inline-block rounded me-2 p-1">
+                  New: {{ Object.values(previousLocation[selectedTime]).filter(location => location === 'NEW').length }}
+                </div>
               </div>
               <table class="table rounded-top-1" v-show="showTable[roomID] ?? true">
                 <thead class="rounded-top-1">
@@ -204,11 +219,22 @@
             <div class="card-body" v-if="movementData[selectedTime]">
               <div class="stats mb-2">
                 <div class="d-inline rounded me-2 p-1">Total: {{ Object.keys(filteredDeactivatedDevices || {}).length }}</div>
-                <div class="d-inline rounded me-2 p-1" v-for="(box, roomID) in boxes" :key="roomID" :style="{'background-color': box.colour}">{{box.label}}: {{ Object.entries(movementData[selectedTime]?.[roomID] || {}).reduce((total, obj) => {
-                  if(previousLocation[selectedTime][obj[0]] == roomID)
-                    return total? total + 1 : 1;
-                  return total? total : 0;
-                }, 0) }}</div>
+                <div class="d-inline rounded me-2 p-1"
+                  v-for="(box, roomID) in boxes"
+                  :key="roomID" :style="{'background-color': box.colour}"
+                >
+                  {{box.label}}:
+                  {{
+                    //previousLocation = Record<timestamp, record<picoID, locationInLast>>
+                    filteredDeactivatedDevices.reduce(
+                      (total, [picoID, lastRoom]) => {
+                        if(lastRoom == roomID)
+                          return total + 1;
+                        return total;
+                      }
+                    , 0)
+                  }}
+              </div>
               </div>
               <table class="table" v-show="showTable['deactivated'] ?? true">
                 <thead>
@@ -330,7 +356,6 @@ const fetchMovementData = async () => {
 
     movementData.value = sortedTemp;
 
-    console.log(response)
   } catch (error) {
     if (error.response?.status === 404) {
       movementData.value = {};
