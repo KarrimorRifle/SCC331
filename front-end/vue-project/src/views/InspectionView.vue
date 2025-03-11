@@ -461,16 +461,23 @@ onMounted(async () => {
   isLoading.value = true;
   // Fetch initial data on mount
   await fetchMovementData();
-  const presetListData = (await axios.get<presetListType>("http://localhost:5010/presets", { withCredentials: true })).data;
-  const defaultID = presetListData.default;
-  const presetData = (await axios.get<preset>(`http://localhost:5010/presets/${defaultID}`, { withCredentials: true })).data;
+  let presetData
+  try {
+    const presetListData = (await axios.get<presetListType>("http://localhost:5010/presets", { withCredentials: true })).data;
+    const defaultID = presetListData.default;
+    presetData = (await axios.get<preset>(`http://localhost:5010/presets/${defaultID}`, { withCredentials: true })).data;
+  } catch {
+    console.error("Unable to fetch preset data");
+  }
 
-  presetData.boxes.forEach((box: boxType) => {
-    boxes.value[box.roomID] = {
-      label: box.label,
-      colour: box.colour
-    };
-  });
+  if(presetData?.boxes)
+    presetData.boxes.forEach((box: boxType) => {
+      boxes.value[box.roomID] = {
+        label: box.label,
+        colour: box.colour,
+        position: {...box}
+      };
+    });
 
   // Generate temporary labels and colors for missing room IDs
   timeKeys.value.forEach(time => {
@@ -485,15 +492,16 @@ onMounted(async () => {
     }
   });
 
-  boxData.value = [...presetData.boxes.map(box => ({
-    label: boxes.value.label,
-    color: boxes.value.colour,
+  boxData.value = [...Object.values(boxes.value).map(box => ({
+    label: box.label,
+    color: box.colour,
     position: {
-      ...box
+      ...box.position
     }
   }))]
 
-  console.log(boxes.value);
+  console.log(boxes.value)
+  console.log(boxData.value);
   isLoading.value = false;
 });
 
