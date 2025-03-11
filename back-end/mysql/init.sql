@@ -281,6 +281,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON pico.* TO 'hardware_activator'@'%';
 ALTER USER 'hardware_activator'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
+-- Hardware Activation Service (pico Read, Insert, Update and Delete)
+CREATE USER IF NOT EXISTS 'hardware_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'hardware_editor_password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON pico.* TO 'hardware_editor'@'%';
+ALTER USER 'hardware_editor'@'%' WITH MAX_USER_CONNECTIONS 1;
+FLUSH PRIVILEGES;
+
 -- Data Deletion Service (pico Delete + Read)
 CREATE USER IF NOT EXISTS 'data_admin'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'admin_password';
 GRANT SELECT, DELETE ON pico.* TO 'data_admin'@'%';

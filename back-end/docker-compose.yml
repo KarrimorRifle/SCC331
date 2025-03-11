@@ -123,6 +123,21 @@ services:
     networks:
       - my_network
 
+  hardware_editor:
+    build: ./hardware/editing
+    container_name: hardware_editing
+    environment:
+      mqtt_token: ${mqtt_token}
+      DB_HOST: mysql
+      DB_USER: hardware_editor
+      DB_PASSWORD: hardware_editor_password
+      DB_NAME: pico
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my_network
+
   assets_editor:
     build: ./assets/editor
     container_name: assets_editor

@@ -183,7 +183,6 @@ def main():
 
     #connect
     client.connect("mqtt.flespi.io", 1883)
-
     client.loop_forever()
 
 
