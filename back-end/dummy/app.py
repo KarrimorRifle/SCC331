@@ -128,21 +128,17 @@ def generate_dummy_device_data(device_count, device_type):
 if __name__ == '__main__':
     conn = get_connection()
     if conn:
-        db_name = os.getenv("DB_NAME", "assets")
-        if db_name.lower() == "pico":
-            # Generate and insert dummy tracking data for pico users
-            users_data = generate_dummy_users_data()  # 10 users tracked over 30 minutes
-            insert_pico_users(conn, users_data)
-            guard_data = generate_dummy_device_data(5, "Guard")    # 5 guards across 30 mins (with gaps)
-            luggage_data = generate_dummy_device_data(10, "Luggage") # 10 luggage devices across 30 mins (with gaps)
-            staff_data = generate_dummy_device_data(5, "Staff")      # 5 staff across 30 mins (with gaps)
-            # Insert generated data
-            insert_pico_guard(conn, guard_data)
-            insert_pico_luggage(conn, luggage_data)
-            insert_pico_staff(conn, staff_data)
-        else:
-            # Generate and insert dummy environment data for pico
-            dummy_data = generate_dummy_environment_data()
-            insert_pico_environment(conn, dummy_data)
+      # Generate and insert dummy tracking data for pico users
+      users_data = generate_dummy_users_data()  # 10 users tracked over 30 minutes
+      insert_pico_users(conn, users_data)
+      guard_data = generate_dummy_device_data(5, "Guard")    # 5 guards across 30 mins (with gaps)
+      luggage_data = generate_dummy_device_data(10, "Luggage") # 10 luggage devices across 30 mins (with gaps)
+      staff_data = generate_dummy_device_data(5, "Staff")      # 5 staff across 30 mins (with gaps)
+      # Insert generated data
+      insert_pico_guard(conn, guard_data)
+      insert_pico_luggage(conn, luggage_data)
+      insert_pico_staff(conn, staff_data)
+      dummy_data = generate_dummy_environment_data()
+      insert_pico_environment(conn, dummy_data)
 
-        conn.close()
+      conn.close()
