@@ -21,6 +21,9 @@ class TestData(unittest.TestCase):
     MQTT_HARDWARE_TOPIC = "hardware_config/hardware_message/"
     MQTT_TOKEN = os.getenv("mqtt_token")  # Replace with your actual MQTT token
     HARDWARE_EDITING_URL = "http://hardware_editing:5006"
+    ACCOUNTS_URL = "http://account_registration:5001"
+    LOGIN_URL = "http://account_login:5002"
+    READER_URL = "http://data_reader:5003"
     UNASSIGNED_PICO = 0
     ENVIRONMENT_PICO = 1
     TRACKER_PICO = 2
