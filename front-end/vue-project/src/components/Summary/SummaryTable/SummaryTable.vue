@@ -2,19 +2,14 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
-import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
-import LuggageMarker from '../../ObjectMarker/LuggageMarker.vue';
 import EnvironmentDataGraph from '../EnvironmentDataGraph.vue';
 import SummaryTableFilterBar from "./SummaryTableFilterBar.vue";
-import axios from 'axios';
-import { usePresetLocalCache } from '@/stores/presetLocalCache';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion, faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL } from '@fortawesome/free-solid-svg-icons';
+
 
 const props = defineProps({
   data: {
-    type: Object,
-    required: true,
-  },
-  environmentHistory: {
     type: Object,
     required: true,
   },
@@ -37,12 +32,8 @@ const toggleFilterVisibility = () => {
   showFilterBar.value = !showFilterBar.value;
 };
 
-const environmentData = ref({})
-
 // Toggle modal for environment graph
 const openGraph = async(areaLabel) => {
-  const selectedArea = presetData.value?.find(area => area.label === areaLabel);
-
   activeGraphArea.value = areaLabel;
   showModal.value = true;
 };
@@ -66,6 +57,38 @@ watch(presetData, (newVal, oldVal) => {
 onMounted(() => {
   selectedAreas.value = presetData.value.map(area => area.label);
 });
+
+// Add helper function to return icon mapping based on type using imported icons
+const getIcon = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'guard':
+      return faShieldAlt;
+    case 'luggage':
+      return faSuitcase;
+    case 'users':
+      return faUser;
+    case 'staff':
+      return faClipboardCheck;
+    default:
+      return faQuestion;
+  }
+};
+
+// New helper to return color per role
+const getRoleColor = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'guard':
+      return 'blue';
+    case 'luggage':
+      return 'grey';
+    case 'users':
+      return 'darkblue';
+    case 'staff':
+      return 'green';
+    default:
+      return 'black';
+  }
+};
 
 </script>
 
@@ -100,22 +123,12 @@ onMounted(() => {
           <h3>{{ area.label }}</h3>
         </div>
         <div class="card-body">
-          <!-- People Count -->
-          <div class="count-container">
-            <div class="marker-wrapper">
-              <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
-            </div>
-            <p>People Count: {{ area.tracker?.users?.count || 0 }}</p>
+          <div class="count-container" v-for="(type) in Object.keys(area.tracker).filter(type => type != 'environment')" :key="type" >
+            <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/>
+            <p class="mb-0">{{ type }}: {{ (area.tracker?.[type] || {}).count || 0 }}</p>
           </div>
 
-          <!-- Luggage Count -->
-          <div class="count-container">
-            <div class="marker-wrapper">
-              <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
-            </div>
-            <p>Luggage Count: {{ area.tracker?.luggage?.count || 0 }}</p>
-          </div>
-
+          <hr class="my-1">
           <!-- Environment Data -->
           <div class="environment-data">
             <p><span class="emoji">🌡️</span> Temperature: {{ area.tracker?.environment?.temperature ?? 'N/A' }}°C</p>
