@@ -84,6 +84,11 @@ const getEnvironmentSensors = (area) => {
       value: area.tracker?.environment?.[key] ?? '--' // Default to "N/A" if missing
     }));
 }
+
+const formatSensorName = (name: string): string => {
+  return name.replace(/\s*Sensor\s*/i, '').trim();
+};
+
 // Add helper function to return icon mapping based on type using imported icons
 const getIcon = (type: string) => {
   switch (type.toLowerCase()) {
@@ -154,7 +159,7 @@ const getRoleColor = (type: string) => {
           <div class="pico-data">
             <div v-for="tracker in getObjectTrackers(area)" :key="tracker.key">
               <p>
-                <span class="emoji">
+                <span class="pico-data-icon">
                   <FontAwesomeIcon :icon="tracker.icon" />
                 </span> 
                 <span class="pico-data-value">
@@ -164,19 +169,16 @@ const getRoleColor = (type: string) => {
             </div>
           </div>
           
-          <div class="pico-data">
-            <div v-for="sensor in getEnvironmentSensors(area)" :key="sensor.key">
-              <p>
-                <span class="emoji">
-                  <FontAwesomeIcon :icon="sensor.icon" />
-                </span> 
-                <span class="pico-data-value">
-                  {{ sensor.name }}: {{ sensor.value }}
-                </span>
-              </p>
+          <div class="environment-grid">
+            <div v-for="sensor in getEnvironmentSensors(area)" :key="sensor.key" class="pico-data">
+              <span class="pico-data-icon">
+                <FontAwesomeIcon :icon="sensor.icon" />
+              </span> 
+              <span class="pico-data-value">
+                {{ formatSensorName(sensor.name) }}: {{ sensor.value }}
+              </span>
             </div>
           </div>
-        
 
           <!-- View Graph Button -->
           <button @click="openGraph(area.label)">📊 View Graph</button>
@@ -276,14 +278,22 @@ const getRoleColor = (type: string) => {
 .pico-data p {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   font-size: 14px;
+  gap: 5px;
 }
-
+.pico-data-icon{
+  width: 10%;
+}
 .pico-data-value{
-  width: 80%;
+  width: 100%;
   text-align: left;
 }
+.environment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  width: 100%;
+}
+
 /* Button */
 button {
   width: fit-content;
@@ -304,6 +314,9 @@ button:hover {
 /* Responsive Grid */
 @media (max-width: 600px) {
   .summary-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  .environment-grid {
     grid-template-columns: repeat(1, 1fr);
   }
 }

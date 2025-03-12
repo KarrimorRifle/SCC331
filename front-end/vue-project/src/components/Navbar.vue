@@ -83,8 +83,8 @@ watch(() => authStore.userAuthority, (newVal) => {
 			<!-- normal links -->
       <RouterLink to="/" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
       <RouterLink to="/map" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
-      <RouterLink to="/summaries" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
-      <RouterLink to="/messages" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Messages</RouterLink>
+      <RouterLink to="/summaries" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
+      <RouterLink to="/messages" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" v-if="props.loggedIn">Messages</RouterLink>
 
 			<!-- Admins -->
 			<template v-if="authStore.userAuthority === 'Admin' || authStore.userAuthority === 'Super Admin'">
@@ -154,7 +154,7 @@ watch(() => authStore.userAuthority, (newVal) => {
 }
 
 .nav-link {
-	margin: 0 15px;
+	margin: 0 5px;
 	color: var(--primary-light-text);
 	text-decoration: none;
 	font-size: 14px;
