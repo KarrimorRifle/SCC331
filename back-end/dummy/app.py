@@ -205,9 +205,9 @@ if __name__ == '__main__':
             switch_database(conn, "assets")
             image_data = convert_image_to_base64("store.png")
             presetID = create_preset(conn, "Default", accountID, "store.png", image_data)
-            create_map_block(conn, presetID, 'd83add67ed84', 30, 20, 100, 100, "#ab28b2", "Reception")
-            create_map_block(conn, presetID, 'd83add41a997', 130, 20, 100, 100, "#3a5fcd", "Security")
-            create_map_block(conn, presetID, 'd83add8af3cf', 30, 120, 100, 100, "#e94d1b", "Lobby")
+            create_map_block(conn, presetID, 'd83add67ed84', 30, 20, 300, 300, "#ab28b2", "Reception")
+            create_map_block(conn, presetID, 'd83add41a997', 330, 20, 300, 300, "#3a5fcd", "Security")
+            create_map_block(conn, presetID, 'd83add8af3cf', 30, 320, 300, 300, "#e94d1b", "Lobby")
             set_default_preset(conn, presetID)
         except Exception as e:
             print("Error creating account or preset:", e)
