@@ -1,13 +1,12 @@
 <template>
   <div class="inspection bg-light text-dark mt-0 p-0" style="flex-grow: 1;">
     <div id="date-time-selector" :class="['row', 'bg-theme', 'p-3', 'py-1', 'rounded', 'sticky-top']" style="z-index: 1;">
-      <div class="w-100 row">
+      <div class="w-100 row" v-if="!live">
         <div class="g-3 align-middle align-items-center col-xxl-4 mt-0 col-md-4 col-12 flex-wrap d-flex">
           <div class="d-flex flex-row align-middle mt-2 mt-md-0">
             <label for="calendar-picker" class="form-label mb-0 d-flex align-items-center me-2">Date:</label>
             <input type="date" id="calendar-picker" v-model="selectedDate" class="form-control me-1" />
             <div class="d-flex align-items-center justify-content-center" style="min-width: 4rem;">
-              <!-- Reintroducing day navigation buttons -->
               <button @click="prevDay" class="btn-sm btn btn-secondary me-1">
                 <font-awesome-icon :icon="faChevronLeft" />
               </button>
@@ -31,9 +30,17 @@
           </div>
         </div>
       </div>
+      <div class="w-100 row" v-else>
+        <div class="d-flex justify-content-center">
+          <button class="px-3 btn btn-light text-secondary" @click="paused = !paused">
+            <font-awesome-icon v-if="paused" :icon="faPlay"/>
+            <font-awesome-icon v-else :icon="faPause" />
+          </button>
+        </div>
+      </div>
     </div>
 
-    <div v-if="isLoading" class="loading-throbber">
+    <div v-if="isLoading && !live" class="loading-throbber">
       <div class="spinner"></div>
       <p>Loading data...</p>
     </div>
@@ -66,6 +73,7 @@
           </div>
         </div>
         <div class="filter-container" style="position: relative;">
+          <button @click="live = !live" class="btn btn-sm me-2" :class="{'btn-success': live, 'btn-outline-secondary': !live}">Show Live</button>
           <button class="btn btn-sm btn-secondary" @click="toggleFilter" ref="filterButton">Filter</button>
           <div v-if="showFilter" class="filter-popout card p-2" style="position: absolute; top: 100%; right: 0; z-index: 1000; width: 15rem;" ref="filterPopout">
             <div class="mb-2">
@@ -311,7 +319,7 @@ import type { presetListType, preset, boxType } from '@/utils/mapTypes';
 import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModal.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { getIcon, getRoleColor } from '@/utils/helper/colourIcon';
-import { faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL } from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL, faPlay, faPause } from '@fortawesome/free-solid-svg-icons';
 
 
 const showTable = ref<Record<string, boolean>>({});
@@ -326,10 +334,10 @@ const showModal = ref(false);
 const isLoading = ref(false);
 const movementData = ref<Record<string, Record<string, Record<string, string>>>>({});
 const boxes = ref<Record<string, { label: string; colour: string }>>({});
-
+const live = ref<boolean>(false);
 const userID = ref<string>("");
 const userMovementHistory = ref<{ roomLabel: string; loggedAt: string }[]>([]);
-
+const paused = ref<boolean>(false);
 const hideHeader = ref(false);
 let lastScrollTop = 0;
 
@@ -346,39 +354,93 @@ const endOfDay = new Date();
 endOfDay.setHours(23,59,59,999);
 const hasData = ref<boolean>(true);
 
+let firstLiveFetch = true;
 const fetchMovementData = async () => {
   try {
     isLoading.value = true;
     hasData.value = false;
-    const response = await axios.get('http://localhost:5003/movement', {
-      headers: {
-        'time_start': startOfDay.toISOString(),
-        'time_end': endOfDay.toISOString()
-      },
-      withCredentials: true
-    });
-    isLoading.value = false;
-    // Detect and fill gaps in timestamps
-    const temp = response.data;
-    const timestamps = Object.keys(temp).sort();
-    for (let i = 1; i < timestamps.length; i++) {
-      const prevTime = new Date(timestamps[i - 1]);
-      const currTime = new Date(timestamps[i]);
-      const diff = (currTime.getTime() - prevTime.getTime()) / 1000; // difference in seconds
+    let response;
+    if (live.value) {
+      const now = new Date();
+      const twoMinutesAgo = new Date(now.getTime() - 2 * 60000);
+      response = await axios.get('http://localhost:5003/summary', {
+        withCredentials: true
+      });
 
-      if (diff > 60) { // assuming a gap is more than 60 seconds
-        const newTime = new Date(prevTime.getTime() + 60000).toISOString(); // add 1 minute
-        temp[newTime] = {}; // add empty data for the new timestamp
+      interface CountData {
+        count: number;
+        id: string[];
       }
+
+
+      // Data for each "room" key
+      interface RoomData {
+        users: CountData;
+        luggage: CountData;
+        staff: CountData;
+        guard: CountData;
+      }
+
+      interface MovementData {
+        [roomID: string]: RoomData;
+      }
+
+      const data = response.data as MovementData
+      //previousLocation = Record<timestamp, record<picoID, locationInLast>>
+      if(firstLiveFetch){
+        firstLiveFetch = false;
+        movementData.value = {};
+      }
+      movementData.value[now.toISOString()] = {};
+      Object.entries(data).forEach(([picoID, item]) => {
+        movementData.value[now.toISOString()][picoID] = {};
+        Object.entries(item).forEach(([type, { id, count }]) => {
+          // Skip environment
+          if (type === 'environment') return;
+
+          // For each ID in the array, create a separate property
+          id.forEach((ID) => {
+            movementData.value[now.toISOString()][picoID][ID] = type;
+          });
+        });
+      })
+
+      selectedDayTimeIndex.value = Object.keys(movementData.value).length - 1;
+
+      console.log(movementData.value)
+    } else {
+      firstLiveFetch = true;
+      response = await axios.get('http://localhost:5003/movement', {
+        headers: {
+          'time_start': startOfDay.toISOString(),
+          'time_end': endOfDay.toISOString()
+        },
+        withCredentials: true
+      });
+
+      // Detect and fill gaps in timestamps
+      const temp = response.data;
+      const timestamps = Object.keys(temp).sort();
+      for (let i = 1; i < timestamps.length; i++) {
+        const prevTime = new Date(timestamps[i - 1]);
+        const currTime = new Date(timestamps[i]);
+        const diff = (currTime.getTime() - prevTime.getTime()) / 1000; // difference in seconds
+
+        if (diff > 60) { // assuming a gap is more than 60 seconds
+          const newTime = new Date(prevTime.getTime() + 60000).toISOString(); // add 1 minute
+          temp[newTime] = {}; // add empty data for the new timestamp
+        }
+      }
+
+      const sortedTemp = Object.keys(temp).sort().reduce((acc, key) => {
+        acc[key] = temp[key];
+        return acc;
+      }, {});
+      movementData.value = sortedTemp;
     }
-
-    const sortedTemp = Object.keys(temp).sort().reduce((acc, key) => {
-      acc[key] = temp[key];
-      return acc;
-    }, {});
-
-    movementData.value = sortedTemp;
+    isLoading.value = false;
     hasData.value = true;
+    console.log(previousLocation.value);
   } catch (error) {
     if (error.response?.status === 404) {
       movementData.value = {};
@@ -620,6 +682,10 @@ const handleClickOutsideFilter = (event: MouseEvent) => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutsideFilter);
+  if (liveFetchTimer) {
+    clearInterval(liveFetchTimer);
+    liveFetchTimer = null;
+  }
 });
 
 const searchPico = ref('');
@@ -868,6 +934,21 @@ const canGoNextDay = computed(() => {
   const today = new Date();
   today.setHours(0,0,0,0);
   return selected < today;
+});
+
+let liveFetchTimer: number | null = null;
+watch([live, paused], ([liveVal, pausedVal]) => {
+  if (liveVal && !pausedVal) {
+    if (!liveFetchTimer) {
+      fetchMovementData(); // immediate update
+      liveFetchTimer = window.setInterval(fetchMovementData, 30000);
+    }
+  } else {
+    if (liveFetchTimer) {
+      clearInterval(liveFetchTimer);
+      liveFetchTimer = null;
+    }
+  }
 });
 </script>
 
