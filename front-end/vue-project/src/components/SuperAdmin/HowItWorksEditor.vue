@@ -185,7 +185,10 @@ function removeStep(index: number) {
 /* Add Step Card */
 .add-step-card {
   background: var(--primary-light-bg);
-  border: 2px dashed var(--home-primary-light-text);
+  border: 2px dashed var(--home-primary-dark-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
 
