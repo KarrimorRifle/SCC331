@@ -86,7 +86,8 @@ const getEnvironmentSensors = (area) => {
 }
 
 const formatSensorName = (name: string): string => {
-  return name.replace(/\s*Sensor\s*/i, '').trim();
+  const formattedName = name.replace(/\s*Sensor\s*/i, '').trim();
+  return formattedName.length > 4 ? formattedName.slice(0, 4) : formattedName;
 };
 
 // Add helper function to return icon mapping based on type using imported icons
@@ -178,20 +179,17 @@ const getUnitSymbol = (key: string) => {
         </div>
         <div class="card-body">
 
-        
-          <div class="pico-data">
-            <div v-for="tracker in getObjectTrackers(area)" :key="tracker.key">
-              <p>
-                <span class="pico-data-icon">
-                  <FontAwesomeIcon :icon="tracker.icon" />
-                </span> 
-                <span class="pico-data-value">
-                  {{ tracker.name }} Count: {{ tracker.count }}
-                </span>
-              </p>
+          <div class="object-grid">
+            <div v-for="tracker in getObjectTrackers(area)" :key="tracker.key" class="pico-data">
+              <span class="pico-data-icon" :style="{ color: getRoleColor(tracker.key) }">
+                <FontAwesomeIcon :icon="tracker.icon" />
+              </span> 
+              <span class="pico-data-value">
+                {{ tracker.name }}: {{ tracker.count }}
+              </span>
             </div>
           </div>
-          
+
           <div class="environment-grid">
             <div v-for="sensor in getEnvironmentSensors(area)" :key="sensor.key" class="pico-data">
               <span class="pico-data-icon">
@@ -295,14 +293,9 @@ const getUnitSymbol = (key: string) => {
 
 .pico-data {
   display: flex;
-  flex-direction: column;
-}
-
-.pico-data p {
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  gap: 5px;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;
 }
 .pico-data-icon{
   width: 10%;
@@ -316,6 +309,12 @@ const getUnitSymbol = (key: string) => {
   grid-template-columns: repeat(2, 1fr);
   width: 100%;
 }
+.object-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  width: 100%;
+}
+
 
 /* Button */
 button {

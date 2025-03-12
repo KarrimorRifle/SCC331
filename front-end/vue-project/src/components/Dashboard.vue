@@ -125,7 +125,7 @@ const getObjectTrackers = (area) => {
       key,
       name: sensor.name,
       icon: sensor.icon,
-      count: area.tracker?.[key]?.count ?? "--" // Default to 0 if missing
+      count: area?.tracker?.[key]?.count ?? "--" // Default to 0 if missing
     }));
 };
 
@@ -139,6 +139,10 @@ const getEnvironmentSensors = (area) => {
       icon: sensor.icon,
       value: area.tracker?.environment?.[key] ?? '--' // Default to "N/A" if missing
     }));
+};
+
+const formatSensorName = (name: string): string => {
+  return name.replace(/\s*Sensor\s*/i, '').trim();
 };
 
 onMounted(() => {
@@ -235,18 +239,26 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <div class="pico-container">
-          <div v-for="tracker in getObjectTrackers(data)" :key="tracker.key" class="pico-item">
-            <FontAwesomeIcon :icon="tracker.icon" class="pico-icon" />
-            <span class="pico-text">{{ tracker.name }}: {{ tracker.count }}</span>
+        <div class="object-grid">
+          <div v-for="tracker in getObjectTrackers(area)" :key="tracker.key" class="pico-data">
+            <span class="pico-data-icon">
+              <FontAwesomeIcon :icon="tracker.icon" />
+            </span> 
+            <span class="pico-data-value">
+              {{ tracker.name }}: {{ tracker.count }}
+            </span>
           </div>
         </div>
 
         <!-- Environment Sensors -->
-        <div v-if="isExpanded" class="pico-container">
-          <div v-for="sensor in getEnvironmentSensors(data)" :key="sensor.key" class="pico-item">
-            <FontAwesomeIcon :icon="sensor.icon" class="pico-icon" />
-            <span class="pico-text">{{ sensor.name }}: {{ sensor.value }}</span>
+        <div v-if="isExpanded" class="environment-grid">
+          <div v-for="sensor in getEnvironmentSensors(data)" :key="sensor.key" class="pico-data">
+            <span class="pico-data-icon">
+              <FontAwesomeIcon :icon="sensor.icon" />
+            </span> 
+            <span class="pico-data-value">
+              {{ formatSensorName(sensor.name) }}: {{ sensor.value }}
+            </span>
           </div>
         </div>
 
@@ -402,28 +414,35 @@ onUnmounted(() => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.pico-container {
+.pico-data {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 1rem;
-}
-
-.pico-item {
-  display: flex;
+  flex-direction: row;
   justify-content: space-between;
-  align-items: center;
-  justify-items: center;
-  gap: 10px;
+  gap: 20px;
 }
-
-.pico-icon {
+.pico-data-icon{
   width: 10%;
 }
-
-.pico-text {
-  font-weight: bold;
-  width: 80%;
+.pico-data-value{
+  width: 100%;
+  text-align: left;
+}
+.environment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  width: 100%;
+  margin: 10px 0;
+}
+.object-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  width: 100%;
+}
+.expanded .object-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  width: 100%;
+  border-bottom: 0.5px solid #ccc;
 }
 
 </style>
