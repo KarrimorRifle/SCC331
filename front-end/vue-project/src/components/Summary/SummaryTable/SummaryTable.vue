@@ -66,7 +66,7 @@ const getEmoji = (key: string) => {
     light: '💡',
     humidity: '💧',
   };
-  return emojiMapping[key] || '';
+  return emojiMapping[key] || null;
 };
 
 const getUnitSymbol = (key: string) => {
@@ -78,7 +78,7 @@ const getUnitSymbol = (key: string) => {
     light: 'lux',
     humidity: '%',
   };
-  return unitMapping[key] || '';
+  return unitMapping[key] || '?';
 };
 </script>
 
@@ -125,7 +125,7 @@ const getUnitSymbol = (key: string) => {
           <div class="environment-data">
             <div class="row">
               <div class="col-lg-6 col-md-12 col-6 mb-1" :key="type" v-for="([type, value]) in Object.entries(area.tracker?.environment || {})">
-                {{ getEmoji(type) }} {{ value.toFixed(1) }} {{ getUnitSymbol(type) }}
+                {{ getEmoji(type) || getIcon(type) }} {{ value.toFixed(1) }} {{ getUnitSymbol(type) }}
               </div>
             </div>
           </div>
