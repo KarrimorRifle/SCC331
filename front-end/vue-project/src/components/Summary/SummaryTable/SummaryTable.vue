@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
-import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
-import LuggageMarker from '../../ObjectMarker/LuggageMarker.vue';
 import EnvironmentDataGraph from '../EnvironmentDataGraph.vue';
 import SummaryTableFilterBar from "./SummaryTableFilterBar.vue";
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { getIcon,getRoleColor } from '@/utils/helper/colourIcon';
 
 const props = defineProps({
   data: {
-    type: Object,
-    required: true,
-  },
-  environmentHistory: {
     type: Object,
     required: true,
   },
@@ -30,21 +26,13 @@ const selectedAreas = ref([]);
 const activeGraphArea = ref(null);
 const showModal = ref(false);
 const showFilterBar = ref(true);
-const selectedEnvironmentData = ref({});
 
 const toggleFilterVisibility = () => {
   showFilterBar.value = !showFilterBar.value;
 };
 
 // Toggle modal for environment graph
-const openGraph = (areaLabel) => {
-  const selectedArea = presetData.value?.find(area => area.label === areaLabel);
-
-  if (selectedArea) {
-    selectedEnvironmentData.value = selectedArea.tracker.environment;
-  } else {
-    selectedEnvironmentData.value = {}; 
-  }
+const openGraph = async(areaLabel) => {
   activeGraphArea.value = areaLabel;
   showModal.value = true;
 };
@@ -54,11 +42,44 @@ const closeGraph = () => {
 };
 
 // Computed property for filtered areas
-const filteredAreas = computed(() => {
-  if (selectedAreas.value.length === 0) return presetData.value;
-  return presetData.value.filter(area => selectedAreas.value.includes(area.label));
+const filteredAreas = computed(() => presetData.value.filter(area => selectedAreas.value.includes(area.label)));
+
+watch(presetData, (newVal, oldVal) => {
+  // If newVal contains rooms not in selectedAreas, add them
+  newVal.forEach(area => {
+    if (!selectedAreas.value.includes(area.label)) {
+      selectedAreas.value.push(area.label);
+    }
+  });
 });
 
+onMounted(() => {
+  selectedAreas.value = presetData.value.map(area => area.label);
+});
+
+const getEmoji = (key: string) => {
+  const emojiMapping: Record<string, string> = {
+    temperature: '🌡️',
+    IAQ: '🌬️',
+    sound: '🔊',
+    pressure: '🌡️',
+    light: '💡',
+    humidity: '💧',
+  };
+  return emojiMapping[key] || null;
+};
+
+const getUnitSymbol = (key: string) => {
+  const unitMapping: Record<string, string> = {
+    temperature: '°C',
+    IAQ: '%',
+    sound: 'dB',
+    pressure: 'hPa',
+    light: 'lux',
+    humidity: '%',
+  };
+  return unitMapping[key] || '?';
+};
 </script>
 
 <template>
@@ -73,40 +94,40 @@ const filteredAreas = computed(() => {
       </button>
     </div>
     <!-- Import Filter Bar -->
-    <SummaryTableFilterBar 
+    <SummaryTableFilterBar
       v-if="showFilterBar"
-      :presetData="presetData" 
-      @update:selectedAreas="selectedAreas = $event"
+      v-model:selectedAreas="selectedAreas"
+      :presetData="presetData"
     />
 
+    <div class="text-center mt-2" v-if="presetData.length == 0">
+      There are no rooms available to display!
+    </div>
+    <div v-else-if="filteredAreas.length == 0" class="text-center mt-2">
+      You have nothing selected!
+    </div>
     <!-- Cards Layout -->
-    <div class="summary-grid">
+    <div class="summary-grid pb-3 px-1">
       <div v-for="(area, index) in filteredAreas" :key="index" class="summary-card">
         <div class="card-header" :style="{ backgroundColor: area.box?.colour, color: getTextColour(area.box?.colour) }">
           <h3>{{ area.label }}</h3>
         </div>
         <div class="card-body">
-          <!-- People Count -->
-          <div class="count-container">
-            <div class="marker-wrapper">
-              <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
+          <div class="row">
+            <div class="count-container col-lg-6 col-md-12 col-6 mt-1" v-for="(type) in Object.keys(area.tracker).filter(type => type != 'environment')" :key="type" >
+              <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/>
+              <p class="mb-0">{{ type }}: {{ (area.tracker?.[type] || {}).count || 0 }}</p>
             </div>
-            <p>People Count: {{ area.tracker?.users?.count || 0 }}</p>
           </div>
 
-          <!-- Luggage Count -->
-          <div class="count-container">
-            <div class="marker-wrapper">
-              <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
-            </div>
-            <p>Luggage Count: {{ area.tracker?.luggage?.count || 0 }}</p>
-          </div>
-
+          <hr class="my-0">
           <!-- Environment Data -->
           <div class="environment-data">
-            <p><span class="emoji">🌡️</span> Temperature: {{ area.tracker?.environment?.temperature ?? 'N/A' }}°C</p>
-            <p><span class="emoji">🔊</span> Sound Level: {{ area.tracker?.environment?.sound ?? 'N/A' }} dB</p>
-            <p><span class="emoji">💡</span> Light Level: {{ area.tracker?.environment?.light ?? 'N/A' }} lux</p>
+            <div class="row">
+              <div class="col-lg-6 col-md-12 col-6 mb-1" :key="type" v-for="([type, value]) in Object.entries(area.tracker?.environment || {})">
+                {{ getEmoji(type) || getIcon(type) }} {{ value.toFixed(1) }} {{ getUnitSymbol(type) }}
+              </div>
+            </div>
           </div>
 
           <!-- View Graph Button -->
@@ -119,8 +140,8 @@ const filteredAreas = computed(() => {
     <EnvironmentDataGraph
       v-if="showModal"
       :areaLabel="activeGraphArea"
-      :environmentData="selectedEnvironmentData"
       :showModal="showModal"
+      :area-labels="presetData.map(item => item.label)"
       @close="closeGraph"
     />
   </div>
@@ -132,7 +153,7 @@ const filteredAreas = computed(() => {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  background-color: var(--primary-light-bg); 
+  background-color: var(--primary-light-bg);
   border-top: 1px solid #ccc;
   color: var(--primary-dark-text);
 }

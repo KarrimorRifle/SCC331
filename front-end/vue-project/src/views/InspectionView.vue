@@ -260,7 +260,7 @@
       </div>
     </div>
 
-    <div class="quick-selects d-md-none fixed-bottom bg-light p-2 border-top" style="overflow-x: auto;">
+    <div class="quick-selects d-md-none fixed-bottom bg-light p-2 border-top" style="overflow-x: auto; z-index: 4;">
       <div class="container-fluid">
         <div class="d-flex flex-nowrap justify-content-start">
           <button v-for="(box, roomID) in boxes"
@@ -291,7 +291,9 @@ import type { Record } from 'vue';
 import type { presetListType, preset, boxType } from '@/utils/mapTypes';
 import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModal.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion, faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL } from '@fortawesome/free-solid-svg-icons';
+import { getIcon, getRoleColor } from '@/utils/helper/colourIcon';
+import { faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL } from '@fortawesome/free-solid-svg-icons';
+
 
 const showTable = ref<Record<string, boolean>>({});
 
@@ -536,38 +538,6 @@ const fetchUserMovementData = async () => {
 };
 
 watch([selectedTime, userID], fetchUserMovementData);
-
-// Add helper function to return icon mapping based on type using imported icons
-const getIcon = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'guard':
-      return faShieldAlt;
-    case 'luggage':
-      return faSuitcase;
-    case 'user':
-      return faUser;
-    case 'staff':
-      return faClipboardCheck;
-    default:
-      return faQuestion;
-  }
-};
-
-// New helper to return color per role
-const getRoleColor = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'guard':
-      return 'blue';
-    case 'luggage':
-      return 'grey';
-    case 'user':
-      return 'darkblue';
-    case 'staff':
-      return 'green';
-    default:
-      return 'black';
-  }
-};
 
 const sortColumn = ref('cameFrom'); // options: 'picoID', 'type', 'cameFrom'
 const sortDirection = ref('asc'); // options: 'asc', 'desc'
