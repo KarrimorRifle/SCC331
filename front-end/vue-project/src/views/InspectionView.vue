@@ -950,6 +950,7 @@ watch([live, paused], ([liveVal, pausedVal]) => {
       clearInterval(liveFetchTimer);
       liveFetchTimer = null;
     }
+    fetchMovementData();
   }
 });
 </script>
