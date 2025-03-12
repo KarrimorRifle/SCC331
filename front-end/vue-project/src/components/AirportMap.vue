@@ -233,7 +233,7 @@ const updateMode = ref<boolean>(false);
         <button v-if="props.settable" class="btn btn-success ms-2" @click="emit('setDefault')" for="inputGroupSelect01">Set Default</button>
         <label v-else class="input-group-text bg-dark text-light" for="inputGroupSelect01">Preset</label>
         <!-- add v-model and make it a v-if to change the name -->
-        <select class="form-select" id="inputGroupSelect02" style="max-width: 30rem;" @change="emit('selectPreset', $event.target.value)" :value="props.currentPreset">
+        <select class="form-select" id="inputGroupSelect02" style="min-width: 20rem;" @change="emit('selectPreset', $event.target.value)" :value="props.currentPreset">
           <option v-for="preset in presetList.presets" :value="preset.id" :key="preset.id">
             {{ preset.id === defaultPresetId ? `Default: ${preset.name}` : preset.name }}
           </option>
@@ -325,6 +325,7 @@ const updateMode = ref<boolean>(false);
           v-for="([key, data]) in Object.entries(internalModelValue).filter(([k, d]) => d.box)"
           :key="key"
           :position="data.box"
+          :areaKey="key"
           :label="data.label?.length > 0 ? data.label : key"
           :color="data.box.colour"
           :zoomLevel="zoomLevel"
