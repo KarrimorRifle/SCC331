@@ -63,7 +63,7 @@ void BluetoothSensor::ledSetup() {
   // Colour System:
   leds->begin(); // initializes WS2812B strip object (REQUIRED)
   leds->setPixelColor(1, leds->Color(100, 100, 100));
-  leds->setBrightness(75);     //just to make the brightness more bearable, feel free to adjust
+  leds->setBrightness(50);     //just to make the brightness more bearable, feel free to adjust
   leds->show();
 }
 
