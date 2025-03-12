@@ -97,9 +97,28 @@ onMounted(() => {
           <hr class="my-1">
           <!-- Environment Data -->
           <div class="environment-data">
-            <p><span class="emoji">🌡️</span> Temperature: {{ area.tracker?.environment?.temperature ?? 'N/A' }}°C</p>
-            <p><span class="emoji">🔊</span> Sound Level: {{ area.tracker?.environment?.sound ?? 'N/A' }} dB</p>
-            <p><span class="emoji">💡</span> Light Level: {{ area.tracker?.environment?.light ?? 'N/A' }} lux</p>
+            <table style="width: 100%;">
+              <tbody>
+              <tr>
+                <th class="emoji-column">🌡️</th>
+                <th class="data-column">{{ area.tracker?.environment?.temperature || '--' }} °C</th>
+                <th class="emoji-column">🌬️</th>
+                <th class="data-column">{{ area.tracker?.environment?.IAQ || '--' }} %</th>
+              </tr>
+              <tr>
+                <th class="emoji-column">🔊</th>
+                <th class="data-column">{{ area.tracker?.environment?.sound || '--' }} dB</th>
+                <th class="emoji-column">🌡️</th>
+                <th class="data-column">{{ area.tracker?.environment?.pressure || '--' }} hPa</th>
+              </tr>
+              <tr>
+                <th class="emoji-column">💡</th>
+                <th class="data-column">{{ area.tracker?.environment?.light || '--' }} lux</th>
+                <th class="emoji-column">💧</th>
+                <th class="data-column">{{ area.tracker?.environment?.humidity || '--' }} %</th>
+              </tr>
+              </tbody>
+            </table>
           </div>
 
           <!-- View Graph Button -->
