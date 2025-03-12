@@ -250,7 +250,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Live Updates for Each Area (Expanded View Only)-->
+        <!-- Live Updates for Each Area (Expanded View Only)
         <div v-if="isExpanded" class="live-updates-section">
           <LiveUpdates 
             :userIds="userIds" 
@@ -260,6 +260,7 @@ onUnmounted(() => {
             :fullUpdates="updates"
           />
         </div>
+        -->
       </div>
     </div>
     </div>
