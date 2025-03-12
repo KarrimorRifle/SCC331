@@ -83,21 +83,17 @@ watch(() => authStore.userAuthority, (newVal) => {
 			<!-- normal links -->
       <RouterLink to="/" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Home</RouterLink>
       <RouterLink to="/map" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Map</RouterLink>
-      <RouterLink to="/summaries" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
-      <RouterLink to="/messages" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" v-if="props.loggedIn">Messages</RouterLink>
+      <RouterLink to="/summaries" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" v-if="props.loggedIn">Summary</RouterLink>
+      <RouterLink to="/messages" class="nav-link" exact-active-class="active" v-if="props.loggedIn">Messages</RouterLink>
 
 			<!-- Admins -->
-			<template v-if="authStore.userAuthority === 'Admin' || authStore.userAuthority === 'Super Admin'">
+			<template v-if="authStore.userAuthority === 'Admin'">
 				<RouterLink to="/create-warning" class="nav-link ms-4" exact-active-class="active" >Warnings</RouterLink>
 				<RouterLink to="/admin" class="nav-link" exact-active-class="active" >Users</RouterLink>
 				<RouterLink to="/inspection" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" >Inspection</RouterLink>
 			</template>
-			<template v-if="authStore.userAuthority === 'Super Admin'">
-				<RouterLink to="/change-domain" class="nav-link" exact-active-class="active" >Change Domain</RouterLink>
-				<RouterLink to="/sensor-config" class="nav-link me-1 pe-5 border-end border-white" exact-active-class="active" >Sensor Config</RouterLink>
-			</template>
       <RouterLink to="/login" class="nav-link" exact-active-class="active" v-if="!props.loggedIn">Login</RouterLink>
-      <RouterLink to="/login" class="nav-link ms-4" v-if="props.loggedIn" @click.prevent="handleLogout">
+      <RouterLink to="#" class="nav-link ms-4" v-if="props.loggedIn" @click.prevent="handleLogout">
         Log out
       </RouterLink>
     </div>
@@ -114,16 +110,12 @@ watch(() => authStore.userAuthority, (newVal) => {
       <RouterLink to="/messages" class="mobile-link" exact-active-class="active" v-if="props.loggedIn" @click="closeMenu">Messages</RouterLink>
 
 			<!-- Admin links -->
-			<template v-if="authStore.userAuthority === 'Admin' || authStore.userAuthority === 'Super Admin'">
+			<template v-if="authStore.userAuthority === 'Admin'">
 				<RouterLink to="/create-warning" class="mobile-link" exact-active-class="active" @click="closeMenu">Create Warning</RouterLink>
 				<RouterLink to="/admin" class="mobile-link" exact-active-class="active" @click="closeMenu">Admin</RouterLink>
 				<RouterLink to="/inspection" class="mobile-link" exact-active-class="active" @click="closeMenu">Inspection</RouterLink>
 			</template>
 
-			<template v-if="authStore.userAuthority === 'Super Admin'">
-				<RouterLink to="/change-domain" class="mobile-link" exact-active-class="active" @click="closeMenu">Change Domain</RouterLink>
-				<RouterLink to="/sensor-config" class="mobile-link" exact-active-class="active" @click="closeMenu">Sensor Config</RouterLink>
-			</template>
       <RouterLink to="/login" class="mobile-link" exact-active-class="active" v-if="!props.loggedIn" @click="closeMenu">Login</RouterLink>
       <RouterLink to="#" class="mobile-link" v-if="props.loggedIn" @click.prevent="handleLogout" @click="closeMenu">
         Log out
@@ -154,10 +146,10 @@ watch(() => authStore.userAuthority, (newVal) => {
 }
 
 .nav-link {
-	margin: 0 5px;
+	margin: 0 15px;
 	color: var(--primary-light-text);
 	text-decoration: none;
-	font-size: 14px;
+	font-size: 16px;
 	font-weight: bold;
 }
 

@@ -20,10 +20,6 @@
           <input type="checkbox" class="form-check-input" id="admin" v-model="isAdmin">
           <label class="form-check-label text-white" for="admin">Admin (Dev only)</label>
         </div>
-        <div class="mb-3 form-check">
-          <input type="checkbox" class="form-check-input" id="superAdmin" v-model="isSuperAdmin">
-          <label class="form-check-label text-white" for="superAdmin">Super Admin</label>
-        </div>
         <button type="submit" class="btn btn-primary">Submit</button>
       </form>
     </div>
@@ -41,7 +37,6 @@ const name = ref('');
 const email = ref('');
 const password = ref('');
 const isAdmin = ref(false);
-const isSuperAdmin = ref(false);
 const errorMessage = ref<string | null>(null);
 
 const email_compliance = computed(() => email.value.toLowerCase().endsWith('@fakecompany.co.uk'));
@@ -63,8 +58,7 @@ const handleSubmit = async () => {
           "name": name.value,
           "email": email.value,
           "password": password.value,
-          "bypass": isAdmin.value ? "yes" : "no",
-          "super": isSuperAdmin.value ? "yes" : "no"
+          "bypass": isAdmin.value ? "yes" : "no"
         }
       })
 

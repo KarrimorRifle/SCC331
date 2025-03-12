@@ -536,9 +536,7 @@ const fetchUserMovementData = async () => {
     }
   }
 };
-onMounted(async()=>{
-  fetchUserMovementData();
-})
+
 watch([selectedTime, userID], fetchUserMovementData);
 
 const sortColumn = ref('cameFrom'); // options: 'picoID', 'type', 'cameFrom'
