@@ -163,7 +163,7 @@ const configTexts = computed(() => {
     heroSubtitle: homeConfig.value.config.hero.subtitle,
     loginText: homeConfig.value.config.loginText,
     heroImage: base64Data && imageName.includes('.') 
-      ? `data:image/${imageName.split('.').pop()};base64,${atob(base64Data)}` 
+      ? `data:image/${imageName.split('.').pop()};base64,${base64Data}` 
       : '/newcastle-airport-image.webp', // Fallback image
   };
 });
