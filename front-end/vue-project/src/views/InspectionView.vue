@@ -123,90 +123,101 @@
         </div>
       </div>
       <div class="row">
-        <div v-for="(box, roomID) in boxes" :key="roomID" :id="'room-' + roomID" class="col-md-4 mb-4">
-          <div class="card">
-            <div @click="showTable[roomID] = !(showTable[roomID] ?? true)" class="card-header text-dark d-flex justify-content-between align-middle" :style="{backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor()}" :title="box.label.startsWith('%') ? 'Temporary value as no label available' : ''">
-              <div class="fw-bold">{{ box.label || generateTempLabel() }}</div>
-              <font-awesome-icon v-if="showTable[roomID] ?? true" :icon="faChevronUp" />
-              <font-awesome-icon v-else :icon="faChevronDown" />
-            </div>
-            <div class="card-body" v-if="movementData[selectedTime]?.[roomID]">
-              <!-- New statistical counter -->
-              <div class="stats mb-2">
-                <div class="d-inline-block rounded me-2 p-1">Total: {{ Object.keys(movementData[selectedTime]?.[roomID] || {}).length }}</div>
-                <button
-                  class="d-inline-block rounded me-2 p-1 border-0"
-                  @click="scrollToRoom(room)" v-for="(box, room) in boxes"
-                  :key="room"
-                  :style="{'background-color': box.colour}"
-                >
-                  {{box.label}}:
-                  {{
-                    //movementData = Record<timestamp, Record<picoID, type>>
-                    //previousLocation = Record<timestamp, record<picoID, locationInLast>>
-                    Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce(
-                      (total, obj) => {
-                        if(previousLocation[selectedTime][obj[0]] == room)
-                          return total? total + 1 : 1;
-                        return total? total : 0;
-                      }, 0)
-                  }}
-                </button>
-                <div class="d-inline-block rounded me-2 p-1">
-                  New: {{ Object.values(previousLocation[selectedTime]).filter(location => location === 'NEW').length }}
+        <template v-for="(box, roomID) in boxes" :key="roomID">
+          <div class="col-md-4 mb-4" :id="'room-' + roomID"  v-if="movementData[selectedTime]?.[roomID]">
+            <div class="card">
+              <div @click="showTable[roomID] = !(showTable[roomID] ?? true)" class="card-header text-dark d-flex justify-content-between align-middle" :style="{backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor()}" :title="box.label.startsWith('%') ? 'Temporary value as no label available' : ''">
+                <div class="fw-bold">{{ box.label || generateTempLabel() }}</div>
+                <font-awesome-icon v-if="showTable[roomID] ?? true" :icon="faChevronUp" />
+                <font-awesome-icon v-else :icon="faChevronDown" />
+              </div>
+              <div class="card-body" v-if="movementData[selectedTime]?.[roomID]">
+                <!-- New statistical counter -->
+                <div class="stats mb-2">
+                  <div class="d-inline-block rounded me-2 p-1">Total: {{ Object.keys(movementData[selectedTime]?.[roomID] || {}).length }}</div>
+                  <template :key="room" v-for="(box, room) in boxes">
+                    <button
+                      class="d-inline-block rounded me-2 p-1 border-0"
+                      v-if="0 < Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce(
+                          (total, obj) => {
+                            if(previousLocation[selectedTime][obj[0]] == room)
+                              return total? total + 1 : 1;
+                            return total? total : 0;
+                          }, 0)"
+                      @click="scrollToRoom(room)"
+                      :style="{'background-color': box.colour}"
+                    >
+                      {{box.label}}:
+                      {{
+                        //movementData = Record<timestamp, Record<picoID, type>>
+                        //previousLocation = Record<timestamp, record<picoID, locationInLast>>
+                        Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce(
+                          (total, obj) => {
+                            if(previousLocation[selectedTime][obj[0]] == room)
+                              return total? total + 1 : 1;
+                            return total? total : 0;
+                          }, 0)
+                      }}
+                    </button>
+                  </template>
+                  <div class="d-inline-block rounded me-2 p-1">
+                    New: {{ Object.values(previousLocation[selectedTime]).filter(location => location === 'NEW').length }}
+                  </div>
+                </div>
+                <div class="table-wrapper">
+                  <table class="table" v-show="showTable[roomID] ?? true">
+                    <thead>
+                      <tr class="rounded-top-1">
+                        <th class="rounded-top-1 rounded-end-0"
+                            @click="sortBy('picoID')"
+                            style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
+                          picoID <span v-html="getArrows('picoID')"></span>
+                        </th>
+                        <th @click="sortBy('type')"
+                            style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
+                          Type <span v-html="getArrows('type')"></span>
+                        </th>
+                        <th class="rounded-top-1 rounded-start-0"
+                            @click="sortBy('cameFrom')"
+                            style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
+                          Came From <span v-html="getArrows('cameFrom')"></span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="([picoID, type]) in Object.entries(movementData[selectedTime][roomID] || {}).filter(([picoID, type]) => {
+                          const filterPico = selectedFilterPicoIDs.length ? selectedFilterPicoIDs.includes(picoID) : true;
+                          const filterType = selectedFilterTypes.length ? selectedFilterTypes.includes(type) : true;
+                          const filterRoom = selectedFilterRooms.length ? selectedFilterRooms.includes(previousLocation[selectedTime][picoID]) : true;
+                          return filterPico && filterType && filterRoom;
+                      }).sort((a, b) => {
+                          let comp = 0;
+                          if (sortColumn === 'picoID') {
+                            comp = a[0].localeCompare(b[0]);
+                          } else if (sortColumn === 'type') {
+                            comp = a[1].localeCompare(b[1]);
+                          } else {
+                            const cameA = previousLocation[selectedTime][a[0]] || '';
+                            const cameB = previousLocation[selectedTime][b[0]] || '';
+                            comp = cameA.localeCompare(cameB);
+                          }
+                          return sortDirection === 'asc' ? comp : -comp;
+                        })" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
+                        <td @click="userID = picoID + ''; showModal = true" style="color: blue; text-decoration: underline; cursor: pointer;">{{ picoID }}</td>
+                        <td>
+                          <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/> {{ type }}
+                        </td>
+                        <td :style="{backgroundColor: boxes[previousLocation[selectedTime][picoID]]?.colour}">
+                          {{ boxes[previousLocation[selectedTime][picoID]]?.label || previousLocation[selectedTime][picoID] }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              <table class="table rounded-top-1" v-show="showTable[roomID] ?? true">
-                <thead class="rounded-top-1">
-                  <tr class="rounded-top-1">
-                    <th class="rounded-top-1 rounded-end-0"
-                        @click="sortBy('picoID')"
-                        style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
-                      picoID <span v-html="getArrows('picoID')"></span>
-                    </th>
-                    <th @click="sortBy('type')"
-                        style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
-                      Type <span v-html="getArrows('type')"></span>
-                    </th>
-                    <th class="rounded-top-1 rounded-start-0"
-                        @click="sortBy('cameFrom')"
-                        style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
-                      Came From <span v-html="getArrows('cameFrom')"></span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="([picoID, type]) in Object.entries(movementData[selectedTime][roomID] || {}).filter(([picoID, type]) => {
-                      const filterPico = selectedFilterPicoIDs.length ? selectedFilterPicoIDs.includes(picoID) : true;
-                      const filterType = selectedFilterTypes.length ? selectedFilterTypes.includes(type) : true;
-                      const filterRoom = selectedFilterRooms.length ? selectedFilterRooms.includes(previousLocation[selectedTime][picoID]) : true;
-                      return filterPico && filterType && filterRoom;
-                  }).sort((a, b) => {
-                      let comp = 0;
-                      if (sortColumn === 'picoID') {
-                        comp = a[0].localeCompare(b[0]);
-                      } else if (sortColumn === 'type') {
-                        comp = a[1].localeCompare(b[1]);
-                      } else {
-                        const cameA = previousLocation[selectedTime][a[0]] || '';
-                        const cameB = previousLocation[selectedTime][b[0]] || '';
-                        comp = cameA.localeCompare(cameB);
-                      }
-                      return sortDirection === 'asc' ? comp : -comp;
-                    })" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
-                    <td @click="userID = picoID + ''; showModal = true" style="color: blue; text-decoration: underline; cursor: pointer;">{{ picoID }}</td>
-                    <td>
-                      <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/> {{ type }}
-                    </td>
-                    <td :style="{backgroundColor: boxes[previousLocation[selectedTime][picoID]]?.colour}">
-                      {{ boxes[previousLocation[selectedTime][picoID]]?.label || previousLocation[selectedTime][picoID] }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
             </div>
           </div>
-        </div>
+        </template>
       </div>
       <div class="row">
         <div id="deactivated-devices" class="col-md-12 mb-4">
@@ -219,22 +230,30 @@
             <div class="card-body" v-if="movementData[selectedTime]">
               <div class="stats mb-2">
                 <div class="d-inline rounded me-2 p-1">Total: {{ Object.keys(filteredDeactivatedDevices || {}).length }}</div>
-                <div class="d-inline rounded me-2 p-1"
-                  v-for="(box, roomID) in boxes"
-                  :key="roomID" :style="{'background-color': box.colour}"
-                >
-                  {{box.label}}:
-                  {{
-                    //previousLocation = Record<timestamp, record<picoID, locationInLast>>
-                    filteredDeactivatedDevices.reduce(
-                      (total, [picoID, lastRoom]) => {
-                        if(lastRoom == roomID)
-                          return total + 1;
-                        return total;
-                      }
-                    , 0)
-                  }}
-              </div>
+                <template v-for="(box, roomID) in boxes" :key="roomID">
+                  <div class="d-inline rounded me-2 p-1"
+                    :style="{'background-color': box.colour}"
+                    v-if="filteredDeactivatedDevices.reduce(
+                        (total, [picoID, lastRoom]) => {
+                          if(lastRoom == roomID)
+                            return total + 1;
+                          return total;
+                        }
+                      , 0) > 0"
+                  >
+                    {{box.label}}:
+                    {{
+                      //previousLocation = Record<timestamp, record<picoID, locationInLast>>
+                      filteredDeactivatedDevices.reduce(
+                        (total, [picoID, lastRoom]) => {
+                          if(lastRoom == roomID)
+                            return total + 1;
+                          return total;
+                        }
+                      , 0)
+                    }}
+                  </div>
+                </template>
               </div>
               <table class="table" v-show="showTable['deactivated'] ?? true">
                 <thead>
@@ -976,5 +995,17 @@ const canGoNextDay = computed(() => {
 }
 .dropdown-list li.active {
   background-color: #e0e0e0;
+}
+
+.table-wrapper {
+  overflow-y: scroll;
+  max-height: 25rem;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 0;
 }
 </style>
