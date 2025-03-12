@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
+import { sensors, sensorMapping } from '../../../stores/sensorTypeStore';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
 import LuggageMarker from '../../ObjectMarker/LuggageMarker.vue';
 import EnvironmentDataGraph from '../EnvironmentDataGraph.vue';
@@ -59,6 +61,30 @@ const filteredAreas = computed(() => {
   return presetData.value.filter(area => selectedAreas.value.includes(area.label));
 });
 
+// Computed: Object Trackers (Users, Luggage, etc.)
+const getObjectTrackers = (area) => {
+  return Object.entries(sensorMapping.value)
+    .filter(([_, sensor]) => sensor.type === 2) // Filter only type 2 (object trackers)
+    .map(([key, sensor]) => ({
+      key,
+      name: sensor.name,
+      icon: sensor.icon,
+      count: area.tracker?.[key]?.count ?? 0, // Use count if available, default to 0
+    }));
+};
+
+// Computed: Environment Sensors (Temperature, Sound, etc.)
+const getEnvironmentSensors = (area) => {
+  return Object.entries(sensorMapping.value)
+    .filter(([_, sensor]) => sensor.type === 1) // Only Environment Sensors
+    .map(([key, sensor]) => ({
+      key,
+      name: sensor.name,
+      icon: sensor.icon,
+      value: area.tracker?.environment?.[key] ?? '--' // Default to "N/A" if missing
+    }));
+};
+
 </script>
 
 <template>
@@ -86,27 +112,31 @@ const filteredAreas = computed(() => {
           <h3>{{ area.label }}</h3>
         </div>
         <div class="card-body">
-          <!-- People Count -->
-          <div class="count-container">
-            <div class="marker-wrapper">
-              <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
-            </div>
-            <p>People Count: {{ area.tracker?.users?.count || 0 }}</p>
-          </div>
 
-          <!-- Luggage Count -->
-          <div class="count-container">
-            <div class="marker-wrapper">
-              <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
+          <div class="pico-data">
+            <div v-for="tracker in getObjectTrackers(area)" :key="tracker.key">
+              <p>
+                <span class="emoji">
+                  <FontAwesomeIcon :icon="tracker.icon" />
+                </span> 
+                <span class="pico-data-value">
+                  {{ tracker.name }} Count: {{ tracker.count }}
+                </span>
+              </p>
             </div>
-            <p>Luggage Count: {{ area.tracker?.luggage?.count || 0 }}</p>
           </div>
-
-          <!-- Environment Data -->
-          <div class="environment-data">
-            <p><span class="emoji">🌡️</span> Temperature: {{ area.tracker?.environment?.temperature ?? 'N/A' }}°C</p>
-            <p><span class="emoji">🔊</span> Sound Level: {{ area.tracker?.environment?.sound ?? 'N/A' }} dB</p>
-            <p><span class="emoji">💡</span> Light Level: {{ area.tracker?.environment?.light ?? 'N/A' }} lux</p>
+          
+          <div class="pico-data">
+            <div v-for="sensor in getEnvironmentSensors(area)" :key="sensor.key">
+              <p>
+                <span class="emoji">
+                  <FontAwesomeIcon :icon="sensor.icon" />
+                </span> 
+                <span class="pico-data-value">
+                  {{ sensor.name }}: {{ sensor.value }}
+                </span>
+              </p>
+            </div>
           </div>
 
           <!-- View Graph Button -->
@@ -199,37 +229,22 @@ const filteredAreas = computed(() => {
   gap: 10px;
 }
 
-/* Counters */
-.count-container {
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  gap: 10px;
-}
-
-.marker-wrapper {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-/* Environment Data */
-.environment-data {
+.pico-data {
   display: flex;
   flex-direction: column;
-  gap: 5px;
 }
 
-.environment-data p {
+.pico-data p {
   display: flex;
   align-items: center;
-  gap: 15px;
+  justify-content: space-between;
   font-size: 14px;
 }
 
+.pico-data-value{
+  width: 80%;
+  text-align: left;
+}
 /* Button */
 button {
   width: fit-content;

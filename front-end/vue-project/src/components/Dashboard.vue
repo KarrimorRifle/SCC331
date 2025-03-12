@@ -7,6 +7,7 @@ import { updateTabHeight } from '@/utils/helper/domUtils';
 import { boxAndData } from '@/utils/mapTypes';
 import { Sketch } from '@ckpack/vue-color';
 import { usePresetStore } from '../utils/useFetchPresets';
+import { sensorMapping } from '../stores/sensorTypeStore';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 import LiveUpdates from './Summary/LiveUpdates/LiveUpdates.vue';
@@ -116,6 +117,30 @@ function changeColour(key: string) {
   hideColourPicker();
 }
 
+// Object Trackers (picoType: 2)
+const getObjectTrackers = (area) => {
+  return Object.entries(sensorMapping.value)
+    .filter(([_, sensor]) => sensor.type === 2) // Only Object Trackers
+    .map(([key, sensor]) => ({
+      key,
+      name: sensor.name,
+      icon: sensor.icon,
+      count: area.tracker?.[key]?.count ?? "--" // Default to 0 if missing
+    }));
+};
+
+// Environment Sensors (picoType: 1)
+const getEnvironmentSensors = (area) => {
+  return Object.entries(sensorMapping.value)
+    .filter(([_, sensor]) => sensor.type === 1) // Only Environment Sensors
+    .map(([key, sensor]) => ({
+      key,
+      name: sensor.name,
+      icon: sensor.icon,
+      value: area.tracker?.environment?.[key] ?? '--' // Default to "N/A" if missing
+    }));
+};
+
 onMounted(() => {
   updateTabHeight('.tab-bar', bottomTabHeight);
   window.addEventListener('resize', updateTabHeight);
@@ -210,50 +235,20 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <!-- Luggage Count -->
-        <div class="count-container">
-          <div class="marker-container">
-            <LuggageMarker :color="'#f44336'" :position="{ top: 0, left: 0 }" />
+        <div class="pico-container">
+          <div v-for="tracker in getObjectTrackers(data)" :key="tracker.key" class="pico-item">
+            <FontAwesomeIcon :icon="tracker.icon" class="pico-icon" />
+            <span class="pico-text">{{ tracker.name }}: {{ tracker.count }}</span>
           </div>
-          <p>Luggage: {{  data.tracker?.luggage?.count|| 0 }}</p>
         </div>
 
-        <!-- People Count -->
-        <div class="count-container">
-          <div class="marker-container">
-            <PersonMarker :color="'#4caf50'" :position="{ top: 0, left: 0 }" />
+        <!-- Environment Sensors -->
+        <div v-if="isExpanded" class="pico-container">
+          <div v-for="sensor in getEnvironmentSensors(data)" :key="sensor.key" class="pico-item">
+            <FontAwesomeIcon :icon="sensor.icon" class="pico-icon" />
+            <span class="pico-text">{{ sensor.name }}: {{ sensor.value }}</span>
           </div>
-          <p>People: {{  data.tracker?.users?.count || 0 }}</p>
         </div>
-
-
-        <!-- Environment Data (Expanded View Only) -->
-        <div v-if="isExpanded" class="environment-container">
-          <h4>Environment Data:</h4>
-          <table style="width: 100%;">
-            <tbody>
-            <tr>
-              <th class="emoji-column">🌡️</th>
-              <th class="data-column">{{ data.tracker?.environment?.temperature || '--' }} °C</th>
-              <th class="emoji-column">🌬️</th>
-              <th class="data-column">{{ data.tracker?.environment?.IAQ || '--' }} %</th>
-            </tr>
-            <tr>
-              <th class="emoji-column">🔊</th>
-              <th class="data-column">{{ data.tracker?.environment?.sound || '--' }} dB</th>
-              <th class="emoji-column">🌡️</th>
-              <th class="data-column">{{ data.tracker?.environment?.pressure || '--' }} hPa</th>
-            </tr>
-            <tr>
-              <th class="emoji-column">💡</th>
-              <th class="data-column">{{ data.tracker?.environment?.light || '--' }} lux</th>
-              <th class="emoji-column">💧</th>
-              <th class="data-column">{{ data.tracker?.environment?.humidity || '--' }} %</th>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-
 
         <!-- Live Updates for Each Area (Expanded View Only)-->
         <div v-if="isExpanded" class="live-updates-section">
@@ -325,8 +320,6 @@ onUnmounted(() => {
 .dashboard-areas {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px;
 }
 
 /* Expanded Layout - Two Areas Per Row */
@@ -380,20 +373,6 @@ onUnmounted(() => {
   background: var(--warning-bg-hover);
 }
 
-/* Counters for Luggage & People */
-.count-container {
-  display: flex;
-  align-items: center;
-  margin: 5px 0;
-}
-
-.marker-container {
-  position: relative;
-  width: 20px;
-  height: 20px;
-  margin-right: 8px;
-}
-
 /* Live Updates inside Each Area */
 .live-updates-section {
   margin-top: 10px;
@@ -414,7 +393,7 @@ onUnmounted(() => {
   position: absolute;
   top: 40px;
   right: 10px;
-  z-index: 1000;
+  z-index: 5000;
   background: var(--primary-light-bg);
   padding: 10px;
   border: 1px solid #ccc;
@@ -422,15 +401,28 @@ onUnmounted(() => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.colour-picker-popover {
-  position: absolute;
-  top: 40px;
-  right: 10px;
-  z-index: 1000;
-  background: var(--primary-light-bg);
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.pico-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 1rem;
 }
+
+.pico-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  justify-items: center;
+  gap: 10px;
+}
+
+.pico-icon {
+  width: 10%;
+}
+
+.pico-text {
+  font-weight: bold;
+  width: 80%;
+}
+
 </style>

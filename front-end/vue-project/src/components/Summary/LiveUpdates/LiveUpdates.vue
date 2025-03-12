@@ -189,7 +189,7 @@ watch(
       <p>Loading updates...</p>
     </div>
 
-    <!-- Time Filter Inputs -->
+    <!-- Time Filter Inputs 
     <div v-else class="date-time-filter">
       <div>
         <label for="start-time">Start Time:</label>
@@ -200,6 +200,7 @@ watch(
         <input id="end-time" type="datetime-local" v-model="endTime">
       </div>
     </div>
+    -->
 
     <!-- Room List -->
     <div v-else class="room-list">
@@ -246,7 +247,7 @@ watch(
   padding: 20px;
   background-color: var(--primary-light-bg);
   border-top: 1px solid #ccc;
-  color: var(--primary-light-text);
+  color: var(--primary-dark-text);
 }
 
 .loading-throbber {

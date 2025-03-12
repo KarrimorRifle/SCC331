@@ -55,6 +55,12 @@ const router = createRouter({
       component: () => import('../views/SuperAdminView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
     },
+    {
+      path: '/sensor-config',
+      name: 'sensor config',
+      component: () => import('../views/SensorConfigView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
   ],
 });
 
