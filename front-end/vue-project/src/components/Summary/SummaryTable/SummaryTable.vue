@@ -46,6 +46,7 @@ const filteredAreas = computed(() => presetData.value.filter(area => selectedAre
 
 watch(presetData, (newVal, oldVal) => {
   // If newVal contains rooms not in selectedAreas, add them
+  if(newVal.length == oldVal.length) return;
   newVal.forEach(area => {
     if (!selectedAreas.value.includes(area.label)) {
       selectedAreas.value.push(area.label);
