@@ -5,8 +5,7 @@ import { usePresetStore } from '../../../utils/useFetchPresets';
 import EnvironmentDataGraph from '../EnvironmentDataGraph.vue';
 import SummaryTableFilterBar from "./SummaryTableFilterBar.vue";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion, faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL } from '@fortawesome/free-solid-svg-icons';
-
+import { getIcon,getRoleColor } from '@/utils/helper/colourIcon';
 
 const props = defineProps({
   data: {
@@ -57,39 +56,6 @@ watch(presetData, (newVal, oldVal) => {
 onMounted(() => {
   selectedAreas.value = presetData.value.map(area => area.label);
 });
-
-// Add helper function to return icon mapping based on type using imported icons
-const getIcon = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'guard':
-      return faShieldAlt;
-    case 'luggage':
-      return faSuitcase;
-    case 'users':
-      return faUser;
-    case 'staff':
-      return faClipboardCheck;
-    default:
-      return faQuestion;
-  }
-};
-
-// New helper to return color per role
-const getRoleColor = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'guard':
-      return 'blue';
-    case 'luggage':
-      return 'grey';
-    case 'users':
-      return 'darkblue';
-    case 'staff':
-      return 'green';
-    default:
-      return 'black';
-  }
-};
-
 </script>
 
 <template>
