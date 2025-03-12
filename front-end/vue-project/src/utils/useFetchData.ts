@@ -14,11 +14,11 @@ export function useFetchData(picoIds: any) {
       const response = await axios.get("/data.json");
       //warnings.value = response.data;
 
-      
+
       if (JSON.stringify(warnings.value) !== JSON.stringify(response.data.warnings)) {
         warnings.value = response.data;
       }
-      
+
     } catch (error) {
       console.error("Error fetching warnings:", error);
     }
@@ -27,29 +27,30 @@ export function useFetchData(picoIds: any) {
   // Function to fetch data
   const fetchData = async () => {
     try {
+      if(true) return;
       // Fetch updates from multiple Pico IDs
-      for (const PICO_ID of picoIds) {
-        const picoResponse = await axios.get(`/pico/${PICO_ID}`, {withCredentials: true});
-        if (picoResponse.status != 200) {
-          console.error(`Error fetching Pico updates for ${PICO_ID}: ${picoResponse.status}`);
-          continue;
-        }
+      // for (const PICO_ID of picoIds) {
+      //   const picoResponse = await axios.get(`/pico/${PICO_ID}`, {withCredentials: true});
+      //   if (picoResponse.status != 200) {
+      //     console.error(`Error fetching Pico updates for ${PICO_ID}: ${picoResponse.status}`);
+      //     continue;
+      //   }
 
-        // Convert new API format to old format
-        // New format: { type: "...", movement: { "timestamp": "RoomID", ... } }
-        // Old format: [ { roomID: <number>, logged_at: <timestamp> }, ... ]
-        const picoMovementData = picoResponse.data.movement;
-        const picoData = Object.entries(picoMovementData).map(([timestamp, roomID]) => ({
-          roomID,
-          logged_at: timestamp,
-        }));
-        //console.log(`Pico ${PICO_ID} data:`, picoData);
+      //   // Convert new API format to old format
+      //   // New format: { type: "...", movement: { "timestamp": "RoomID", ... } }
+      //   // Old format: [ { roomID: <number>, logged_at: <timestamp> }, ... ]
+      //   const picoMovementData = picoResponse.data.movement;
+      //   const picoData = Object.entries(picoMovementData).map(([timestamp, roomID]) => ({
+      //     roomID,
+      //     logged_at: timestamp,
+      //   }));
+      //   //console.log(`Pico ${PICO_ID} data:`, picoData);
 
-        if (JSON.stringify(picoData) !== JSON.stringify(updates.value[PICO_ID])) {
-          //console.log(`Updates updated for ${PICO_ID}:`, picoData);
-          updates.value = { ...updates.value, [PICO_ID]: picoData };
-        }
-      }
+      //   if (JSON.stringify(picoData) !== JSON.stringify(updates.value[PICO_ID])) {
+      //     //console.log(`Updates updated for ${PICO_ID}:`, picoData);
+      //     updates.value = { ...updates.value, [PICO_ID]: picoData };
+      //   }
+      // }
     } catch (error) {
       console.error('Error fetching data:', error);
     }

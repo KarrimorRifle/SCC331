@@ -51,6 +51,11 @@ export default {
 		},
 		addUser() {
 			if (this.newUser.fullName && this.newUser.email) {
+				if (!this.newUser.email.includes('@fakecompany.co.uk')) {
+					alert("Email must belong to @fakecompany.co.uk domain.");
+					return; // Prevent adding user if email does not meet the condition
+				}
+
 				axios.post('http://localhost:5007/add_user', {
 					full_name: this.newUser.fullName,
 					email: this.newUser.email,

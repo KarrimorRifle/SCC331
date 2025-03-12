@@ -160,11 +160,7 @@ def get_preset_details(preset_id):
         conn.close()
 
 @app.route('/home', methods=['GET'])
-def get_front_page():
-    cookie_error = validate_session_cookie(request)
-    if len(cookie_error) == 2:
-        return jsonify(cookie_error[0]), cookie_error[1]
-    
+def get_front_page():   
     conn = get_db_connection()
     if not conn:
         return jsonify({"error": "DB connection unavailable"}), 500

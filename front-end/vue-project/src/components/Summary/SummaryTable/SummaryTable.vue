@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
 import { sensors, sensorMapping } from '../../../stores/sensorTypeStore';
@@ -8,6 +8,8 @@ import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
 import LuggageMarker from '../../ObjectMarker/LuggageMarker.vue';
 import EnvironmentDataGraph from '../EnvironmentDataGraph.vue';
 import SummaryTableFilterBar from "./SummaryTableFilterBar.vue";
+import axios from 'axios';
+import { usePresetLocalCache } from '@/stores/presetLocalCache';
 
 const props = defineProps({
   data: {
@@ -32,21 +34,17 @@ const selectedAreas = ref([]);
 const activeGraphArea = ref(null);
 const showModal = ref(false);
 const showFilterBar = ref(true);
-const selectedEnvironmentData = ref({});
 
 const toggleFilterVisibility = () => {
   showFilterBar.value = !showFilterBar.value;
 };
 
+const environmentData = ref({})
+
 // Toggle modal for environment graph
-const openGraph = (areaLabel) => {
+const openGraph = async(areaLabel) => {
   const selectedArea = presetData.value?.find(area => area.label === areaLabel);
 
-  if (selectedArea) {
-    selectedEnvironmentData.value = selectedArea.tracker.environment;
-  } else {
-    selectedEnvironmentData.value = {}; 
-  }
   activeGraphArea.value = areaLabel;
   showModal.value = true;
 };
@@ -56,9 +54,19 @@ const closeGraph = () => {
 };
 
 // Computed property for filtered areas
-const filteredAreas = computed(() => {
-  if (selectedAreas.value.length === 0) return presetData.value;
-  return presetData.value.filter(area => selectedAreas.value.includes(area.label));
+const filteredAreas = computed(() => presetData.value.filter(area => selectedAreas.value.includes(area.label)));
+
+watch(presetData, (newVal, oldVal) => {
+  // If newVal contains rooms not in selectedAreas, add them
+  newVal.forEach(area => {
+    if (!selectedAreas.value.includes(area.label)) {
+      selectedAreas.value.push(area.label);
+    }
+  });
+});
+
+onMounted(() => {
+  selectedAreas.value = presetData.value.map(area => area.label);
 });
 
 // Computed: Object Trackers (Users, Luggage, etc.)
@@ -99,14 +107,20 @@ const getEnvironmentSensors = (area) => {
       </button>
     </div>
     <!-- Import Filter Bar -->
-    <SummaryTableFilterBar 
+    <SummaryTableFilterBar
       v-if="showFilterBar"
-      :presetData="presetData" 
-      @update:selectedAreas="selectedAreas = $event"
+      v-model:selectedAreas="selectedAreas"
+      :presetData="presetData"
     />
 
+    <div class="text-center mt-2" v-if="presetData.length == 0">
+      There are no rooms available to display!
+    </div>
+    <div v-else-if="filteredAreas.length == 0" class="text-center mt-2">
+      You have nothing selected!
+    </div>
     <!-- Cards Layout -->
-    <div class="summary-grid">
+    <div class="summary-grid pb-3 px-1">
       <div v-for="(area, index) in filteredAreas" :key="index" class="summary-card">
         <div class="card-header" :style="{ backgroundColor: area.box?.colour, color: getTextColour(area.box?.colour) }">
           <h3>{{ area.label }}</h3>
@@ -149,8 +163,8 @@ const getEnvironmentSensors = (area) => {
     <EnvironmentDataGraph
       v-if="showModal"
       :areaLabel="activeGraphArea"
-      :environmentData="selectedEnvironmentData"
       :showModal="showModal"
+      :area-labels="presetData.map(item => item.label)"
       @close="closeGraph"
     />
   </div>
@@ -162,7 +176,7 @@ const getEnvironmentSensors = (area) => {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  background-color: var(--primary-light-bg); 
+  background-color: var(--primary-light-bg);
   border-top: 1px solid #ccc;
   color: var(--primary-dark-text);
 }

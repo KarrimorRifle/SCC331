@@ -1,50 +1,56 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { watch } from 'vue';
 
 const props = defineProps({
   presetData: {
     type: Array,
     required: true,
   },
+  selectedAreas: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(["update:selectedAreas"]);
 
-// Multi-selection state (stores selected areas) - Select all by default
-const selectedAreas = ref(props.presetData.map(area => area.label));
-
-// Watch for changes and emit updates
-watch(selectedAreas, (newValue) => {
-  emit("update:selectedAreas", newValue);
+// Watch for presetData changes and sync selectedAreas
+watch(() => props.presetData, (newVal) => {
+  // Sync selectedAreas with newly available data while preserving existing selections
+  const newLabels = newVal.map(area => area.label);
+  const filtered = props.selectedAreas.filter(label => newLabels.includes(label));
+  emit("update:selectedAreas", filtered);
 });
 
 // Handle Select All functionality
 const toggleAllAreas = () => {
-  if (selectedAreas.value.length === props.presetData.length) {
-    selectedAreas.value = []; // Deselect all
+  if (props.selectedAreas.length === props.presetData.length) {
+    emit("update:selectedAreas", []); // Deselect all
   } else {
-    selectedAreas.value = props.presetData.map(area => area.label); // Select all
+    emit("update:selectedAreas", props.presetData.map(area => area.label)); // Select all
   }
+};
+
+const toggleArea = (areaLabel: string) => {
+  const updated = props.selectedAreas.includes(areaLabel)
+    ? props.selectedAreas.filter(a => a !== areaLabel)
+    : [...props.selectedAreas, areaLabel];
+  emit("update:selectedAreas", updated);
 };
 </script>
 
 <template>
   <div class="filter-bar">
     <h2>Filter by Area</h2>
-
-    <!-- Select All Checkbox -->
-    <div class="checkbox-group">
-      <input type="checkbox" id="select-all" @change="toggleAllAreas" :checked="selectedAreas.length === presetData.length" />
-      <label for="select-all">Select All</label>
-    </div>
-
-    <div class="divider"></div>
-
     <!-- Individual Checkboxes -->
     <div class="area-list">
-      <div v-for="area in presetData" :key="area.label" class="checkbox-group">
-        <input type="checkbox" :id="area.label" v-model="selectedAreas" :value="area.label" />
-        <label :for="area.label">{{ area.label }}</label>
+      <button type="button" class="btn" @click="toggleAllAreas" :class="{ 'btn-primary': selectedAreas.length === presetData.length, 'btn-outline-primary': selectedAreas.length != presetData.length }">
+        All
+      </button>
+      <div v-for="area in presetData" :key="area.label" class="checkbox-group d-inline-block">
+        <button type="button" class="btn" :class="{ 'btn-secondary': selectedAreas.includes(area.label), 'btn-outline-secondary': !selectedAreas.includes(area.label) }" @click="toggleArea(area.label)">
+          {{ area.label }}
+        </button>
       </div>
     </div>
   </div>
