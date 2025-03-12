@@ -55,7 +55,7 @@ export default {
 						fullName: user.name,
 						email: user.email,
 						lastActive: user.last_login,
-						isAdmin: user.authority === "Admin"
+						isAdmin: user.authority === "Admin" || user.authority === "Super Admin"
 					}));
 				})
 				.catch(error => {

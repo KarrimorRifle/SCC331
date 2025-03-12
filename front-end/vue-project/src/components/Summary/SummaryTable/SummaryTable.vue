@@ -2,10 +2,14 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
+import { sensors, sensorMapping } from '../../../stores/sensorTypeStore';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
+import LuggageMarker from '../../ObjectMarker/LuggageMarker.vue';
 import EnvironmentDataGraph from '../EnvironmentDataGraph.vue';
 import SummaryTableFilterBar from "./SummaryTableFilterBar.vue";
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { getIcon,getRoleColor } from '@/utils/helper/colourIcon';
+import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion, faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL } from '@fortawesome/free-solid-svg-icons';
+
 
 const props = defineProps({
   data: {
@@ -57,6 +61,67 @@ watch(presetData, (newVal, oldVal) => {
 onMounted(() => {
   selectedAreas.value = presetData.value.map(area => area.label);
 });
+
+// Computed: Object Trackers (Users, Luggage, etc.)
+const getObjectTrackers = (area) => {
+  return Object.entries(sensorMapping.value)
+    .filter(([_, sensor]) => sensor.type === 2) // Filter only type 2 (object trackers)
+    .map(([key, sensor]) => ({
+      key,
+      name: sensor.name,
+      icon: sensor.icon,
+      count: area.tracker?.[key]?.count ?? 0, // Use count if available, default to 0
+    }));
+};
+
+// Computed: Environment Sensors (Temperature, Sound, etc.)
+const getEnvironmentSensors = (area) => {
+  return Object.entries(sensorMapping.value)
+    .filter(([_, sensor]) => sensor.type === 1) // Only Environment Sensors
+    .map(([key, sensor]) => ({
+      key,
+      name: sensor.name,
+      icon: sensor.icon,
+      value: area.tracker?.environment?.[key] ?? '--' // Default to "N/A" if missing
+    }));
+}
+
+const formatSensorName = (name: string): string => {
+  const formattedName = name.replace(/\s*Sensor\s*/i, '').trim();
+  return formattedName.length > 4 ? formattedName.slice(0, 4) : formattedName;
+};
+
+// Add helper function to return icon mapping based on type using imported icons
+const getIcon = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'guard':
+      return faShieldAlt;
+    case 'luggage':
+      return faSuitcase;
+    case 'users':
+      return faUser;
+    case 'staff':
+      return faClipboardCheck;
+    default:
+      return faQuestion;
+  }
+};
+
+// New helper to return color per role
+const getRoleColor = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'guard':
+      return 'blue';
+    case 'luggage':
+      return 'grey';
+    case 'users':
+      return 'darkblue';
+    case 'staff':
+      return 'green';
+    default:
+      return 'black';
+  }
+};
 
 const getEmoji = (key: string) => {
   const emojiMapping: Record<string, string> = {
@@ -114,20 +179,26 @@ const getUnitSymbol = (key: string) => {
           <h3>{{ area.label }}</h3>
         </div>
         <div class="card-body">
-          <div class="row">
-            <div class="count-container col-lg-6 col-md-12 col-6 mt-1" v-for="(type) in Object.keys(area.tracker).filter(type => type != 'environment')" :key="type" >
-              <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/>
-              <p class="mb-0">{{ type }}: {{ (area.tracker?.[type] || {}).count || 0 }}</p>
+
+          <div class="object-grid">
+            <div v-for="tracker in getObjectTrackers(area)" :key="tracker.key" class="pico-data">
+              <span class="pico-data-icon" :style="{ color: getRoleColor(tracker.key) }">
+                <FontAwesomeIcon :icon="tracker.icon" />
+              </span> 
+              <span class="pico-data-value">
+                {{ tracker.name }}: {{ tracker.count }}
+              </span>
             </div>
           </div>
 
-          <hr class="my-0">
-          <!-- Environment Data -->
-          <div class="environment-data">
-            <div class="row">
-              <div class="col-lg-6 col-md-12 col-6 mb-1" :key="type" v-for="([type, value]) in Object.entries(area.tracker?.environment || {})">
-                {{ getEmoji(type) || getIcon(type) }} {{ value.toFixed(1) }} {{ getUnitSymbol(type) }}
-              </div>
+          <div class="environment-grid">
+            <div v-for="sensor in getEnvironmentSensors(area)" :key="sensor.key" class="pico-data">
+              <span class="pico-data-icon">
+                <FontAwesomeIcon :icon="sensor.icon" />
+              </span> 
+              <span class="pico-data-value">
+                {{ formatSensorName(sensor.name) }}: {{ sensor.value }}
+              </span>
             </div>
           </div>
 
@@ -221,36 +292,30 @@ const getUnitSymbol = (key: string) => {
   gap: 10px;
 }
 
-/* Counters */
-.count-container {
+.pico-data {
   display: flex;
-  align-items: center;
-  font-size: 14px;
-  gap: 10px;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;
+}
+.pico-data-icon{
+  width: 10%;
+}
+.pico-data-value{
+  width: 100%;
+  text-align: left;
+}
+.environment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  width: 100%;
+}
+.object-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  width: 100%;
 }
 
-.marker-wrapper {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-/* Environment Data */
-.environment-data {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.environment-data p {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  font-size: 14px;
-}
 
 /* Button */
 button {
@@ -272,6 +337,9 @@ button:hover {
 /* Responsive Grid */
 @media (max-width: 600px) {
   .summary-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  .environment-grid {
     grid-template-columns: repeat(1, 1fr);
   }
 }
