@@ -2,7 +2,7 @@
 import { PropType, ref, computed, watch } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
-import UserMovementModal from './UserMovementModal.vue'; 
+import UserMovementModal from './UserMovementModal.vue';
 
 // Props
 const props = defineProps({
@@ -11,7 +11,7 @@ const props = defineProps({
     required: true,
   },
   areaKey:{
-    type: Number, 
+    type: Number,
     required: true,
   },
   updates: {
@@ -93,9 +93,9 @@ const groupedUsersByRoom = computed(() => {
   const end = endTime.value ? new Date(endTime.value).getTime() : null;
 
   // ✅ **Determine Which Area Filter to Use**
-  const areasToShow = 
-    props.areaKey ? 
-    presetData.value.filter(area => area.label === `${props.areaKey}`) : 
+  const areasToShow =
+    props.areaKey ?
+    presetData.value.filter(area => area.label === `${props.areaKey}`) :
     presetData.value;
 
   // Populate roomMap **only for the filtered users of the area**

@@ -292,6 +292,8 @@ import type { presetListType, preset, boxType } from '@/utils/mapTypes';
 import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModal.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { getIcon, getRoleColor } from '@/utils/helper/colourIcon';
+import { faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL } from '@fortawesome/free-solid-svg-icons';
+
 
 const showTable = ref<Record<string, boolean>>({});
 
