@@ -35,7 +35,7 @@ const props = defineProps({
     required: true
   },
   isLoading: Boolean,
-  
+
 });
 const emit = defineEmits(["update:modelValue", "newBox","colourChange", "removeBox"]);
 
@@ -153,10 +153,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div 
+  <div
     class="dashboard"
     :class="{ expanded: isExpanded }"
-    :style="{ 
+    :style="{
       maxHeight: `calc(100vh - ${bottomTabHeight + 65}px)`,
       minHeight: `calc(100vh - ${bottomTabHeight + 65}px)`
     }"
@@ -172,7 +172,7 @@ onUnmounted(() => {
         <font-awesome-icon :icon="isExpanded ? faCompress : faExpand" />
       </button>
     </div>
-    
+
     <!-- Show "No data available" if empty -->
     <div v-if="!modelValue || Object.keys(modelValue).length === 0">
       No data available
@@ -226,7 +226,7 @@ onUnmounted(() => {
               <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
             </button>
           </template>
-          <button 
+          <button
             v-if="warningsByArea[key]?.length && !editMode"
             class="warning-btn"
             @click="onWarningButtonClick(key)"

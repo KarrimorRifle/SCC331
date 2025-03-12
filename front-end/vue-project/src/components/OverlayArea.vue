@@ -22,7 +22,7 @@ const props = defineProps({
     default: 1,
   },
   data: {
-    type: Object, 
+    type: Object,
     default: () => ({}),
   },
   editMode: {
@@ -33,12 +33,10 @@ const props = defineProps({
     type: Array as PropType<{ Title: string; Location: string; Severity: string; Summary: string }[]>,
     default: () => [],
   },
-  enabledSensors: Array, 
-  showDisconnected: Boolean, 
+  enabledSensors: Array,
+  showDisconnected: Boolean,
   showAll: Boolean,
 });
-console.log(props.enabledSensors);
-console.log(props.areaKey);
 const presetCache = usePresetLocalCache();
 const getAreaKey = (label: string): string | null => {
   if (!label || !label.match) {
@@ -63,7 +61,7 @@ const filteredSensors = computed(() => {
       .filter(sensor => !connectedAreaSet.has(sensor.name) && props.enabledSensors.includes(sensor.name))
       .map(sensor => sensor.name);
   }
-  
+
   // Fallback: return only selected sensor types
   return sensors.value
     .filter(sensor => props.enabledSensors.includes(sensor.name))
@@ -120,7 +118,7 @@ const usersList = computed(() => {
   const key = props.areaKey;
 
   if (!key || !props.data[key]?.users?.id) return [];
-  
+
   return props.data[key].users.id.map((userId, index) => ({
     id: userId,
     position: { top: 50 + index * 10, left: 20 + index * 10 },
@@ -207,7 +205,7 @@ const resize = (event: MouseEvent | TouchEvent) => {
   if (resizing.value) {
     const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
     const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
-    
+
     const newWidth = Math.max(minWidth, props.position.width + (clientX - resizeStart.value.x) / props.zoomLevel);
     const newHeight = Math.max(minHeight, props.position.height + (clientY - resizeStart.value.y) / props.zoomLevel);
 
@@ -237,9 +235,9 @@ const endResize = () => {
 const getSensorStyle = () => {
   const minDimension = Math.min(props.position.width, props.position.height);
   return {
-    fontSize: minDimension < 60 ? '8px' : minDimension < 100 ? '12px' : '14px',  
-    padding: minDimension < 60 ? '2px' : '5px', 
-    minWidth: minDimension < 60 ? '25px' : '40px', 
+    fontSize: minDimension < 60 ? '8px' : minDimension < 100 ? '12px' : '14px',
+    padding: minDimension < 60 ? '2px' : '5px',
+    minWidth: minDimension < 60 ? '25px' : '40px',
   };
 };
 </script>
@@ -247,7 +245,7 @@ const getSensorStyle = () => {
 <template>
   <div
     class="overlay-area"
-    :style="{ 
+    :style="{
       top: props.position.top + 'px',
       left: props.position.left + 'px',
       width: props.position.width + 'px',
@@ -265,7 +263,7 @@ const getSensorStyle = () => {
     @touchend="endDrag"
   >
   <!--
-    <button 
+    <button
       v-if="hasWarnings"
       class="warning-btn"
       @click="onWarningButtonClick"
@@ -277,14 +275,14 @@ const getSensorStyle = () => {
       <span class="overlay-area-label">{{ label }}</span>
 
       <div class="sensor-container">
-        <div 
-          v-for="sensor in displayedSensors" 
-          :key="sensor.name" 
+        <div
+          v-for="sensor in displayedSensors"
+          :key="sensor.name"
           class="sensor-item"
-          :class="{ 'disconnected-sensor': sensor.disconnected }" 
+          :class="{ 'disconnected-sensor': sensor.disconnected }"
           :style="getSensorStyle(sensor)"
         >
-          <font-awesome-icon 
+          <font-awesome-icon
             v-if="sensor.name !== 'ellipsis'"
             :icon="sensorMapping[sensor.name]?.icon || 'question'"
             class="sensor-icon"
@@ -402,7 +400,7 @@ const getSensorStyle = () => {
 }
 
 .disconnected-sensor {
-  background: rgba(255, 0, 0, 0.5); 
+  background: rgba(255, 0, 0, 0.5);
   color: var(--primary-light-text);
 }
 

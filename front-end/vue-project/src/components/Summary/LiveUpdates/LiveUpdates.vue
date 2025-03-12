@@ -2,7 +2,7 @@
 import { PropType, ref, computed, watch } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
-import UserMovementModal from './UserMovementModal.vue'; 
+import UserMovementModal from './UserMovementModal.vue';
 
 // Props
 const props = defineProps({
@@ -11,7 +11,7 @@ const props = defineProps({
     required: true,
   },
   areaKey:{
-    type: Number, 
+    type: Number,
     required: true,
   },
   dataLabel:{

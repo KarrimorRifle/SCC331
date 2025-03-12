@@ -488,6 +488,36 @@ def get_user_email():
     # Return the email of the logged-in user
     return jsonify({"email": user["email"]}), 200
 
+@app.route('/check_password', methods=['POST'])
+def check_password():
+    session_id = request.headers.get('session-id') or request.cookies.get('session_id')
+    if not session_id:
+        return jsonify({"error": "No session cookie or header provided"}), 400
+
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    cursor = connection.cursor(dictionary=True)
+
+    data = request.get_json()
+    if not data or "password" not in data:
+        cursor.close()
+        connection.close()
+        return jsonify({"error": "Password is required"}), 400
+
+    # Retrieve the user's password hash from the database based on the session ID
+    cursor.execute("SELECT pass_hash FROM users WHERE cookie = %s", (session_id,))
+    user = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if user and bcrypt.checkpw(data["password"].encode('utf-8'), user['pass_hash'].encode('utf-8')):
+        return jsonify({"message": "Password is correct"}), 200
+    else:
+        return jsonify({"error": "Incorrect password"}), 401
+
 
 if __name__ == '__main__':
 	get_db_connection()  # Ensure the connection is established at startup

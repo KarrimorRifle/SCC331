@@ -121,6 +121,29 @@ const getRoleColor = (type: string) => {
   }
 };
 
+const getEmoji = (key: string) => {
+  const emojiMapping: Record<string, string> = {
+    temperature: '🌡️',
+    IAQ: '🌬️',
+    sound: '🔊',
+    pressure: '🌡️',
+    light: '💡',
+    humidity: '💧',
+  };
+  return emojiMapping[key] || null;
+};
+
+const getUnitSymbol = (key: string) => {
+  const unitMapping: Record<string, string> = {
+    temperature: '°C',
+    IAQ: '%',
+    sound: 'dB',
+    pressure: 'hPa',
+    light: 'lux',
+    humidity: '%',
+  };
+  return unitMapping[key] || '?';
+};
 </script>
 
 <template>
