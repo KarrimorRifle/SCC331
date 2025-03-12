@@ -56,6 +56,30 @@ watch(presetData, (newVal, oldVal) => {
 onMounted(() => {
   selectedAreas.value = presetData.value.map(area => area.label);
 });
+
+const getEmoji = (key: string) => {
+  const emojiMapping: Record<string, string> = {
+    temperature: '🌡️',
+    IAQ: '🌬️',
+    sound: '🔊',
+    pressure: '🌡️',
+    light: '💡',
+    humidity: '💧',
+  };
+  return emojiMapping[key] || '';
+};
+
+const getUnitSymbol = (key: string) => {
+  const unitMapping: Record<string, string> = {
+    temperature: '°C',
+    IAQ: '%',
+    sound: 'dB',
+    pressure: 'hPa',
+    light: 'lux',
+    humidity: '%',
+  };
+  return unitMapping[key] || '';
+};
 </script>
 
 <template>
@@ -89,36 +113,21 @@ onMounted(() => {
           <h3>{{ area.label }}</h3>
         </div>
         <div class="card-body">
-          <div class="count-container" v-for="(type) in Object.keys(area.tracker).filter(type => type != 'environment')" :key="type" >
-            <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/>
-            <p class="mb-0">{{ type }}: {{ (area.tracker?.[type] || {}).count || 0 }}</p>
+          <div class="row">
+            <div class="count-container col-lg-6 col-md-12 col-6 mt-1" v-for="(type) in Object.keys(area.tracker).filter(type => type != 'environment')" :key="type" >
+              <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/>
+              <p class="mb-0">{{ type }}: {{ (area.tracker?.[type] || {}).count || 0 }}</p>
+            </div>
           </div>
 
-          <hr class="my-1">
+          <hr class="my-0">
           <!-- Environment Data -->
           <div class="environment-data">
-            <table style="width: 100%;">
-              <tbody>
-              <tr>
-                <th class="emoji-column">🌡️</th>
-                <th class="data-column">{{ area.tracker?.environment?.temperature || '--' }} °C</th>
-                <th class="emoji-column">🌬️</th>
-                <th class="data-column">{{ area.tracker?.environment?.IAQ || '--' }} %</th>
-              </tr>
-              <tr>
-                <th class="emoji-column">🔊</th>
-                <th class="data-column">{{ area.tracker?.environment?.sound || '--' }} dB</th>
-                <th class="emoji-column">🌡️</th>
-                <th class="data-column">{{ area.tracker?.environment?.pressure || '--' }} hPa</th>
-              </tr>
-              <tr>
-                <th class="emoji-column">💡</th>
-                <th class="data-column">{{ area.tracker?.environment?.light || '--' }} lux</th>
-                <th class="emoji-column">💧</th>
-                <th class="data-column">{{ area.tracker?.environment?.humidity || '--' }} %</th>
-              </tr>
-              </tbody>
-            </table>
+            <div class="row">
+              <div class="col-lg-6 col-md-12 col-6 mb-1" :key="type" v-for="([type, value]) in Object.entries(area.tracker?.environment || {})">
+                {{ getEmoji(type) }} {{ value.toFixed(1) }} {{ getUnitSymbol(type) }}
+              </div>
+            </div>
           </div>
 
           <!-- View Graph Button -->
