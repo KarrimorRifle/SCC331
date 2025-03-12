@@ -48,7 +48,7 @@ def validate_session_cookie(request):
         return {"error": "Invalid cookie"}, 401 #, "message": r.text
     
     data = r.json()
-    if data.get("authority") != "Admin":
+    if data.get("authority") != "Admin" and data.get("authority") != "Super Admin" :
         print("ERR: Non-admin cookie")
         return {"error": "Forbidden", "message": "User isn't a valid admin"}, 403
     
@@ -413,18 +413,27 @@ def update_front_page():
         theme = data["theme"]
         cursor.execute("""
             UPDATE theme_colours 
-            SET primaryDarkBg = %s, primaryDarkText = %s, primarySecondaryBg = %s, primarySecondaryText = %s, 
-                primaryLightBg = %s, primaryLightText = %s, accent = %s, accentHover = %s 
+            SET 
+              primary_bg = %s, primary_text = %s, primary_bg_hover = %s,
+              primary_dark_bg = %s, primary_dark_text = %s, primary_dark_bg_hover = %s, primary_dark_text_hover = %s,
+              primary_light_bg = %s, primary_light_text = %s, primary_light_bg_hover = %s, primary_light_text_hover = %s,
+              warning_text = %s, warning_bg = %s, warning_text_hover = %s, warning_bg_hover = %s,
+              notification_text = %s, notification_bg = %s, notification_text_hover = %s, notification_bg_hover = %s,
+              active = %s, active_text = %s, active_bg = %s,
+              not_active = %s, not_active_text = %s, not_active_bg = %s,
+              negative = %s, negative_text = %s, negative_bg = %s,
+              positive = %s
             WHERE id = 1
         """, (
-            theme["primaryDarkBg"],
-            theme["primaryDarkText"],
-            theme["primarySecondaryBg"],
-            theme["primarySecondaryText"],
-            theme["primaryLightBg"],
-            theme["primaryLightText"],
-            theme["accent"],
-            theme["accentHover"]
+            theme["primary_bg"], theme["primary_text"], theme["primary_bg_hover"],
+            theme["primary_dark_bg"], theme["primary_dark_text"], theme["primary_dark_bg_hover"], theme["primary_dark_text_hover"],
+            theme["primary_light_bg"], theme["primary_light_text"], theme["primary_light_bg_hover"], theme["primary_light_text_hover"],
+            theme["warning_text"], theme["warning_bg"], theme["warning_text_hover"], theme["warning_bg_hover"],
+            theme["notification_text"], theme["notification_bg"], theme["notification_text_hover"], theme["notification_bg_hover"],
+            theme["active"], theme["active_text"], theme["active_bg"],
+            theme["not_active"], theme["not_active_text"], theme["not_active_bg"],
+            theme["negative"], theme["negative_text"], theme["negative_bg"],
+            theme["positive"]
         ))
         conn.commit()
         return jsonify({"message": "Front page updated"}), 200

@@ -133,7 +133,7 @@ def get_preset_details(preset_id):
             print(preset_row["image_data"])
             image = {
                 "name": preset_row["image_name"],
-                "data": base64.b64encode(preset_row["image_data"]).decode('utf-8')
+                "data": preset_row["image_data"].decode('utf-8')
             }
 
         # Minimal representation of "permission"
@@ -160,11 +160,7 @@ def get_preset_details(preset_id):
         conn.close()
 
 @app.route('/home', methods=['GET'])
-def get_front_page():
-    cookie_error = validate_session_cookie(request)
-    if len(cookie_error) == 2:
-        return jsonify(cookie_error[0]), cookie_error[1]
-    
+def get_front_page():   
     conn = get_db_connection()
     if not conn:
         return jsonify({"error": "DB connection unavailable"}), 500
@@ -193,8 +189,16 @@ def get_front_page():
         cursor.execute("SELECT * FROM how_it_works")
         howItWorks = cursor.fetchall()
         cursor.execute("""
-            SELECT primaryDarkBg, primaryDarkText, primarySecondaryBg, primarySecondaryText, 
-                   primaryLightBg, primaryLightText, accent, accentHover 
+            SELECT 
+              primary_bg, primary_text, primary_bg_hover,
+              primary_dark_bg, primary_dark_text, primary_dark_bg_hover, primary_dark_text_hover,
+              primary_light_bg, primary_light_text, primary_light_bg_hover, primary_light_text_hover,
+              warning_text, warning_bg, warning_text_hover, warning_bg_hover,
+              notification_text, notification_bg, notification_text_hover, notification_bg_hover,
+              active, active_text, active_bg,
+              not_active, not_active_text, not_active_bg,
+              negative, negative_text, negative_bg,
+              positive
             FROM theme_colours WHERE id=1
         """)
         theme = cursor.fetchone()

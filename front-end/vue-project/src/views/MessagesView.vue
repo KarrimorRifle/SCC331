@@ -19,7 +19,7 @@ interface ChatUser {
 const chatUsers = ref<ChatUser[]>([]);
 const selectedUser = ref<string | null>(null);
 const messages = ref<Message[]>([]);
-const newMessage = ref(''); 
+const newMessage = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
 const sessionId = document.cookie
   .split('; ')
@@ -80,7 +80,7 @@ const processChatUsers = (allMessages: Message[], unreadCounts: Record<string, n
     userMap.get(otherUser)?.push(msg);
   });
 
-  // Add unread message count to the user object 
+  // Add unread message count to the user object
   chatUsers.value = Array.from(userMap, ([email, messages]) => ({
     email,
     messages,
@@ -163,7 +163,7 @@ const fetchAllUsers = async () => {
 // Start a new chat
 const startNewChat = () => {
   if (!newChatUser.value) return;
-  
+
   selectedUser.value = newChatUser.value;
   messages.value = [];
   showNewChat.value = false;
@@ -205,13 +205,13 @@ const sendMessage = async () => {
 </script>
 
 <template>
-  <div class="messages-container">
+  <div class="messages-container text-dark">
     <!-- Sidebar with User List -->
     <div class="sidebar">
       <h2>Chats</h2>
-      
+
       <button @click="showNewChat = !showNewChat" class="new-chat-btn">New Chat</button>
-      
+
       <!-- Dropdown for Selecting New Chat -->
       <div v-if="showNewChat" class="new-chat-dropdown">
         <select v-model="newChatUser">
@@ -223,11 +223,12 @@ const sendMessage = async () => {
       </div>
 
       <ul v-if="chatUsers.length > 0">
-        <li 
-          v-for="user in chatUsers" 
-          :key="user.email" 
+        <li
+          v-for="user in chatUsers.filter(item => item.email)"
+          :key="user.email"
           @click="selectUser(user.email)"
-          :class="{ active: selectedUser === user.email }"
+          class="mb-1"
+          :class="{ active: selectedUser === user.email, 'btn btn-outline-primary': selectUser !== user.email }"
         >
           <div class="user-info">
             <span>{{ user.email }}</span>
@@ -243,10 +244,10 @@ const sendMessage = async () => {
     <!-- Main Chat Panel -->
     <div class="chat-panel">
       <div v-if="selectedUser" class="chat-box">
-        <h2>Chat with {{ selectedUser }}</h2>
+        <h2>{{ selectedUser }}</h2>
         <div class="messages" ref="messagesContainer">
-          <div 
-            v-for="message in messages" 
+          <div
+            v-for="message in messages"
             :key="message.message_id"
             class="message"
             :class="{ 'sent': message.sender_email !== selectedUser, 'received': message.sender_email === selectedUser }"
