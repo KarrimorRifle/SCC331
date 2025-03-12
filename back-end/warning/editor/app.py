@@ -51,7 +51,7 @@ def validate_session_cookie_edit(request):
         return {"error": "Invalid cookie"}, 401
     
     data = r.json()
-    if data.get("authority") != "Admin":
+    if data.get("authority") not in ["Admin", "Super Admin"]:
         return {"error": "Unauthorized access", "message": "you don't have sufficient permission to access this resource"}, 401
 
     # Return user ID if everything is valid (no error)
