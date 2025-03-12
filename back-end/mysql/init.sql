@@ -146,14 +146,35 @@ CREATE TABLE IF NOT EXISTS how_it_works (
 
 CREATE TABLE IF NOT EXISTS theme_colours (
 	id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-	primaryDarkBg VARCHAR(20) NOT NULL,
-	primaryDarkText VARCHAR(20) NOT NULL,
-	primarySecondaryBg VARCHAR(20) NOT NULL,
-	primarySecondaryText VARCHAR(20) NOT NULL,
-	primaryLightBg VARCHAR(20) NOT NULL,
-	primaryLightText VARCHAR(20) NOT NULL,
-	accent VARCHAR(20) NOT NULL,
-	accentHover VARCHAR(20) NOT NULL
+	primary_bg VARCHAR(20) NOT NULL,
+	primary_text VARCHAR(20) NOT NULL,
+	primary_bg_hover VARCHAR(20) NOT NULL,
+	primary_dark_bg VARCHAR(20) NOT NULL,
+	primary_dark_text VARCHAR(20) NOT NULL,
+	primary_dark_bg_hover VARCHAR(20) NOT NULL,
+	primary_dark_text_hover VARCHAR(20) NOT NULL,
+	primary_light_bg VARCHAR(20) NOT NULL,
+	primary_light_text VARCHAR(20) NOT NULL,
+	primary_light_bg_hover VARCHAR(20) NOT NULL,
+	primary_light_text_hover VARCHAR(20) NOT NULL,
+	warning_text VARCHAR(20) NOT NULL,
+	warning_bg VARCHAR(20) NOT NULL,
+	warning_text_hover VARCHAR(20) NOT NULL,
+	warning_bg_hover VARCHAR(20) NOT NULL,
+	notification_text VARCHAR(20) NOT NULL,
+	notification_bg VARCHAR(20) NOT NULL,
+	notification_text_hover VARCHAR(20) NOT NULL,
+	notification_bg_hover VARCHAR(20) NOT NULL,
+	active VARCHAR(20) NOT NULL,
+	active_text VARCHAR(20) NOT NULL,
+	active_bg VARCHAR(20) NOT NULL,
+	not_active VARCHAR(20) NOT NULL,
+	not_active_text VARCHAR(20) NOT NULL,
+	not_active_bg VARCHAR(20) NOT NULL,
+	negative VARCHAR(20) NOT NULL,
+	negative_text VARCHAR(20) NOT NULL,
+	negative_bg VARCHAR(20) NOT NULL,
+	positive VARCHAR(20) NOT NULL
 );
 
 -- Insert data into 'config' table only if it's empty
@@ -189,8 +210,26 @@ SELECT * FROM (
 WHERE NOT EXISTS (SELECT * FROM how_it_works);
 
 -- Insert data into 'theme_colours' table only if it's empty
-INSERT INTO theme_colours (id, primaryDarkBg, primaryDarkText, primarySecondaryBg, primarySecondaryText, primaryLightBg, primaryLightText, accent, accentHover)
-SELECT 1, '#003865', '#003865', 'lightgray', 'lightgray', 'white', 'white', '#FFD700', '#E6C200'
+INSERT INTO theme_colours (
+    id, 
+    primary_bg, primary_text, primary_bg_hover, 
+    primary_dark_bg, primary_dark_text, primary_dark_bg_hover, primary_dark_text_hover,
+    primary_light_bg, primary_light_text, primary_light_bg_hover, primary_light_text_hover,
+    warning_text, warning_bg, warning_text_hover, warning_bg_hover,
+    notification_text, notification_bg, notification_text_hover, notification_bg_hover,
+    active, active_text, active_bg,
+    not_active, not_active_text, not_active_bg,
+    negative, negative_text, negative_bg, positive
+)
+SELECT 1, 
+    '#568ea6', '#568ea6', '#305f72', 
+    '#305f72', '#305f72', '#568ea6', '#568ea6',
+    '#ffffff', '#ffffff', '#f0f0f0', '#e0e0e0',
+    '#ff4d4d', '#ff4d4d', '#D94A4A', '#D94A4A',
+    '#ff4d4d', '#ff4d4d', '#D94A4A', '#D94A4A',
+    '#F18C8E', '#F18C8E', '#F18C8E',
+    'lightgray', 'lightgray', 'lightgray',
+    '#666', '#666', '#666', '#b6dfbf'
 WHERE NOT EXISTS (SELECT * FROM theme_colours);
 
 -- Warning System
