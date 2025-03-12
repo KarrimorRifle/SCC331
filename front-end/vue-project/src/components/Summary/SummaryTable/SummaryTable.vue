@@ -8,15 +8,11 @@ import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
 import LuggageMarker from '../../ObjectMarker/LuggageMarker.vue';
 import EnvironmentDataGraph from '../EnvironmentDataGraph.vue';
 import SummaryTableFilterBar from "./SummaryTableFilterBar.vue";
-import axios from 'axios';
-import { usePresetLocalCache } from '@/stores/presetLocalCache';
+import { faUser, faClipboardCheck, faShieldAlt, faSuitcase, faQuestion, faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL } from '@fortawesome/free-solid-svg-icons';
+
 
 const props = defineProps({
   data: {
-    type: Object,
-    required: true,
-  },
-  environmentHistory: {
     type: Object,
     required: true,
   },
@@ -39,12 +35,8 @@ const toggleFilterVisibility = () => {
   showFilterBar.value = !showFilterBar.value;
 };
 
-const environmentData = ref({})
-
 // Toggle modal for environment graph
 const openGraph = async(areaLabel) => {
-  const selectedArea = presetData.value?.find(area => area.label === areaLabel);
-
   activeGraphArea.value = areaLabel;
   showModal.value = true;
 };
@@ -91,6 +83,37 @@ const getEnvironmentSensors = (area) => {
       icon: sensor.icon,
       value: area.tracker?.environment?.[key] ?? '--' // Default to "N/A" if missing
     }));
+}
+// Add helper function to return icon mapping based on type using imported icons
+const getIcon = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'guard':
+      return faShieldAlt;
+    case 'luggage':
+      return faSuitcase;
+    case 'users':
+      return faUser;
+    case 'staff':
+      return faClipboardCheck;
+    default:
+      return faQuestion;
+  }
+};
+
+// New helper to return color per role
+const getRoleColor = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'guard':
+      return 'blue';
+    case 'luggage':
+      return 'grey';
+    case 'users':
+      return 'darkblue';
+    case 'staff':
+      return 'green';
+    default:
+      return 'black';
+  }
 };
 
 </script>
@@ -127,6 +150,7 @@ const getEnvironmentSensors = (area) => {
         </div>
         <div class="card-body">
 
+        
           <div class="pico-data">
             <div v-for="tracker in getObjectTrackers(area)" :key="tracker.key">
               <p>
@@ -152,6 +176,7 @@ const getEnvironmentSensors = (area) => {
               </p>
             </div>
           </div>
+        
 
           <!-- View Graph Button -->
           <button @click="openGraph(area.label)">📊 View Graph</button>

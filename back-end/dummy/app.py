@@ -5,6 +5,7 @@ import random
 from datetime import datetime, timedelta
 import bcrypt
 import base64
+import time
 
 def get_connection():
     host = os.getenv("DB_HOST", "mysql")
@@ -183,11 +184,11 @@ if __name__ == '__main__':
     conn = get_connection()
     if conn:
         # Generate and insert dummy tracking data for pico users
-        users_data = generate_dummy_users_data()  # 10 users tracked over 30 minutes
+        users_data = generate_dummy_users_data()  # 10 users tracked over 60 minutes
         insert_pico_users(conn, users_data)
-        guard_data = generate_dummy_device_data(5, "Guard")    # 5 guards across 30 mins (with gaps)
-        luggage_data = generate_dummy_device_data(10, "Luggage") # 10 luggage devices across 30 mins (with gaps)
-        staff_data = generate_dummy_device_data(5, "Staff")      # 5 staff across 30 mins (with gaps)
+        guard_data = generate_dummy_device_data(5, "Guard")    # 5 guards across 60 mins (with gaps)
+        luggage_data = generate_dummy_device_data(10, "Luggage") # 10 luggage devices across 60 mins (with gaps)
+        staff_data = generate_dummy_device_data(5, "Staff")      # 5 staff across 60 mins (with gaps)
         # Insert generated data
         insert_pico_guard(conn, guard_data)
         insert_pico_luggage(conn, luggage_data)
@@ -202,19 +203,81 @@ if __name__ == '__main__':
             
             # Switch to assets and put in some data
             switch_database(conn, "assets")
-
-            # Preset creation
             image_data = convert_image_to_base64("store.png")
             presetID = create_preset(conn, "Default", accountID, "store.png", image_data)
-
-            # Boxes creation
             create_map_block(conn, presetID, 'd83add67ed84', 30, 20, 100, 100, "#ab28b2", "Reception")
             create_map_block(conn, presetID, 'd83add41a997', 130, 20, 100, 100, "#3a5fcd", "Security")
             create_map_block(conn, presetID, 'd83add8af3cf', 30, 120, 100, 100, "#e94d1b", "Lobby")
-
-            # Set Preset to default
             set_default_preset(conn, presetID)
         except Exception as e:
             print("Error creating account or preset:", e)
 
-    conn.close()
+        # "Live Data"
+        switch_database(conn, "pico")
+        ROOMS = ['d83add67ed84', 'd83add41a997', 'd83add8af3cf']
+
+        live_user_state = {f"PICO-User-{d}": random.choice(ROOMS) for d in range(1, 11)}
+        live_luggage_state = {f"PICO-Luggage-{d}": random.choice(ROOMS) for d in range(1, 11)}
+        live_guard_state = {f"PICO-Guard-{d}": random.choice(ROOMS) for d in range(1, 6)}
+        live_staff_state = {f"PICO-Staff-{d}": random.choice(ROOMS) for d in range(1, 6)}
+
+        def simulate_minute(current_time, state):
+            records = []
+            for picoID, current_room in state.items():
+                if random.random() < 0.20:
+                    continue
+                if random.random() < 0.30:
+                    new_room = random.choice([r for r in ROOMS if r != current_room])
+                    state[picoID] = new_room
+                else:
+                    new_room = current_room
+                records.append((picoID, new_room, current_time.strftime("%Y-%m-%d %H:%M:%S")))
+            return records
+
+        def simulate_environment(current_time):
+            records = []
+            for room in ROOMS:
+                picoID = f"PICO-ENV-{room}-{current_time.strftime('%H%M%S')}"
+                sound = round(random.uniform(40, 70), 2)          # dB
+                light = round(random.uniform(200, 800), 2)         # lux
+                temperature = round(random.uniform(18, 26), 2)     # Celsius
+                IAQ = round(random.uniform(50, 150), 2)            # index
+                pressure = round(random.uniform(1000, 1020), 2)    # hPa
+                humidity = round(random.uniform(30, 70), 2)        # %
+                records.append((picoID, room, current_time.strftime("%Y-%m-%d %H:%M:%S"),
+                                sound, light, temperature, IAQ, pressure, humidity))
+            return records
+
+        print("Starting live simulation (press CTRL+C to stop)...")
+        try:
+            while True:
+                current_time = datetime.now().replace(second=0, microsecond=0)
+                print(f"\n--- Live Simulation: {current_time.strftime('%Y-%m-%d %H:%M:%S')} ---")
+                
+                user_records = simulate_minute(current_time, live_user_state)
+                if user_records:
+                    insert_pico_users(conn, user_records)
+                    
+                luggage_records = simulate_minute(current_time, live_luggage_state)
+                if luggage_records:
+                    insert_pico_luggage(conn, luggage_records)
+                    
+                guard_records = simulate_minute(current_time, live_guard_state)
+                if guard_records:
+                    insert_pico_guard(conn, guard_records)
+                    
+                staff_records = simulate_minute(current_time, live_staff_state)
+                if staff_records:
+                    insert_pico_staff(conn, staff_records)
+                    
+                env_records = simulate_environment(current_time)
+                if env_records:
+                    insert_pico_environment(conn, env_records)
+                    
+                time.sleep(60)
+        except KeyboardInterrupt:
+            print("Live simulation interrupted by user.")
+        except Exception as e:
+            print("Error during live simulation:", e)
+        finally:
+            conn.close()

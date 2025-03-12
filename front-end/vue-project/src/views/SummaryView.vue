@@ -7,14 +7,10 @@ import { ref, PropType } from 'vue';
 
 const props = defineProps({
   picoIds: {
-    type: Array, 
-    required: true,
-  }, 
-  updates: {
-    type: Object,
+    type: Array,
     required: true,
   },
-  environmentHistory: {
+  updates: {
     type: Object,
     required: true,
   },
@@ -35,23 +31,22 @@ const activeSection = ref("all");
     <nav class="sidebar">
       <button @click="activeSection = 'all'" :class="{ active: activeSection === 'all' }">📌 Show All</button>
       <button @click="activeSection = 'summary'" :class="{ active: activeSection === 'summary' }">📊 Summary Table</button>
-      <button @click="activeSection = 'updates'" :class="{ active: activeSection === 'updates' }">🔄 Live Updates</button>
+      <!-- <button @click="activeSection = 'updates'" :class="{ active: activeSection === 'updates' }">🔄 Live Updates</button> -->
       <button @click="activeSection = 'warnings'" :class="{ active: activeSection === 'warnings' }">⚠️ Warnings</button>
     </nav>
 
     <!-- Main Content -->
     <div class="summary-content">
       <SummaryHeader title="Live Summary of People and Luggage" />
-      
-      <SummaryTable 
+
+      <SummaryTable
         v-if="activeSection === 'summary' || activeSection === 'all'"
-        :environmentHistory="environmentHistory"
       />
-      <LiveUpdates 
+      <!-- <LiveUpdates
         v-if="activeSection === 'updates' || activeSection === 'all'"
-        :userIds="picoIds" 
+        :userIds="picoIds"
         :updates="updates"
-      />
+      /> -->
       <WarningSystem
         v-if="activeSection === 'warnings' || activeSection === 'all'"
         :warnings="warnings"

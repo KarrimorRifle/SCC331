@@ -25,7 +25,6 @@ const presetStore = usePresetStore();
 const isMobile = ref(window.innerWidth < 768);
 const isWarningModalOpen = ref(false);
 const showSeverePopup = ref(false);
-const summary = presetStore.summary;
 const safeWarnings = computed(() => Array.isArray(warnings.value) ? warnings.value : []);
 const warningCount = computed(() => notificationQueue.value.length);
 const authStore = useAuthStore();
@@ -36,10 +35,10 @@ let firstTime = true;
 
 // Sync `notificationQueue` when `safeWarnings` updates
 watch(
-  () => JSON.stringify(safeWarnings.value), 
+  () => JSON.stringify(safeWarnings.value),
   (newWarnings) => {
     if (!newWarnings || newWarnings === "[]") {
-      console.log("Waiting for safeWarnings to load...");
+      // console.log("Waiting for safeWarnings to load...");
       return;
     }
 
@@ -118,8 +117,8 @@ onMounted(() => {
 });
 
 onMounted(async () => {
-  await fetchWarnings(); 
-  await fetchFullWarningConditions(); 
+  await fetchWarnings();
+  await fetchFullWarningConditions();
 });
 
 onMounted(() => {
@@ -172,7 +171,7 @@ watch(
   () => presetStore.summary,
   (newSummary) => {
     if (!newSummary || Object.keys(newSummary).length === 0) return;
-    
+
     Object.entries(fullWarningConditions.value).forEach(([warningId, warning]) => {
       const triggeredAreas = checkWarningAreas(newSummary, warning);
       triggeredAreas.forEach(({ roomID, messages }) => {
@@ -213,17 +212,16 @@ watch(
       class="flex-grow-1 app"
       :picoIds="picoIds"
       :updates="updates"
-      :environmentHistory="environmentHistory"
       :warnings="notificationQueue"
       :isMobile="isMobile"
       :loggedIn="authStore.isLoggedIn"
       @login="authStore.login"
     />
-    
+
     <!-- Notification Icon Component -->
-    <NotificationIcon 
-      v-if="!isMobile && authStore.isLoggedIn" 
-      :warnings="notificationQueue" 
+    <NotificationIcon
+      v-if="!isMobile && authStore.isLoggedIn"
+      :warnings="notificationQueue"
       :warningCount="warningCount"
       :isWarningModalOpen="isWarningModalOpen"
       @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
@@ -233,12 +231,12 @@ watch(
     <WarningAreaModal/>
 
     <!-- Warning Notification Modal -->
-    <WarningNotificationModal 
-      v-if="isWarningModalOpen" 
-      :warnings="notificationQueue" 
+    <WarningNotificationModal
+      v-if="isWarningModalOpen"
+      :warnings="notificationQueue"
       :warningCount="warningCount"
       :isMobile="isMobile"
-      @close="isWarningModalOpen = false" 
+      @close="isWarningModalOpen = false"
       @dismiss="dismissNotification"
     />
 

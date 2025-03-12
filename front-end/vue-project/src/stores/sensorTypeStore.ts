@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faUser, faEye, faUsers, faTemperatureLow, faTint, faLightbulb, faArrowDown, faVolumeUp, faThermometerHalf, faSuitcaseRolling } from '@fortawesome/free-solid-svg-icons';
-library.add(faUser, faEye, faUsers, faTemperatureLow, faTint, faLightbulb, faArrowDown, faVolumeUp, faThermometerHalf, faSuitcaseRolling);
+import { faUser, faEye, faUsers, faTemperatureLow, faTint, faLightbulb, faArrowDown, faVolumeUp, faThermometerHalf, faSuitcaseRolling, faClipboardCheck} from '@fortawesome/free-solid-svg-icons';
+library.add(faUser, faEye, faUsers, faTemperatureLow, faTint, faLightbulb, faArrowDown, faVolumeUp, faThermometerHalf, faSuitcaseRolling, faClipboardCheck);
 
 /**
  * This is the mapping for all the sensors (in the future, can add whatever over here)
@@ -9,7 +9,7 @@ library.add(faUser, faEye, faUsers, faTemperatureLow, faTint, faLightbulb, faArr
 export const sensorMapping = ref({
   "users": { name: "User", icon: faUser, type: 2 },
   "luggage": { name: "Luggage", icon: faSuitcaseRolling, type: 2 },
-  "guard": { name: "Guard", icon: faEye, type: 2 },
+  "guard": { name: "Guard", icon: faClipboardCheck, type: 2 },
   "staff": { name: "Staff", icon: faUsers, type: 2 },
   "iaq": { name: "IAQ Sensor", icon: faTemperatureLow, type: 1 },
   "humidity": { name: "Humidity Sensor", icon: faTint, type: 1 },
