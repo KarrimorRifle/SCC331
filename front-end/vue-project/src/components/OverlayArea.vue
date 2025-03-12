@@ -49,7 +49,6 @@ const getAreaKey = (label: string): string | null => {
 const filteredSensors = computed(() => {
   const areaKey = props.areaKey;
   const connectedAreaSet = presetCache.connectedSensors.get(areaKey) || new Set();
-  console.log(connectedAreaSet);
   if (props.showAll) {
     // When "All" is toggled, show only selected sensor types
     return sensors.value
