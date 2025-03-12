@@ -38,8 +38,8 @@
       <p>Loading data...</p>
     </div>
 
-    <div v-else-if="!movementData || Object.keys(movementData).length === 0" class="no-data">
-      <p>No data selected</p>
+    <div v-else-if="!dayTimeKeys.length" class="no-data mt-3">
+      <p>No data available</p>
     </div>
 
     <div v-else class="movement-data p-3 pb-4 pb-md-0" style="flex-grow: 1; overflow: auto; padding-bottom: 60px;" @scroll="handleScroll" @click="hideDateTimeSelector">
@@ -344,10 +344,12 @@ const startOfDay = new Date();
 startOfDay.setHours(0,0,0,0);
 const endOfDay = new Date();
 endOfDay.setHours(23,59,59,999);
+const hasData = ref<boolean>(true);
 
 const fetchMovementData = async () => {
   try {
     isLoading.value = true;
+    hasData.value = false;
     const response = await axios.get('http://localhost:5003/movement', {
       headers: {
         'time_start': startOfDay.toISOString(),
@@ -376,11 +378,12 @@ const fetchMovementData = async () => {
     }, {});
 
     movementData.value = sortedTemp;
-
+    hasData.value = true;
   } catch (error) {
     if (error.response?.status === 404) {
       movementData.value = {};
     }
+    isLoading.value = false;
     console.error('Error fetching movement data:', error);
   }
 };
