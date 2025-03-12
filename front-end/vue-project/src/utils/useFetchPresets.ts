@@ -33,7 +33,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         let uid = userValidationRequest.data.uid;
         canDelete.value = presetData.value?.owner_id == uid;
         canEdit.value = presetData.value?.trusted?.includes(uid) || canDelete.value;
-        canCreate.value = userValidationRequest.data.authority == "Admin" || userValidationRequest.data.authority === "Super Admin";
+        canCreate.value = userValidationRequest.data.authority == "Admin";
       } catch (error) {
         console.error("Error validating user:", error);
         canEdit.value = false;

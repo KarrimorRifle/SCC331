@@ -14,10 +14,6 @@ const props = defineProps({
     type: Number,
     required: true,
   },
-  dataLabel:{
-    type: Number, 
-  },
-  allDataLabels: Array,
   updates: {
     type: Object as PropType<Record<number, { logged_at: string; roomID: number }[]>>,
     required: true,
@@ -72,18 +68,10 @@ const openUserModal = (userId: number) => {
 
   const userData = props.fullUpdates?.[userId] || props.updates[userId];
 
-  const roomMapping = new Map<string, { label: string; color: string }>();
-
-  presetData.value.forEach(({ label, box }, index) => {
-    roomMapping.set(String(index + 1), { label, color: box.colour });
-  });
-
+  // Retrieve **full history** of the selected user across all areas
   userRoomHistory.value = userData.map(({ logged_at, roomID }) => {
-    const mappedData = roomMapping.get(String(roomID)) || { label: `Room ${roomID}`, color: "#ccc" };
-
     return {
-      roomLabel: mappedData.label,
-      roomColor: mappedData.color,
+      roomLabel: String(roomID),
       loggedAt: new Date(logged_at).toLocaleString(),
     };
   }) || [];
@@ -104,40 +92,33 @@ const groupedUsersByRoom = computed(() => {
   const start = startTime.value ? new Date(startTime.value).getTime() : null;
   const end = endTime.value ? new Date(endTime.value).getTime() : null;
 
-  // Extract area labels from the preset store
-  const areaLabels = computed(() =>
-    Object.values(presetStore.boxes_and_data).map(area => area.label)
-  );
+  // ✅ **Determine Which Area Filter to Use**
+  const areasToShow =
+    props.areaKey ?
+    presetData.value.filter(area => area.label === `${props.areaKey}`) :
+    presetData.value;
 
-  // Determine which areas to show based on the presence of dataLabel
-  const areasToShow = props.dataLabel
-    ? presetData.value.filter(area => area.label === `${props.dataLabel}`)
-    : presetData.value.filter(area => areaLabels.value.includes(String(area.label)));
-
-  // Process user updates and group them by area and time
+  // Populate roomMap **only for the filtered users of the area**
   Object.entries(props.updates).forEach(([userId, userUpdates]) => {
-    try {
+    try{
       userUpdates.forEach(({ logged_at, roomID }) => {
         const date = new Date(logged_at);
         const timestamp = date.getTime();
 
-        // Filter updates based on the selected time range
+        // ✅ **Apply time filtering**
         if (start !== null && end !== null && (timestamp < start || timestamp > end)) {
-          return;
+          return; // Skip entries outside the selected time range
         }
 
         const hour = date.toLocaleTimeString([], { hour: 'numeric', hour12: true });
         const hourNumeric = date.getHours();
         const fullTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-        // Determine the correct area label
-        const formattedRoomLabel = props.dataLabel 
-          ? String(props.dataLabel) 
-          : presetStore.boxes_and_data[roomID]?.label;
+      const formattedRoomLabel = String(roomID);
 
-        if (!formattedRoomLabel) return; // Skip if no valid label found
+        // ✅ **Ensure only selected areas are displayed**
+        if (!areasToShow.some(area => area.label === formattedRoomLabel)) return;
 
-        // Initialize area in the room map if not present
         if (!roomMap.has(formattedRoomLabel)) {
           roomMap.set(formattedRoomLabel, []);
         }
@@ -151,15 +132,15 @@ const groupedUsersByRoom = computed(() => {
           roomEntry?.push({ hour, hourNumeric, users: [{ userId: Number(userId), loggedAt: fullTime }] });
         }
       });
-    } catch (error) {
-      console.error("Error processing user updates:", error);
+    }catch(error){
+      console.log(error)
     }
   });
 
-  // Return formatted list of areas with user visit data
+  // ✅ **Ensure correct area list is used (Summary = all, Dashboard = filtered)**
   return areasToShow.map((area) => ({
     roomLabel: area.label,
-    roomColor: area.box?.colour,
+    roomColor: area.box?.colour, // Use box.colour for color
     entries: (roomMap.get(area.label) || []).sort((a, b) => a.hourNumeric - b.hourNumeric),
   }));
 });
@@ -189,7 +170,7 @@ watch(
       <p>Loading updates...</p>
     </div>
 
-    <!-- Time Filter Inputs 
+    <!-- Time Filter Inputs -->
     <div v-else class="date-time-filter">
       <div>
         <label for="start-time">Start Time:</label>
@@ -200,7 +181,6 @@ watch(
         <input id="end-time" type="datetime-local" v-model="endTime">
       </div>
     </div>
-    -->
 
     <!-- Room List -->
     <div v-else class="room-list">
@@ -211,7 +191,6 @@ watch(
           class="room-card"
         >
           <h3 :style="{ backgroundColor: roomColor, color: getTextColour(roomColor) }">{{ roomLabel }}</h3>
-          {{users}}
           <template v-if="entries.length">
             <div v-for="{ hour, users } in entries" :key="hour" class="hour-group">
               <h4 class="hour-title">{{ hour }}</h4>
@@ -247,7 +226,7 @@ watch(
   padding: 20px;
   background-color: var(--primary-light-bg);
   border-top: 1px solid #ccc;
-  color: var(--primary-dark-text);
+  color: var(--primary-light-text);
 }
 
 .loading-throbber {
@@ -350,7 +329,6 @@ h3 {
 .user-item {
   cursor: pointer;
   background: var(--primary-light-bg);
-  color: var(--primary-dark-text);
   margin-bottom: 5px;
   padding: 8px;
   border-radius: 5px;

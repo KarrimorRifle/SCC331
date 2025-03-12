@@ -13,12 +13,6 @@ import { checkWarningAreas } from './utils/warningChecker';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
-import {
-  domainConfig,
-  defaultDomainConfig,
-  fetchDomainConfig,
-} from './constants/HomeConfig';
-
 const picoIds = [1, 2, 3, 4, 5, 6, 9, 10, 14, 59];
 const { updates, warnings } = useFetchData(picoIds);
 const presetStore = usePresetStore();
@@ -28,7 +22,6 @@ const showSeverePopup = ref(false);
 const safeWarnings = computed(() => Array.isArray(warnings.value) ? warnings.value : []);
 const warningCount = computed(() => notificationQueue.value.length);
 const authStore = useAuthStore();
-const form = ref(defaultDomainConfig);
 
 // first time loading for the warnings
 let firstTime = true;
@@ -63,51 +56,6 @@ watch(
   { deep: true, immediate: true }
 );
 
-const homeConfig = computed(() => {
-  return domainConfig.value 
-});
-
-const themeStyles = computed(() => ({
-  '--active': form.value.theme.active,
-  '--active-bg': form.value.theme.active_bg,
-  '--active-text': form.value.theme.active_text,
-
-  '--negative': form.value.theme.negative,
-  '--negative-bg': form.value.theme.negative_bg,
-  '--negative-text': form.value.theme.negative_text,
-
-  '--not-active': form.value.theme.not_active,
-  '--not-active-bg': form.value.theme.not_active_bg,
-  '--not-active-text': form.value.theme.not_active_text,
-
-  '--notification-bg': form.value.theme.notification_bg,
-  '--notification-bg-hover': form.value.theme.notification_bg_hover,
-  '--notification-text': form.value.theme.notification_text,
-  '--notification-text-hover': form.value.theme.notification_text_hover,
-
-  '--positive': form.value.theme.positive,
-
-  '--primary-bg': form.value.theme.primary_bg,
-  '--primary-bg-hover': form.value.theme.primary_bg_hover,
-
-  '--primary-dark-bg': form.value.theme.primary_dark_bg,
-  '--primary-dark-bg-hover': form.value.theme.primary_dark_bg_hover,
-  '--primary-dark-text': form.value.theme.primary_dark_text,
-  '--primary-dark-text-hover': form.value.theme.primary_dark_text_hover,
-
-  '--primary-light-bg': form.value.theme.primary_light_bg,
-  '--primary-light-bg-hover': form.value.theme.primary_light_bg_hover,
-  '--primary-light-text': form.value.theme.primary_light_text,
-  '--primary-light-text-hover': form.value.theme.primary_light_text_hover,
-
-  '--primary-text': form.value.theme.primary_text,
-
-  '--warning-bg': form.value.theme.warning_bg,
-  '--warning-bg-hover': form.value.theme.warning_bg_hover,
-  '--warning-text': form.value.theme.warning_text,
-  '--warning-text-hover': form.value.theme.warning_text_hover,
-}));
-
 const updateIsMobile = () => {
   isMobile.value = window.innerWidth < 768;
 };
@@ -127,17 +75,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener("resize", updateIsMobile);
-});
-
-onMounted(async () => {
-  try {
-    const response = await axios.get('http://localhost:5010/home', { withCredentials: true });
-    if (response.status === 200 && response.data) {
-      form.value.theme = response.data.theme;
-    }
-  } catch (error) {
-    console.error('Error fetching configuration:', error);
-  }
 });
 
 const { cookies } = useCookies();
@@ -194,17 +131,15 @@ watch(
 
 <template>
   <!--<div id="app" class="d-flex flex-column max-vh-100" @click="refreshCookie">-->
-  <div id="app" class="d-flex flex-column max-vh-100" :style="themeStyles">
-    <Navbar 
-      :style="themeStyles"
-      class="nav" 
-      :isMobile="isMobile" 
-      :isWarningModalOpen="isWarningModalOpen" 
+  <div id="app" class="d-flex flex-column max-vh-100">
+    <Navbar
+      class="nav"
+      :isMobile="isMobile"
+      :isWarningModalOpen="isWarningModalOpen"
       :warnings="notificationQueue"
       :warningCount="warningCount"
       :loggedIn="authStore.isLoggedIn"
-      :isAdmin="authStore.userAuthority === 'Admin' || authStore.userAuthority === 'Super Admin'"
-      :isSuperAdmin="authStore.userAuthority === 'Super Admin'"
+      :isAdmin="authStore.userAuthority === 'Admin'"
       @toggleWarningModal="isWarningModalOpen = !isWarningModalOpen"
       @logout="authStore.logout"
     />
