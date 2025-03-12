@@ -53,8 +53,8 @@
 
     <!-- Message Modal -->
     <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content">
-        <button class="close-btn" @click="closeModal">
+      <div class="modal-content text-dark" style="max-height: 60vh; overflow-y: scroll; overflow-x: hidden;">
+        <button class="close-btn" @click="closeModal" style="position: sticky; margin-right: -320px; top: 0px; margin-top: -40px;">
           <FontAwesomeIcon :icon="faTimes" />
         </button>
         <h2>New Messages</h2>
@@ -162,8 +162,8 @@ const configTexts = computed(() => {
     heroTitle: homeConfig.value.config.hero.title,
     heroSubtitle: homeConfig.value.config.hero.subtitle,
     loginText: homeConfig.value.config.loginText,
-    heroImage: base64Data && imageName.includes('.') 
-      ? `data:image/${imageName.split('.').pop()};base64,${atob(base64Data)}` 
+    heroImage: base64Data && imageName.includes('.')
+      ? `data:image/${imageName.split('.').pop()};base64,${atob(base64Data)}`
       : '/newcastle-airport-image.webp', // Fallback image
   };
 });
