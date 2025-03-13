@@ -2,7 +2,7 @@
   <div :style="themeStyles" class="container">
     <div class="super-admin-view-header">
       <h1>Update Configuration</h1>
-      <button type="submit" class="update-button" @click="handleSubmit">
+      <button type="submit" class="btn-success btn fw-bold" @click="handleSubmit">
         Update
       </button>
     </div>
@@ -11,19 +11,25 @@
       <!-- Theme Section -->
 
 
-      <section>
-        <div class="section-header">
+      <section class="rounded border mb-3">
+        <div class="section-header" @click="toggleSection('theme')">
           <h2>Theme Settings</h2>
-          <span class="toggle-icon" @click="toggleSection('theme')">{{ collapsed.theme ? '+' : '-' }}</span>
+          <span class="toggle-icon">
+            <font-awesome-icon v-if="collapsed.theme" :icon="faChevronDown"/>
+            <font-awesome-icon v-else :icon="faChevronUp"/>
+          </span>
         </div>
         <ThemeEditor v-model:theme="form.theme" v-if="!collapsed.theme"/>
       </section>
 
       <!-- General Config Section -->
-      <section class="hero-config-section">
-        <div class="section-header">
+      <section class="hero-config-section rounded border mb-3">
+        <div class="section-header" @click="toggleSection('heroConfig')">
           <h2>Landing Page (Hero) Settings</h2>
-          <span class="toggle-icon" @click="toggleSection('heroConfig')">{{ collapsed.heroConfig ? '+' : '-' }}</span>
+          <span class="toggle-icon" >
+            <font-awesome-icon v-if="collapsed.heroConfig" :icon="faChevronDown"/>
+            <font-awesome-icon v-else :icon="faChevronUp"/>
+          </span>
         </div>
         <div class="hero-content-container" v-if="!collapsed.heroConfig">
           <!-- Live Preview (looks like the actual homepage hero) -->
@@ -76,19 +82,25 @@
       </section>
 
       <!-- Features Section -->
-      <section>
-        <div class="section-header">
+      <section class=" rounded border mb-3">
+        <div class="section-header" @click="toggleSection('features')">
           <h2>Features Settings</h2>
-          <span class="toggle-icon" @click="toggleSection('features')">{{ collapsed.features ? '+' : '-' }}</span>
+          <span class="toggle-icon">
+            <font-awesome-icon v-if="collapsed.features" :icon="faChevronDown"/>
+            <font-awesome-icon v-else :icon="faChevronUp"/>
+          </span>
         </div>
         <FeatureListEditor v-model:features="form.features" v-if="!collapsed.features"/>
       </section>
 
       <!-- How It Works Section -->
-      <section>
-        <div class="section-header">
+      <section class="rounded border mb-3">
+        <div class="section-header" @click="toggleSection('howItWorks')">
           <h2>How It Works Settings</h2>
-          <span class="toggle-icon" @click="toggleSection('howItWorks')">{{ collapsed.howItWorks ? '+' : '-' }}</span>
+          <span class="toggle-icon">
+            <font-awesome-icon v-if="collapsed.howItWorks" :icon="faChevronDown"/>
+            <font-awesome-icon v-else :icon="faChevronUp"/>
+          </span>
         </div>
         <HowItWorksEditor v-model:steps="form.howItWorks" v-if="!collapsed.howItWorks"/>
       </section>
@@ -107,7 +119,7 @@ import {
 } from '../constants/HomeConfig';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { fas } from '@fortawesome/free-solid-svg-icons';
+import { fas, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 library.add(fas);
 
 

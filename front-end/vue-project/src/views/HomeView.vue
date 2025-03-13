@@ -53,7 +53,7 @@
 
 	<!-- Message Modal -->
 	<div v-if="showModal" class="modal-overlay">
-	<div class="modal-content">
+	<div class="modal-content text-dark">
 		<button class="close-btn" @click="closeModal">
 		<FontAwesomeIcon :icon="faTimes" />
 		</button>
