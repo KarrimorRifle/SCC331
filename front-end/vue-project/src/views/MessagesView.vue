@@ -287,6 +287,7 @@ const sendMessage = async () => {
 
 .new-chat-dropdown {
   display: flex;
+  margin-bottom: 20px;
   gap: 10px;
 }
 
@@ -397,6 +398,7 @@ const sendMessage = async () => {
 /* Message Styles */
 .message {
   max-width: 70%;
+  min-width: 15%;
   padding: 10px 15px;
   border-radius: 20px;
   font-size: 1rem;
@@ -406,6 +408,7 @@ const sendMessage = async () => {
 
 .sent {
   align-self: flex-end;
+  text-align: right;
   background: #007bff;
   color: white;
 }
@@ -414,6 +417,7 @@ const sendMessage = async () => {
   background: #e1e1e1;
   color: #333;
 }
+
 
 /* Message Time */
 .message-time {
