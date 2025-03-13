@@ -51,22 +51,16 @@
       </div>
     </section>
 
-    <!-- Message Modal -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content text-dark" style="max-height: 60vh; overflow-y: scroll; overflow-x: hidden;">
-        <button class="close-btn" @click="closeModal" style="position: sticky; margin-right: -320px; top: 0px; margin-top: -40px;">
-          <FontAwesomeIcon :icon="faTimes" />
-        </button>
-        <h2>New Messages</h2>
-        <ul>
-          <li v-for="message in messages" :key="message.message_id">
-            <strong>{{ message.sender_email }}</strong>: {{ message.left_message }}
-            <br />
-            <small>{{ new Date(message.time_sent).toLocaleString() }}</small>
-          </li>
-        </ul>
-      </div>
-    </div>
+	<!-- Message Modal -->
+	<div v-if="showModal" class="modal-overlay">
+	<div class="modal-content">
+		<button class="close-btn" @click="closeModal">
+		<FontAwesomeIcon :icon="faTimes" />
+		</button>
+		<h2>You have {{ unreadMessagesCount }} unread message{{ unreadMessagesCount > 1 ? 's' : '' }}</h2>
+		<p><RouterLink to="/messages" class="cta-button">Go to Messages</RouterLink></p>
+	</div>
+	</div>
   </div>
 </template>
 
@@ -74,7 +68,8 @@
 import { RouterLink } from 'vue-router';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faSignInAlt, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { onMounted, computed } from 'vue';
+import { onMounted, computed, ref } from 'vue';
+import axios from 'axios';
 import {
   domainConfig,
   fetchDomainConfig,
@@ -88,6 +83,28 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import { fas } from '@fortawesome/free-solid-svg-icons';
 library.add(fas);
 
+const unreadMessagesCount = ref(0);
+
+// Function to check unread messages
+const checkUnreadMessages = async () => {
+  try {
+    const response = await axios.get('http://localhost:5007/unread_messages_count', {
+      headers: {
+        'session-id': document.cookie.split('; ').find(row => row.startsWith('session_id='))?.split('=')[1] || '',
+      },
+      withCredentials: true, // Ensures cookies are sent with the request
+    });
+
+    // Set the unread messages count
+    unreadMessagesCount.value = response.data.unread_messages_count || 0;
+
+    // Show modal only if there are unread messages
+    showModal.value = unreadMessagesCount.value > 0;
+  } catch (error) {
+    console.error('Error fetching unread messages count:', error.response?.data || error.message);
+    showModal.value = false; // Ensure modal stays closed on error
+  }
+};
 
 // In this component, use the global domainConfig defined in HomeConfig.ts.
 // If a prop is not provided, we use the backend-configured one.
@@ -189,7 +206,7 @@ onMounted(() => {
   // First, fetch the configuration from the backend.
   fetchDomainConfig();
   // Then, fetch messages.
-  fetchMessages();
+  checkUnreadMessages();
 });
 
 const closeModal = () => {
@@ -274,22 +291,22 @@ section {
 }
 
 .cta-button {
-  display: inline-flex;
-  align-items: center;
-  padding: 1rem 2.5rem;
-  font-size: 1.4rem;
-  color: var(--home-primary-light-text);
-  background-color: var(--home-active);
-  border-radius: 10px;
-  text-decoration: none;
-  transition: all 0.3s ease-in-out;
-  gap: 10px;
-  font-weight: bold;
+	display: inline-flex;
+	align-items: center;
+	padding: 1rem 2.5rem;
+	font-size: 1.4rem;
+	color: white;
+	background-color: #FFD700; /* Gold */
+	border-radius: 10px;
+	text-decoration: none;
+	transition: all 0.3s ease-in-out;
+	gap: 10px;
+	font-weight: bold;
 }
 
 .cta-button:hover {
-  background-color: var(--home-active-hover);
-  transform: scale(1.05);
+	background-color: #E6C200; /* Darker Gold */
+	transform: scale(1.05);
 }
 
 /* Scroll Indicator */
