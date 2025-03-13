@@ -102,7 +102,7 @@ const renderChart = async() => {
   loading.value = true;
   const now = new Date(currentUpperTime.value);
   const oneHourAgo = new Date(currentUpperTime.value - totalTime.value);
-  const request = await axios.get('/summary/average', {
+  const request = await axios.get('/api/reader/summary/average', {
     withCredentials: true,
     params: {
       start_time:oneHourAgo.toISOString(),

@@ -31,7 +31,7 @@ export function useFetchData(picoIds: any) {
   const fetchData = async () => {
     return [];
     // try {
-    //   const summaryResponse = await axios.get(`/summary`, {withCredentials: true});
+    //   const summaryResponse = await axios.get(`/api/reader/summary`, {withCredentials: true});
     //   // Flatten all IDs from every pico into a single array (ignoring "environment")
     //   compiledPicoIDs.value = Object.values(summaryResponse.data).reduce((acc: any[], info: any) => {
     //     for (const key in info) {
@@ -47,7 +47,7 @@ export function useFetchData(picoIds: any) {
     //   console.log(compiledPicoIDs.value);
 
     //   for (const PICO_ID of compiledPicoIDs.value) {
-    //     const picoResponse = await axios.get(`/pico/${PICO_ID}`, {withCredentials: true});
+    //     const picoResponse = await axios.get(`/api/reader/pico/${PICO_ID}`, {withCredentials: true});
     //     if (picoResponse.status != 200) {
     //       console.error(`Error fetching Pico updates for ${PICO_ID}: ${picoResponse.status}`);
     //       continue;
