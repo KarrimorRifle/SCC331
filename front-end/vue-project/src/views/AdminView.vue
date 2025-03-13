@@ -20,7 +20,6 @@ export default {
 			userMessage: "",
 			userIsAdmin: false,
 			loading: true,
-			// 👇 New state variables for delete confirmation modal
 			showDeleteModal: false,
 			deleteUserIndex: null,
 			adminPassword: "",
@@ -87,14 +86,22 @@ export default {
 				alert("Full Name and Email are required.");
 			}
 		},
-		// 🔥 New method to open the delete modal
 		openDeleteModal(index) {
 			this.deleteUserIndex = index;
 			this.showDeleteModal = true;
 			this.adminPassword = ""; // Reset password field
 			this.deleteError = ""; // Clear previous errors
 		},
-		// 🔥 New method to handle user deletion with password confirmation
+		openMessageModal(index) {
+			this.messageUserIndex = index;
+			this.showMessageModal = true;
+		},
+		openResetPasswordModal(index) {
+			this.resetPasswordUserIndex = index;
+			this.showResetPasswordModal = true;
+		},
+
+
 		async confirmDeleteUser() {
 			if (!this.adminPassword) {
 				this.deleteError = "Please enter your password";
@@ -106,8 +113,6 @@ export default {
 					/(?:(?:^|.*;\s*)session_id\s*\=\s*([^;]*).*$)|^.*$/,
 					"$1"
 				);
-
-				// Step 1: Validate admin password
 				const passwordResponse = await axios.post(
 					"/api/messages/check_password",
 					{ password: this.adminPassword },
@@ -119,7 +124,6 @@ export default {
 					return;
 				}
 
-				// Step 2: Proceed with user deletion
 				const userEmail = this.users[this.deleteUserIndex].email;
 				await axios.post(
 					"/api/messages/delete_user",
@@ -134,7 +138,72 @@ export default {
 				console.error("Error deleting user:", error);
 				this.deleteError = "Incorrect password";
 			}
-		}
+		},
+		sendMessage() {
+			if (!this.userMessage.trim()) {
+				alert("Message cannot be empty!");
+				return;
+			}
+
+			const user = this.users[this.messageUserIndex];
+
+			if (!user || !user.email) {
+				alert("Invalid recipient.");
+				return;
+			}
+
+			axios.post('/api/messages/send_message', {
+				receiver_email: user.email, // Ensure correct field name
+				message: this.userMessage.trim() // Trim to avoid empty spaces
+			}, { withCredentials: true })
+				.then(() => {
+					alert("Message sent successfully!");
+					this.showMessageModal = false;
+					this.userMessage = "";  
+				})
+				.catch(error => {
+					console.error("Error sending message:", error.response?.data || error);
+					alert("Failed to send message. Please try again.");
+				});
+		},
+
+
+    // Reset password for user
+	resetPassword() {
+    if (!this.newPassword || !this.confirmPassword) {
+        alert("Both password fields are required!");
+        return;
+    }
+
+    if (this.newPassword !== this.confirmPassword) {
+        alert("Passwords do not match!");
+        return;
+    }
+
+    const user = this.users[this.resetPasswordUserIndex];
+
+    if (!user || !user.email) {
+        alert("Invalid user selected.");
+        return;
+    }
+
+    axios.post('/api/messages/reset_password', {
+        email: user.email, // Ensure correct field name
+        new_password: this.newPassword // Ensure correct field name
+    }, { withCredentials: true })
+        .then(() => {
+            alert("Password reset successfully!");
+            this.showResetPasswordModal = false;
+            this.newPassword = "";
+            this.confirmPassword = "";
+        })
+        .catch(error => {
+            console.error("Error resetting password:", error.response?.data || error);
+            alert("Failed to reset password. Please try again.");
+        });
+	}
+
+
 	},
 	mounted() {
 		this.checkAdmin();
@@ -157,7 +226,6 @@ export default {
 			<button @click="addUser" class="button add">Add User</button>
 		</div>
 
-		<!-- Search Section for Full Name and Email -->
 		<div class="input-section">
 			<input v-model="searchName"
 				type="text"
@@ -200,44 +268,42 @@ export default {
 		</div>
 	</div>
 
-			<!-- ✅ Reset Password Modal -->
-			<div v-if="showResetPasswordModal" class="modal">
-			<div class="modal-content">
-				<h2>Reset Password</h2>
-				<p>Reset password for {{ users[resetPasswordUserIndex]?.fullName }}</p>
-				<input
-					v-model="newPassword"
-					type="password"
-					placeholder="New Password"
-					class="input password-input"
-				/>
-				<input
-					v-model="confirmPassword"
-					type="password"
-					placeholder="Confirm Password"
-					class="input password-input"
-				/>
-				<div class="modal-actions">
-					<button @click="resetPassword" class="button send">Reset</button>
-					<button @click="showResetPasswordModal = false" class="button cancel">Cancel</button>
-				</div>
+	<!-- Send Message Modal -->
+	<div v-if="showMessageModal" class="modal">
+		<div class="modal-content">
+			<h2>Send Message</h2>
+			<p>Send a message to {{ users[messageUserIndex]?.fullName }}</p>
+			<textarea v-model="userMessage" class="textarea" placeholder="Type your message..."></textarea>
+			<div class="modal-actions">
+				<button @click="sendMessage" class="button send">Send</button>
+				<button @click="showMessageModal = false" class="button cancel">Cancel</button>
 			</div>
 		</div>
+	</div>
 
-		<!-- ✅ Send Message Modal -->
-		<div v-if="showMessageModal" class="modal">
-			<div class="modal-content">
-				<h2>Send Message</h2>
-				<p>Send a message to {{ users[messageUserIndex]?.fullName }}</p>
-				<textarea v-model="userMessage" class="textarea" placeholder="Type your message..."></textarea>
-				<div class="modal-actions">
-					<button @click="sendMessage" class="button send">Send</button>
-					<button @click="showMessageModal = false" class="button cancel">Cancel</button>
-				</div>
+	<!-- Reset Password Modal -->
+	<div v-if="showResetPasswordModal" class="modal">
+		<div class="modal-content">
+			<h2>Reset Password</h2>
+			<p>Reset password for {{ users[resetPasswordUserIndex]?.fullName }}</p>
+			<input
+				v-model="newPassword"
+				type="password"
+				placeholder="New Password"
+				class="input password-input"
+			/>
+			<input
+				v-model="confirmPassword"
+				type="password"
+				placeholder="Confirm Password"
+				class="input password-input"
+			/>
+			<div class="modal-actions">
+				<button @click="resetPassword" class="button send">Reset</button>
+				<button @click="showResetPasswordModal = false" class="button cancel">Cancel</button>
 			</div>
 		</div>
-
-		<!-- ✅ Delete Confirmation Modal -->
+	</div>
 		<div v-if="showDeleteModal" class="modal">
 			<div class="modal-content">
 				<h2>Confirm Deletion</h2>
@@ -293,7 +359,7 @@ export default {
 	background: var(--primary-light-bg);
 	padding: 10px;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	align-items: center; /* Vertically center the items inside the container */
+	align-items: center; 
 }
 .input {
 	border: 1px solid #ccc;
@@ -326,7 +392,6 @@ export default {
 	text-align: left;
 	border-bottom: 1px solid #ddd;
 }
-/* Modal Background */
 .modal {
 	position: fixed;
 	inset: 0;
@@ -337,7 +402,6 @@ export default {
 	z-index: 1000;
 }
 
-/* Modal Title */
 .modal-title {
 	font-size: 24px;
 	font-weight: 600;
@@ -345,17 +409,15 @@ export default {
 	margin-bottom: 10px;
 }
 
-/* Modal Description */
 .modal-description {
 	font-size: 16px;
 	color: var(--primary-dark-text);
 	margin-bottom: 20px;
 }
 
-/* Modal Input Fields */
 .password-input {
-  width: 90%;            /* Make the input fields take up 90% of the available space */
-  max-width: 350px;      /* Limiting the maximum width of the input fields */
+  width: 90%;          
+  max-width: 350px;    
   padding: 12px;
   border-radius: 8px;
   border: 1px solid #ddd;
@@ -363,28 +425,28 @@ export default {
   font-size: 16px;
   box-sizing: border-box;
   display: block;
-  margin: 0 auto;        /* Center the inputs */
+  margin: 0 auto;      
 }
 
-/* Adjusting the modal content for better alignment */
+
 .modal-content {
   padding: 20px;
   background: #fff;
   border-radius: 10px;
-  width: 350px;          /* Modal width set to 350px */
+  width: 350px;          
   text-align: center;
   max-width: 100%;
   box-sizing: border-box;
 }
 
-/* Modal Action Buttons */
+
 .modal-actions {
 	display: flex;
 	justify-content: space-between;
 	gap: 10px;
 }
 
-/* Buttons */
+
 .button {
 	padding: 10px 15px;
 	border-radius: 5px;
@@ -411,7 +473,7 @@ export default {
 	background-color: #c53030;
 }
 
-/* Animation for the modal */
+
 @keyframes fadeIn {
 	from {
 		opacity: 0;
