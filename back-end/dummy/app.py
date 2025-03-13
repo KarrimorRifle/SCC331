@@ -171,6 +171,12 @@ if __name__ == '__main__':
     if conn:
         # Switch to the pico database for tracking data and devices.
         switch_database(conn, "pico")
+        ROOMS = ['d83add67ed84', 'd83add41a997', 'd83add8af3cf']
+
+        i = 1
+        for roomID in ROOMS:
+            insert_pico_device(conn, roomID, "Room" + str(i), i, 1)
+            i += 1
         
         # Insert dummy devices for each tracker type (bluetooth trackers have picoType=2)
         tracker_types = {
@@ -220,8 +226,7 @@ if __name__ == '__main__':
         # Live simulation: Inserting live tracking and environment data every minute.
         # ------------------------------------------------------------------
         switch_database(conn, "pico")
-        ROOMS = ['d83add67ed84', 'd83add41a997', 'd83add8af3cf']
-        
+
         live_states = {
             "User": {f"PICO-USER-{d}": random.choice(ROOMS) for d in range(1, 11)},
             "Luggage": {f"PICO-LUGGAGE-{d}": random.choice(ROOMS) for d in range(1, 11)},
