@@ -75,6 +75,8 @@ def send_individual_pico_message(pico_id, hardware_message):
     client.connect("mqtt.flespi.io", 1883)
     client.loop_start()
 
+    print("sending data to \"" + "hardware_config/server_message/" + pico_id + " \"")
+    print(hardware_message)
     client.publish("hardware_config/server_message/" + pico_id, hardware_message, qos=2)
 
     client.loop_stop()
