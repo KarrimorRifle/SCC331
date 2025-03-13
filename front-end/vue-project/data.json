@@ -1,142 +1,55 @@
 {
-  "1": {
-    "environment": {
-      "IAQ": 11,
-      "humidity": 20,
-      "light": 12,
-      "pressure": 20,
-      "sound": 10,
-      "temperature": 34
+  "configs": [
+    {
+      "picoID": "00:1A:7D:DA:71:11",
+      "readablePicoID": "Users",
+      "picoType": 2,
+      "trackingGroupID": -1
     },
-    "guard": {
-      "count": 1,
-      "id": [
-        "20"
-      ]
+    {
+      "picoID": "00:1A:7D:DA:71:12",
+      "readablePicoID": "Guards",
+      "picoType": 2,
+      "trackingGroupID": 3
     },
-    "luggage": {
-      "count": 3,
-      "id": [
-        "1",
-        "2",
-        "3"
-      ]
-    },
-    "staff": {
-      "count": 2,
-      "id": [
-        "15",
-        "16"
-      ]
-    },
-    "users": {
-      "count": 2,
-      "id": [
-        "8",
-        "9"
-      ]
+    {
+      "picoID": "00:1A:7D:DA:71:13",
+      "readablePicoID": "Staff",
+      "picoType": 2,
+      "trackingGroupID": -1
     }
+  ],
+  "trackingGroups": {
+    "groups": [
+      {
+        "groupID": 1,
+        "groupName": "Security Personnel"
+      },
+      {
+        "groupID": 2,
+        "groupName": "Maintenance Crew"
+      },
+      {
+        "groupID": 3,
+        "groupName": "Passenger Flow Monitoring"
+      }
+    ]
   },
-  "101": {
-    "environment": {
-      "IAQ": 22,
-      "humidity": 45,
-      "light": 55,
-      "pressure": 1015,
-      "sound": 15,
-      "temperature": 25
-    },
-    "guard": {
-      "count": 0,
-      "id": []
-    },
-    "luggage": {
-      "count": 0,
-      "id": []
-    },
-    "staff": {
-      "count": 0,
-      "id": []
-    },
-    "users": {
-      "count": 0,
-      "id": []
-    }
+  "patchDeviceConfigResponse": {
+    "message": "Device configuration updated successfully",
+    "error": ""
   },
-  "2": {
-    "environment": {
-      "IAQ": 23,
-      "humidity": 12,
-      "light": 30,
-      "pressure": 15,
-      "sound": 21,
-      "temperature": 12
-    },
-    "guard": {
-      "count": 1,
-      "id": [
-        "21"
-      ]
-    },
-    "luggage": {
-      "count": 3,
-      "id": [
-        "4",
-        "5",
-        "59"
-      ]
-    },
-    "staff": {
-      "count": 1,
-      "id": [
-        "17"
-      ]
-    },
-    "users": {
-      "count": 3,
-      "id": [
-        "10",
-        "11",
-        "12"
-      ]
-    }
+  "addTrackingGroupResponse": {
+    "message": "Tracking group added successfully",
+    "groupID": 4,
+    "error": ""
   },
-  "3": {
-    "environment": {
-      "IAQ": 53,
-      "humidity": 63,
-      "light": 17,
-      "pressure": 23,
-      "sound": 13,
-      "temperature": 9
-    },
-    "guard": {
-      "count": 2,
-      "id": [
-        "22",
-        "23"
-      ]
-    },
-    "luggage": {
-      "count": 2,
-      "id": [
-        "6",
-        "7"
-      ]
-    },
-    "staff": {
-      "count": 2,
-      "id": [
-        "18",
-        "19"
-      ]
-    },
-    "users": {
-      "count": 2,
-      "id": [
-        "13",
-        "14"
-      ]
-    }
+  "patchTrackingGroupResponse": {
+    "message": "Tracking group updated successfully",
+    "error": ""
+  },
+  "deleteTrackingGroupResponse": {
+    "message": "Tracking group deleted successfully",
+    "error": ""
   }
 }

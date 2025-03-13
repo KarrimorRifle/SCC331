@@ -117,7 +117,7 @@ def get_users():
 	cursor.execute("SELECT authority FROM users WHERE cookie = %s", (session_id,))
 	user = cursor.fetchone()
 
-	if user is None or user["authority"] != "Admin":
+	if user is None or (user["authority"] not in ["Admin", "Super Admin"]):
 		print("Not admin")
 		return jsonify({"error": "Unauthorized access", "message": "Insufficient permission to check user list"}), 401
 	

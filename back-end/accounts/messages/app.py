@@ -284,7 +284,7 @@ def check_admin():
 	if user is None:
 		return jsonify({"error": "User not found!"}), 404
 
-	if user["authority"] != "Admin":
+	if user["authority"] not in ["Admin", "Super Admin"]:
 		return jsonify({"error": "Not authorized"}), 403
 
 	return jsonify({"message": "Authorized"}), 200
