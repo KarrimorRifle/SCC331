@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
   faUser, faShoppingCart, faUsers, faTemperatureLow, faTint,
@@ -46,7 +46,7 @@ const domainOverrides: Record<string, Record<string, string[]>> = {
   airport: {
     user: ["User", "Passenger"],
     luggage: ["Luggage"],
-    guard: ["Guard"],
+    guard: ["Guard", "Security"],
     staff: ["Staff"],
     iaq: ["IAQ Sensor"],
     humidity: ["Humidity Sensor"],
@@ -56,7 +56,6 @@ const domainOverrides: Record<string, Record<string, string[]>> = {
     temperature: ["Temperature Sensor"]
   },
   supermarket: {
-    // For supermarket, we want the canonical default to be the first value:
     user: ["Customer", "User", "Passenger"],
     luggage: ["Trolley"],
     guard: ["Security"],
@@ -101,18 +100,28 @@ function toSingular(word: string): string {
 }
 
 /**
+ * Utility: extract the canonical part of a sensor name.
+ * For example, "luggage-01" becomes "luggage".
+ */
+function extractCanonicalName(name: string): string {
+  return name.split('-')[0];
+}
+
+/**
  * Map an incoming readablePicoID to a canonical sensor key.
  * This ensures that names like "Passengers" or "Users" always map to "user".
  */
 function mapReadablePicoID(readablePicoID: string): string {
-  const normalizedInput = toSingular(readablePicoID.toLowerCase());
+  // First, strip any suffix.
+  const baseName = extractCanonicalName(readablePicoID);
+  const normalizedInput = toSingular(baseName.toLowerCase());
   const domainMap = domainOverrides[currentDomain.value] || {};
 
   for (const canonicalKey in domainMap) {
     const normalizedCanonical = toSingular(canonicalKey.toLowerCase());
     const normalizedOverrides = domainMap[canonicalKey].map(name => toSingular(name.toLowerCase()));
     if (normalizedInput === normalizedCanonical || normalizedOverrides.includes(normalizedInput)) {
-      return canonicalKey;
+      return canonicalKey; // Return the canonical key
     }
   }
   return normalizedInput;
@@ -141,8 +150,9 @@ export const sensorMapping = ref<Record<string, Sensor>>({ ...baseSensorMapping 
 export const sensors = ref<Sensor[]>([]);
 
 /**
- * Apply domain overrides first.
- * For the "supermarket" domain, force the displayName to be the default override if the current value equals the base default.
+ * Apply domain overrides.
+ * For the "supermarket" domain, if the current displayName equals the base default,
+ * then use the override default.
  */
 const applyDomainOverrides = async () => {
   const overrides = domainOverrides[currentDomain.value] || {};
@@ -151,7 +161,6 @@ const applyDomainOverrides = async () => {
 
   Object.keys(sensorMapping.value).forEach((key) => {
     const currentSensor = sensorMapping.value[key];
-    // For supermarket, if the current displayName equals the base default, use the override default.
     updatedMapping[key] = {
       name: currentSensor.name,
       displayName:
@@ -165,41 +174,44 @@ const applyDomainOverrides = async () => {
     };
   });
   sensorMapping.value = updatedMapping;
+  await nextTick();
 };
 
 /**
  * Fetch and update sensor mappings dynamically from API.
- * We first apply the domain overrides, then merge in API names.
+ * First apply domain overrides, then merge in API names.
+ * We use extractCanonicalName() so that names like "user-01" become "user".
  */
 export const updateSensorMappings = async () => {
   try {
-    // Apply domain overrides as baseline.
     await applyDomainOverrides();
 
-    const response = await axios.get("/data.json");
+    const response = await axios.get("http://localhost:5006/get/device/configs", { withCredentials: true });
     const data: { configs: DeviceConfig[] } = response.data;
     if (!data.configs) return;
+    console.log(data.configs);
 
-    // Start with current mapping (which has domain defaults).
+    // Start with current mapping.
     const updatedMapping: Record<string, Sensor> = { ...sensorMapping.value };
 
     data.configs.forEach((device: DeviceConfig) => {
       let { readablePicoID, picoType } = device;
-      const mappedKey = mapReadablePicoID(readablePicoID);
+      // Normalize the API name by extracting its canonical part.
+      const canonicalAPIName = extractCanonicalName(readablePicoID);
+      const mappedKey = mapReadablePicoID(canonicalAPIName);
       if (picoType === 0) return;
 
       if (!updatedMapping[mappedKey]) {
         updatedMapping[mappedKey] = {
           name: mappedKey,
-          displayName: readablePicoID,
+          displayName: canonicalAPIName,
           icon: domainIcons[currentDomain.value]?.[mappedKey] || faTowerBroadcast,
           type: picoType,
         };
       } else {
-        // If the current displayName is still the default from the override, update it from API.
         const defaultOverride = domainOverrides[currentDomain.value]?.[mappedKey]?.[0] || baseSensorMapping[mappedKey]?.displayName;
         if (updatedMapping[mappedKey].displayName === defaultOverride) {
-          updatedMapping[mappedKey].displayName = readablePicoID;
+          updatedMapping[mappedKey].displayName = canonicalAPIName;
         }
       }
     });
