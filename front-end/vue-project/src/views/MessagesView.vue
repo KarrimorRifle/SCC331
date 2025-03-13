@@ -205,7 +205,7 @@ const sendMessage = async () => {
 </script>
 
 <template>
-  <div class="messages-container">
+  <div class="messages-container text-dark">
     <!-- Sidebar with User List -->
     <div class="sidebar" :class="{ hidden: selectedUser }">
       <h2>Chats</h2>
