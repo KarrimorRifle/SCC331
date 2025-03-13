@@ -88,7 +88,7 @@ const unreadMessagesCount = ref(0);
 // Function to check unread messages
 const checkUnreadMessages = async () => {
   try {
-    const response = await axios.get('http://localhost:5007/unread_messages_count', {
+    const response = await axios.get('/api/messages/unread_messages_count', {
       headers: {
         'session-id': document.cookie.split('; ').find(row => row.startsWith('session_id='))?.split('=')[1] || '',
       },
