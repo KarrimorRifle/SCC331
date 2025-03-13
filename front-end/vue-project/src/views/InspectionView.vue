@@ -363,7 +363,7 @@ const fetchMovementData = async () => {
     if (live.value) {
       const now = new Date();
       const twoMinutesAgo = new Date(now.getTime() - 2 * 60000);
-      response = await axios.get('http://localhost:5003/summary', {
+      response = await axios.get('/api/reader/summary', {
         withCredentials: true
       });
 
@@ -410,7 +410,7 @@ const fetchMovementData = async () => {
       console.log(movementData.value)
     } else {
       firstLiveFetch = true;
-      response = await axios.get('http://localhost:5003/movement', {
+      response = await axios.get('/api/reader/movement', {
         headers: {
           'time_start': startOfDay.toISOString(),
           'time_end': endOfDay.toISOString()
@@ -573,9 +573,9 @@ onMounted(async () => {
   await fetchMovementData();
   let presetData
   try {
-    const presetListData = (await axios.get<presetListType>("http://localhost:5010/presets", { withCredentials: true })).data;
+    const presetListData = (await axios.get<presetListType>("/api/assets-reader/presets", { withCredentials: true })).data;
     const defaultID = presetListData.default;
-    presetData = (await axios.get<preset>(`http://localhost:5010/presets/${defaultID}`, { withCredentials: true })).data;
+    presetData = (await axios.get<preset>(`/api/assets-reader/presets/${defaultID}`, { withCredentials: true })).data;
   } catch {
     console.error("Unable to fetch preset data");
   }
@@ -607,7 +607,7 @@ onMounted(async () => {
 const fetchUserMovementData = async () => {
   if (userID.value && selectedTime.value) {
     try {
-      const response = await axios.get(`http://localhost:5003/pico/${userID.value}`, { data: {time: selectedTime.value},withCredentials: true });
+      const response = await axios.get(`/api/reader/pico/${userID.value}`, { data: {time: selectedTime.value},withCredentials: true });
       const picoMovementData = response.data.movement;
       // Add console.log to see the object
       userMovementHistory.value = Object.entries(picoMovementData).map(([timestamp, roomID]) => ({

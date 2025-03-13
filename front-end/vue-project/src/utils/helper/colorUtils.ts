@@ -2,7 +2,6 @@ export function getTextColour(colour: string | undefined): string {
     if (typeof colour !== 'string') {
       return "black";
     }
-    console.log(colour)
     const c = colour ?? "#FFFFFF";
     const hex = c.replace("#", "");
     const r = parseInt(hex.slice(0, 2), 16);

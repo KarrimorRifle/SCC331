@@ -113,14 +113,14 @@ const setSuccess = (input: string) => {
 
 const searchUsers = () => {
   if (email.value.trim().length > 0) {
-    const query = email.value.trim().toLowerCase(); 
+    const query = email.value.trim().toLowerCase();
     searchResults.value = allUsers.value.filter(user => {
       const userEmail = user.email.toLowerCase();
       const userName = user.name.toLowerCase();
 
       const matchesQuery = userEmail.includes(query) || userName.includes(query);
       const isNotSelected = !selectedUsers.value.some(selected => selected.uid === user.uid);
-      const isNotCurrentUser = currentUser.value?.uid != user.uid; 
+      const isNotCurrentUser = currentUser.value?.uid != user.uid;
 
       return matchesQuery && isNotSelected && isNotCurrentUser;
     });
@@ -186,7 +186,7 @@ const createPreset = async () => {
   }
 
   if (props.presetList?.presets?.some(object =>
-    object.name == name.value 
+    object.name == name.value
   )) {
     setWarning("Name already in use.");
     return;
@@ -197,14 +197,14 @@ const createPreset = async () => {
     const trusted = selectedUsers.value.map(user => user.uid);
     let response;
     if(updateMode.value){
-      response = await axios.patch(`http://localhost:5011/presets/${props.presetData.id}`, {
+      response = await axios.patch(`/api/editor/presets/${props.presetData.id}`, {
         name: name.value,
         trusted: trusted
       }, {
         withCredentials: true
       });
     } else {
-      response = await axios.post('http://localhost:5011/presets', {
+      response = await axios.post('/api/editor/presets', {
         name: name.value,
         trusted: trusted
       }, {
@@ -256,11 +256,11 @@ watch([name, email, selectedUsers], () => {
 
 onMounted(async () => {
   try {
-    const response = await axios.get('http://localhost:5002/get_users', {
+    const response = await axios.get('/api/login/get_users', {
       withCredentials: true
     });
     allUsers.value = response.data.users;
-    const currentUserResponse = await axios.get('http://localhost:5002/validate_cookie', {
+    const currentUserResponse = await axios.get('/api/login/validate_cookie', {
       withCredentials: true
     });
     currentUser.value = currentUserResponse.data;

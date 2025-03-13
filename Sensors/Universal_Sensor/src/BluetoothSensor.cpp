@@ -9,7 +9,7 @@ int BluetoothSensor::strongestScanBluetoothID = -1;
 int BluetoothSensor::strongestRSSI = -10000;
 
 
-BluetoothSensor::BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds, uint16_t BluetoothID ) {
+BluetoothSensor::BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds, String TrackerGroup, String* ReadableID) {
   display = Display;
   mqtt = Mqtt;
   leds = Leds;
@@ -17,32 +17,20 @@ BluetoothSensor::BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt
   strongestRSSI = -10000;
   lastActionTime = 0;
   isScanning = false;
-  bluetoothID = BluetoothID;
-  picoType = 2;
+  currentlySetUp = false;
+  trackerGroup = TrackerGroup;
+  readableID = ReadableID;
   warningSubscription = MqttSubscription();
   globalWarningSubscription = MqttSubscription();
 }
 
 
 void BluetoothSensor::setWarningSubscriptions() {
-  String specificWarningRoute;
-  switch (picoType) {
-    case SECURITY_PICO:
-      specificWarningRoute = "warnings/security/#";
-      break;
+  String specificWarningRoute = "";
 
-    case STAFF_PICO:
-      specificWarningRoute = "warnings/staff/#";
-      break;
-
-    case PASSENGER_PICO:
-      specificWarningRoute = "warnings/users/#";
-      break;
-
-    default:
-      specificWarningRoute = "";
+  if (!trackerGroup.equals("")) {
+    specificWarningRoute = "warnings/" + trackerGroup + "/#";
   }
-
 
   warningSubscription = MqttSubscription(specificWarningRoute);
   globalWarningSubscription = MqttSubscription("warnings/everyone/#");
@@ -78,6 +66,14 @@ void BluetoothSensor::setup() {
   pinMode(BUZZER, OUTPUT);
   pinMode(BLACK_BUTTON, INPUT);
   pinMode(RED_BUTTON, INPUT);
+
+  display->clearDisplay();
+  display->println((*readableID));
+  display->println("User Group: " + trackerGroup);
+  display->setCursor(0, 0);
+  display->display();
+
+  currentlySetUp = true;
 }
 
 
@@ -115,29 +111,18 @@ void BluetoothSensor::loop() {
   }
 
   if (warningSubscription.hasMessage()) {
-    String source;
-    switch (picoType) {
-      case SECURITY_PICO:
-        source = "SECURITY";
-        break;
-  
-      case STAFF_PICO:
-        source = "STAFF";
-        break;
-  
-      case PASSENGER_PICO:
-        source = "PASSENGER";
-        break;
-  
-      default:
-        source = "";
-    }
-
-    handleWarning(warningSubscription.getMessage(), source);
+    handleWarning(warningSubscription.getMessage(), trackerGroup);
   }
 
   if(warningLive){
     this->checkForAcknowledgement();
+  }
+  else {
+    display->clearDisplay();
+    display->println((*readableID));
+    display->println("User Group: " + trackerGroup);
+    display->setCursor(0, 0);
+    display->display();
   }
   
   BTstack.loop();
@@ -147,16 +132,12 @@ void BluetoothSensor::loop() {
 void BluetoothSensor::unsetup() {
 	BTstack.bleStopScanning();
   this->unsetWarningSubscriptions();
+  currentlySetUp = false;
 }
 
 
 int BluetoothSensor::getSensorType() {
-    return picoType;
-}
-
-
-void BluetoothSensor::setSensorType(int PicoType) {
-    picoType = PicoType;
+    return TRACKER_PICO;
 }
 
 
@@ -171,6 +152,29 @@ void BluetoothSensor::advertisementCallback(BLEAdvertisement *adv) {
       strongestRSSI = rssi;
       strongestScanBluetoothID = majorID;
     }
+  }
+}
+
+
+String BluetoothSensor::getCurrentTrackerGroup() {
+  return trackerGroup;
+}
+
+
+void BluetoothSensor::setCurrentTrackerGroup(String newTrackerGroup) {
+  trackerGroup = newTrackerGroup;
+
+  if (currentlySetUp) {
+    mqtt->removeSubscription(&warningSubscription);
+  
+    String specificWarningRoute = "";
+    if (!trackerGroup.equals("")) {
+      specificWarningRoute = "warnings/" + trackerGroup + "/#";
+    }
+  
+    warningSubscription = MqttSubscription(specificWarningRoute);
+  
+    mqtt->addSubscription(&warningSubscription);
   }
 }
 
@@ -281,6 +285,8 @@ void BluetoothSensor::checkForAcknowledgement() {
     delay(2000);
 
     display->clearDisplay();
+    display->println((*readableID));
+    display->println("User Type: " + trackerGroup);
     display->setCursor(0, 0);
     display->display();
   }
@@ -439,7 +445,7 @@ void BluetoothSensor::sendToServer(String data) {
 
     json["PicoID"] = mqtt->getHardwareIdentifier();
     json["RoomID"] = String(strongestScanBluetoothID);
-    json["PicoType"] = picoType;
+    json["PicoType"] = TRACKER_PICO;
     json["Data"] = data;
 
     String jsonString;

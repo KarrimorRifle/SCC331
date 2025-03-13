@@ -4,6 +4,8 @@ import os
 import json
 import mysql.connector
 from mysql.connector import Error
+from pydantic import BaseModel, ValidationError
+from typing import Union
 
 db_connection = None
 
@@ -33,14 +35,11 @@ def on_connect(client, user_data, connect_flags, result_code, properties):
     client.subscribe("feeds/hardware-data/#")
     print("Subscribed to hardware feeds")
 
-from pydantic import BaseModel, ValidationError
-from typing import Union
-
 class PicoData(BaseModel):
-    PicoID: Union[str, int]
-    RoomID: Union[str, int]
+    PicoID: str
+    RoomID: int
     PicoType: int
-    Data: Union[str, int]
+    Data: str
 
 #whenever a message is recieved from a feed, print it and its details
 def on_message(client, user_data, message):
@@ -78,28 +77,35 @@ def on_message(client, user_data, message):
         # Insert data into the database
         try:
             cursor.execute(
-                "INSERT INTO environment (picoID, roomID, logged_at, sound, light, temperature, IAQ, pressure, humidity) "
-                "VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s, %s)",
-                (str(data.PicoID), str(data.RoomID), env_data[0], env_data[1], env_data[2], env_data[3], env_data[4], env_data[5])
+                "INSERT INTO environment_sensor_data (picoID, logged_at, sound, light, temperature, IAQ, pressure, humidity) "
+                "VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s)",
+                (str(data.PicoID), env_data[0], env_data[1], env_data[2], env_data[3], env_data[4], env_data[5])
             )
             db_connection.commit()
         except Error as e:
+            db_connection.rollback()
             print(f"Error inserting data into MySQL: {e}")
         except:
             print("Incorrect format")
 
-    else:
+    elif data.PicoType == 2:
         # Otherwise just put the data in
         try:
-            get_table_name = lambda pico_type: 'luggage' if pico_type == 2 else 'users' if pico_type == 3 else 'staff' if pico_type == 4 else 'guard' if pico_type == 5 else None
-            table_name = get_table_name(data.PicoType)
-            if table_name:
-                query = f"INSERT INTO {table_name} (picoID, roomID, logged_at) VALUES (%s, %s, NOW())"
-                cursor.execute(query, (str(data.PicoID), str(data.RoomID)))
+            select_query = """SELECT picoID
+                              FROM pico_device
+                              WHERE bluetoothID = %s
+                              LIMIT 1;"""
+            
+            cursor.execute(select_query, (data.RoomID,))
+            select_result = cursor.fetchone()
+            if not select_result is None:
+                room_pico_id = select_result[0]
+                query = """INSERT INTO bluetooth_tracker_data (picoID, roomID, logged_at)
+                           VALUES (%s, %s, NOW())"""
+                cursor.execute(query, (str(data.PicoID), str(room_pico_id)))
                 db_connection.commit()
-            else:
-                print(f"Invalid PicoType {data.PicoType}")
         except Error as e:
+            db_connection.rollback()
             print(f"Error inserting data into MySQL: {e}")
         except e:
             print("unknown error", e)

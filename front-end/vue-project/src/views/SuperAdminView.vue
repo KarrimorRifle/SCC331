@@ -180,7 +180,7 @@ let homeImage = ref<string>("");
 // Fetch current configuration from the backend on mount.
 onMounted(async () => {
   try {
-    const response = await axios.get('http://localhost:5010/home', { withCredentials: true });
+    const response = await axios.get('/api/assets-reader/home', { withCredentials: true });
     if (response.status === 200 && response.data) {
       form.value = response.data;
       processHomeImage();
@@ -194,9 +194,8 @@ const heroIcon = computed(() => getHeroIcon(form.value.config.domain));
 
 const processHomeImage = () => {
   if (form.value.config.hero.image.data && form.value.config.hero.image.name) {
-    const decodedData = atob(form.value.config.hero.image.data); 
     const imageType = form.value.config.hero.image.name.split('.').pop();
-    homeImage.value = `data:image/${imageType};base64,${decodedData}`;
+    homeImage.value = `data:image/${imageType};base64,${atob(form.value.config.hero.image.data) }`;
   } else {
     homeImage.value = "";
   }
@@ -209,7 +208,7 @@ function handleImageUpload(event: Event) {
     const file = target.files[0];
     form.value.config.hero.image.name = file.name;
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       const result = e.target?.result as string;
       // Extract base64 content
@@ -224,7 +223,7 @@ function handleImageUpload(event: Event) {
 
       // Force reactivity update if necessary
       form.value = { ...form.value };
-      
+
       console.log("Base64 Data Updated:", form.value.config.hero.image.data);
       console.log("Preview Updated:", homeImage.value);
     };
@@ -283,7 +282,7 @@ const themeStyles = computed(() => ({
 // Submit updated configuration to backend.
 const handleSubmit = async () => {
   try {
-    const response = await axios.patch('http://localhost:5011/home', form.value, { withCredentials: true });
+    const response = await axios.patch('/api/editor/home', form.value, { withCredentials: true });
     if (response.status === 200) {
       console.log(form.value);
       alert('Configuration updated successfully.');
@@ -458,7 +457,7 @@ button {
 @media (max-width: 768px) {
     .hero-content-container {
         flex-direction: column;
-    } 
+    }
     .hero-preview-image{
         display: none;
     }

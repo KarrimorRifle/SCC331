@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { getTextColour } from '../../../utils/helper/colorUtils';
 import { usePresetStore } from '../../../utils/useFetchPresets';
-import { sensors, sensorMapping } from '../../../stores/sensorTypeStore';
+import { sensors, updateSensorMappings } from '../../../stores/sensorTypeStore';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import PersonMarker from '../../ObjectMarker/PersonMarker.vue';
 import LuggageMarker from '../../ObjectMarker/LuggageMarker.vue';
@@ -58,31 +58,41 @@ watch(presetData, (newVal, oldVal) => {
   });
 });
 
-onMounted(() => {
+onMounted(async () => {
   selectedAreas.value = presetData.value.map(area => area.label);
+  await updateSensorMappings()
 });
+
+function lookupTracker(tracker: any, key: string): any {
+  if (!tracker) return undefined;
+  // Try the key as-is, then lowercase, then uppercase.
+  return tracker[key] ?? tracker[key.toLowerCase()] ?? tracker[key.toUpperCase()];
+}
 
 // Computed: Object Trackers (Users, Luggage, etc.)
 const getObjectTrackers = (area) => {
-  return Object.entries(sensorMapping.value)
+  console.log(area)
+  return Object.entries(sensors?.value)
     .filter(([_, sensor]) => sensor.type === 2) // Filter only type 2 (object trackers)
     .map(([key, sensor]) => ({
       key,
+      displayName: sensor.displayName,
       name: sensor.name,
       icon: sensor.icon,
-      count: area.tracker?.[key]?.count ?? 0, // Use count if available, default to 0
+      count: lookupTracker(area.tracker, sensor.name)?.count ?? 0, // Use count if available, default to 0
     }));
 };
 
 // Computed: Environment Sensors (Temperature, Sound, etc.)
 const getEnvironmentSensors = (area) => {
-  return Object.entries(sensorMapping.value)
+  return Object.entries(sensors?.value)
     .filter(([_, sensor]) => sensor.type === 1) // Only Environment Sensors
     .map(([key, sensor]) => ({
       key,
+      displayName: sensor.displayName,
       name: sensor.name,
       icon: sensor.icon,
-      value: area.tracker?.environment?.[key] ?? '--' // Default to "N/A" if missing
+      value: lookupTracker(area.tracker?.environment, sensor.name) ?? '--', // Default to "N/A" if missing
     }));
 }
 
@@ -186,7 +196,7 @@ const getUnitSymbol = (key: string) => {
                 <FontAwesomeIcon :icon="tracker.icon" />
               </span> 
               <span class="pico-data-value">
-                {{ tracker.name }}: {{ tracker.count }}
+                {{ tracker.displayName }}: {{ tracker.count }}
               </span>
             </div>
           </div>
@@ -197,7 +207,7 @@ const getUnitSymbol = (key: string) => {
                 <FontAwesomeIcon :icon="sensor.icon" />
               </span> 
               <span class="pico-data-value">
-                {{ formatSensorName(sensor.name) }}: {{ sensor.value }}
+                {{ formatSensorName(sensor.displayName) }}: {{ sensor.value }}
               </span>
             </div>
           </div>
