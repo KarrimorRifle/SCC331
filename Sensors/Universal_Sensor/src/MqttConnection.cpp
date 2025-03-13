@@ -49,7 +49,7 @@ bool MqttConnection::publishToMQTT(String data, String topic) {
 
     if (!connectedToMQTT) {
         mqttClient.connect();
-    }
+    }https://testclient-cloud.mqtt.cool/
     if (connectedToMQTT) {
         mqttClient.publish(topic.c_str(), 2, true, data.c_str());
         return true;

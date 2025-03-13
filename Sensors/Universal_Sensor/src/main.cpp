@@ -31,7 +31,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 UnassignedSensor configUnassigned = UnassignedSensor();
 SensorType *currentSensorConfig = &configUnassigned;
-RoomSensor roomSensorConfig = RoomSensor(&display, &mqtt, bluetoothID);
+RoomSensor roomSensorConfig = RoomSensor(&display, &mqtt, bluetoothID, &readableID);
 BluetoothSensor bluetoothSensorConfig = BluetoothSensor(&display, &mqtt, &led, "", &readableID);
 
 
@@ -151,21 +151,9 @@ void handleConfigMessage(String message) {
 
 		}
 	}
-	else {
-		display.clearDisplay();
-		display.setCursor(0, 0);
-		display.println("Message recieved without PicoType.");
-		display.println("Awaiting further messages.");
-		display.println("Hardware ID: " + hardwareID);
-		display.display(); 
-		return;
-	}
   
 	if (doc.containsKey("ReadableID")) {
 		  readableID = doc["ReadableID"].as<String>();
-	}
-	else {
-		readableID = "Invalid ID";
 	}
 
 	if (doc.containsKey("BluetoothID")) {
@@ -191,6 +179,7 @@ void getInitialSensorType() {
 	display.println("Initial Setup complete.");
 	display.println("Waiting for PicoType from Server");
 	display.println("Hardware ID: " + hardwareID);
+	display.println("Device Name: " + readableID );
 	display.display(); 
 	
 	configSubscription = MqttSubscription("hardware_config/server_message/" + hardwareID);
