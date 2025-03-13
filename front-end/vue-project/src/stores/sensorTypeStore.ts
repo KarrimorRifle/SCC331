@@ -41,7 +41,7 @@ export const sensors = ref([
 export const sensors = ref([]);
 export const updateSensorMappings = async () => {
   try {
-    const response = await fetch('http://localhost:5010/get/device/configs');
+    const response = await fetch('/api/assets-reader/get/device/configs');
     const data = await response.json();
 
     if (!data.configs) return;

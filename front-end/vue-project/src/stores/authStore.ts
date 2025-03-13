@@ -10,7 +10,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const checkUserAuthority = async () => {
     try {
-      const response = await axios.get('http://localhost:5002/validate_cookie', { withCredentials: true });
+      const response = await axios.get('/api/login/validate_cookie', { withCredentials: true });
       console.log(response)
       userAuthority.value = response.data.authority;
     } catch (error) {
