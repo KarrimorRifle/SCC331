@@ -10,10 +10,10 @@
         <FontAwesomeIcon :icon="getIcon(feature.icon)" class="feature-icon" @click="openIconSelector(index)"/>
 
         <!-- Editable Title -->
-        <input type="text" v-model="feature.title" class="feature-title" placeholder="Feature Title" />
+        <input type="text" v-model="feature.title" class="feature-title" placeholder="New Feature" />
 
         <!-- Editable Description -->
-        <textarea v-model="feature.description" class="feature-description" placeholder="Feature Description"></textarea>
+        <textarea v-model="feature.description" class="feature-description" placeholder="Description..."></textarea>
       </div>
 
       <!-- "Add Feature" styled as a feature card -->
@@ -74,7 +74,7 @@ const featuresModel = computed({
 function addFeature() {
   featuresModel.value = [
     ...featuresModel.value,
-    { icon: 'question-circle', title: 'New Feature', description: 'Description...' }
+    { icon: 'question-circle', title: '', description: '' }
   ];
 }
 

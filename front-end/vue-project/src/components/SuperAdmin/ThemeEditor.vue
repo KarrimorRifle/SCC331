@@ -4,7 +4,10 @@
       <!-- Group header is clickable to toggle collapse -->
       <div class="group-header" @click="toggleGroup(groupName)">
         <h4 class="group-title">{{ groupName }}</h4>
-        <span class="collapse-indicator">{{ collapsed[groupName] ? '+' : '−' }}</span>
+        <span class="collapse-indicator">
+          <font-awesome-icon v-if="collapsed[groupName]" :icon="faChevronDown"/>
+          <font-awesome-icon v-else :icon="faChevronUp"/>
+        </span>
       </div>
       <div v-if="!collapsed[groupName]" class="theme-grid">
         <div class="theme-field" v-for="key in keys" :key="key">
@@ -31,6 +34,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { defineProps, defineEmits } from 'vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
   theme: {
