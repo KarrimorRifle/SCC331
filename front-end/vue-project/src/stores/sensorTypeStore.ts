@@ -109,7 +109,7 @@ function extractCanonicalName(name: string): string {
   // Check the domainOverrides first.
   const overridesForDomain = domainOverrides[currentDomain.value] || {};
   for (const canonicalKey in overridesForDomain) {
-    const allowedNames = overridesForDomain[canonicalKey].map(n => n.toLowerCase());
+    const allowedNames = overridesForDomain[canonicalKey]?.map(n => n.toLowerCase()) || [];
     for (const allowed of allowedNames) {
       if (lowerName.includes(allowed)) {
         return canonicalKey;
@@ -136,13 +136,14 @@ function mapReadablePicoID(readablePicoID: string): string {
 
   for (const canonicalKey in domainMap) {
     const normalizedCanonical = toSingular(canonicalKey.toLowerCase());
-    const normalizedOverrides = domainMap[canonicalKey].map(name => toSingular(name.toLowerCase()));
+    const normalizedOverrides = domainMap[canonicalKey]?.map(name => toSingular(name.toLowerCase())) || [];
     if (normalizedInput === normalizedCanonical || normalizedOverrides.includes(normalizedInput)) {
       return canonicalKey;
     }
   }
   return normalizedInput;
 }
+
 
 /**
  * Base sensor mapping (canonical defaults).
@@ -193,10 +194,11 @@ function updateSensorMappingWithGroups(groups: Record<string, DeviceConfig[]>): 
     const devices = groups[key];
     const count = devices.length;
     const defaultName = domainOverrides[currentDomain.value]?.[key]?.[0] || baseSensorMapping[key]?.displayName || key;
-    // If count > 1, append count; otherwise, use the device's readablePicoID.
-    const displayName = count > 1 ? `${defaultName} (${count})` : devices[0].readablePicoID;
-    const icon = domainIcons[currentDomain.value]?.[key] || baseSensorMapping[key].icon;
-    const type = devices[0].picoType;
+
+    const displayName = count > 1 ? `${defaultName} (${count})` : devices[0]?.readablePicoID || defaultName;
+    const icon = domainIcons[currentDomain.value]?.[key] || baseSensorMapping[key]?.icon || faTowerBroadcast;
+    const type = devices[0]?.picoType;
+
     newMapping[key] = {
       name: key,
       displayName,
@@ -258,29 +260,29 @@ const applyDomainOverrides = async () => {
 export const updateSensorMappings = async () => {
   try {
     const response = await axios.get("/api/hardware/get/device/configs", { withCredentials: true });
-    const data: { configs: DeviceConfig[] } = response.data;
-    if (!data.configs) return;
+    const data: { configs?: DeviceConfig[] } = response.data;    
+    if (!data.configs || !Array.isArray(data.configs) || data.configs.length === 0) {
+      console.warn("No device configs found, skipping update.");
+      return;
+    }
+
     console.log("Fetched configs:", data.configs);
 
-    // Build separatedSensors: one entry per device config (ungrouped)
     separatedSensors.value = data.configs.map(device => mapDeviceToSensor(device));
     console.log("Separated Sensors:", separatedSensors.value);
 
-    // Group devices by canonical key.
     const groups = groupDevicesByCanonicalKey(data.configs);
     console.log("Grouped Devices:", groups);
 
-    // Merge grouped devices with base mapping.
     const newMapping = updateSensorMappingWithGroups(groups);
     sensorMapping.value = newMapping;
 
     await applyDomainOverrides();
 
-    // Build the grouped sensors array.
     sensors.value = Object.entries(sensorMapping.value).map(([key, sensor]) => ({
       name: key,
       displayName: sensor.displayName,
-      icon: sensor.icon.iconName,
+      icon: sensor.icon?.iconName || "default-icon",
       checked: true,
       disconnected: true,
       type: sensor.type
