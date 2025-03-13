@@ -339,12 +339,18 @@ export default {
 	text-align: center;
 }
 .container {
-	max-width: 900px;
+	display: flex;
+	height: 100vh;
 	margin: 0 auto;
 	padding: 20px;
 	background: var(--primary-bg);
 	color: var(--primary-dark-text);
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	flex-direction: column;
+	display: flex;
+	flex-grow: 1;
+	margin: 0;
+	min-width: 100%;
 }
 .title {
 	text-align: center;
