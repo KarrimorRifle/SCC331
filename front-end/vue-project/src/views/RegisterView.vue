@@ -59,7 +59,10 @@ const handleSubmit = async () => {
 
   try {
       const response = await axios.post("/api/register/register", {}, {
+<<<<<<< HEAD
         withCredentials: true,
+=======
+>>>>>>> 8450fb8488181da3f247f6fc61327ed3cf8a4a77
         headers: {
           "name": name.value,
           "email": email.value,

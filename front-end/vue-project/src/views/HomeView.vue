@@ -8,17 +8,17 @@
           <h1>
             <!-- Use computed heroIcon to select the correct icon based on domain -->
             <FontAwesomeIcon :icon="heroIcon" class="icon" />
-            {{ config.heroTitle }}
+            {{ configTexts.heroTitle }}
           </h1>
-          <p>{{ config.heroSubtitle }}</p>
+          <p>{{ configTexts.heroSubtitle }}</p>
           <RouterLink v-if="!loggedIn" to="/login" class="cta-button">
             <FontAwesomeIcon :icon="faSignInAlt" class="btn-icon" />
-            {{ config.loginText }}
+            {{ configTexts.loginText }}
           </RouterLink>
         </div>
         <div class="hero-image">
           <!-- The image source is set dynamically via the URL provided by the backend -->
-          <img :src="config.heroImage" alt="hero image" />
+          <img :src="configTexts.heroImage" alt="hero image" />
         </div>
       </div>
       <!-- Scroll Indicator -->
@@ -31,7 +31,7 @@
     <section id="features" class="features">
       <h2>Key Features</h2>
       <div class="feature-cards">
-        <div class="feature-card" v-for="(feature, index) in config.features" :key="index">
+        <div class="feature-card" v-for="(feature, index) in features" :key="index">
           <FontAwesomeIcon :icon="feature.icon" class="feature-icon" />
           <h3>{{ feature.title }}</h3>
           <p>{{ feature.description }}</p>
@@ -43,7 +43,7 @@
     <section class="how-it-works">
       <h2>How It Works</h2>
       <div class="steps">
-        <div class="step" v-for="(step, index) in config.howItWorks" :key="index">
+        <div class="step" v-for="(step, index) in howItWorks" :key="index">
           <span class="step-number">{{ step.step }}</span>
           <h3>{{ step.title }}</h3>
           <p>{{ step.description }}</p>
@@ -51,22 +51,16 @@
       </div>
     </section>
 
-    <!-- Message Modal -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content">
-        <button class="close-btn" @click="closeModal">
-          <FontAwesomeIcon :icon="faTimes" />
-        </button>
-        <h2>New Messages</h2>
-        <ul>
-          <li v-for="message in messages" :key="message.message_id">
-            <strong>{{ message.sender_email }}</strong>: {{ message.left_message }}
-            <br />
-            <small>{{ new Date(message.time_sent).toLocaleString() }}</small>
-          </li>
-        </ul>
-      </div>
-    </div>
+	<!-- Message Modal -->
+	<div v-if="showModal" class="modal-overlay">
+	<div class="modal-content">
+		<button class="close-btn" @click="closeModal">
+		<FontAwesomeIcon :icon="faTimes" />
+		</button>
+		<h2>You have {{ unreadMessagesCount }} unread message{{ unreadMessagesCount > 1 ? 's' : '' }}</h2>
+		<p><RouterLink to="/messages" class="cta-button">Go to Messages</RouterLink></p>
+	</div>
+	</div>
   </div>
 </template>
 
@@ -74,7 +68,8 @@
 import { RouterLink } from 'vue-router';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faSignInAlt, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { onMounted, computed } from 'vue';
+import { onMounted, computed, ref } from 'vue';
+import axios from 'axios';
 import {
   domainConfig,
   fetchDomainConfig,
@@ -84,6 +79,32 @@ import {
   getHeroIcon,
   defaultDomainConfig
 } from '../constants/HomeConfig';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { fas } from '@fortawesome/free-solid-svg-icons';
+library.add(fas);
+
+const unreadMessagesCount = ref(0);
+
+// Function to check unread messages
+const checkUnreadMessages = async () => {
+  try {
+    const response = await axios.get('http://localhost:5007/unread_messages_count', {
+      headers: {
+        'session-id': document.cookie.split('; ').find(row => row.startsWith('session_id='))?.split('=')[1] || '',
+      },
+      withCredentials: true, // Ensures cookies are sent with the request
+    });
+
+    // Set the unread messages count
+    unreadMessagesCount.value = response.data.unread_messages_count || 0;
+
+    // Show modal only if there are unread messages
+    showModal.value = unreadMessagesCount.value > 0;
+  } catch (error) {
+    console.error('Error fetching unread messages count:', error.response?.data || error.message);
+    showModal.value = false; // Ensure modal stays closed on error
+  }
+};
 
 // In this component, use the global domainConfig defined in HomeConfig.ts.
 // If a prop is not provided, we use the backend-configured one.
@@ -98,25 +119,79 @@ const props = defineProps({
 });
 
 // Use the configuration from the backend if available.
-const config = computed(() => {
+const homeConfig = computed(() => {
   // If the backend has updated our global domainConfig, use it;
   // otherwise, fall back to the prop.
   return domainConfig.value || props.domainConfig;
 });
 
-console.log(config.value)
 const themeStyles = computed(() => ({
-  '--home-primary-dark-bg': config.value.theme.primaryDarkBg,
-  '--home-primary-dark-text': config.value.theme.primaryDarkText,
-  
-  '--home-secondary-bg': config.value.theme.primarySecondaryBg,
-  '--home-secondary-text': config.value.theme.primarySecondaryText,
+  '--home-active': homeConfig.value.theme.active,
+  '--home-active-bg': homeConfig.value.theme.active_bg,
+  '--home-active-text': homeConfig.value.theme.active_text,
 
-  '--home-primary-light-bg': config.value.theme.primaryLightBg,
-  '--home-primary-light-text': config.value.theme.primaryLightText,
-  '--home-accent': config.value.theme.accent,
-  '--home-accent-hover': config.value.theme.accentHover,
+  '--home-negative': homeConfig.value.theme.negative,
+  '--home-negative-bg': homeConfig.value.theme.negative_bg,
+  '--home-negative-text': homeConfig.value.theme.negative_text,
+
+  '--home-not-active': homeConfig.value.theme.not_active,
+  '--home-not-active-bg': homeConfig.value.theme.not_active_bg,
+  '--home-not-active-text': homeConfig.value.theme.not_active_text,
+
+  '--home-notification-bg': homeConfig.value.theme.notification_bg,
+  '--home-notification-bg-hover': homeConfig.value.theme.notification_bg_hover,
+  '--home-notification-text': homeConfig.value.theme.notification_text,
+  '--home-notification-text-hover': homeConfig.value.theme.notification_text_hover,
+
+  '--home-positive': homeConfig.value.theme.positive,
+
+  '--home-primary-bg': homeConfig.value.theme.primary_bg,
+  '--home-primary-bg-hover': homeConfig.value.theme.primary_bg_hover,
+
+  '--home-primary-dark-bg': homeConfig.value.theme.primary_dark_bg,
+  '--home-primary-dark-bg-hover': homeConfig.value.theme.primary_dark_bg_hover,
+  '--home-primary-dark-text': homeConfig.value.theme.primary_dark_text,
+  '--home-primary-dark-text-hover': homeConfig.value.theme.primary_dark_text_hover,
+
+  '--home-primary-light-bg': homeConfig.value.theme.primary_light_bg,
+  '--home-primary-light-bg-hover': homeConfig.value.theme.primary_light_bg_hover,
+  '--home-primary-light-text': homeConfig.value.theme.primary_light_text,
+  '--home-primary-light-text-hover': homeConfig.value.theme.primary_light_text_hover,
+
+  '--home-primary-text': homeConfig.value.theme.primary_text,
+
+  '--home-warning-bg': homeConfig.value.theme.warning_bg,
+  '--home-warning-bg-hover': homeConfig.value.theme.warning_bg_hover,
+  '--home-warning-text': homeConfig.value.theme.warning_text,
+  '--home-warning-text-hover': homeConfig.value.theme.warning_text_hover,
 }));
+
+
+const configTexts = computed(() => {
+  const imageName = homeConfig.value.config.hero.image.name;
+  let base64Data = homeConfig.value.config.hero.image.data;
+
+  if (base64Data) {
+    base64Data = base64Data.replace(/\s/g, ''); // Remove extra spaces/newlines
+  }
+
+  return {
+    heroTitle: homeConfig.value.config.hero.title,
+    heroSubtitle: homeConfig.value.config.hero.subtitle,
+    loginText: homeConfig.value.config.loginText,
+    heroImage: base64Data && imageName.includes('.')
+      ? `data:image/${imageName.split('.').pop()};base64,${atob(base64Data)}`
+      : '/newcastle-airport-image.webp', // Fallback image
+  };
+});
+
+console.log(configTexts.value.heroImage)
+
+const features = computed(() => homeConfig.value.features);
+const howItWorks = computed(() => homeConfig.value.howItWorks);
+
+// Computed property to choose the hero icon based on the domain.
+const heroIcon = computed(() => getHeroIcon(homeConfig.value.config.domain));
 
 
 // Smooth scroll function
@@ -131,15 +206,12 @@ onMounted(() => {
   // First, fetch the configuration from the backend.
   fetchDomainConfig();
   // Then, fetch messages.
-  fetchMessages();
+  checkUnreadMessages();
 });
 
 const closeModal = () => {
   showModal.value = false;
 };
-
-// Computed property to choose the hero icon based on the domain.
-const heroIcon = computed(() => getHeroIcon(config.value.domain));
 </script>
 
 <style scoped>
@@ -162,7 +234,7 @@ const heroIcon = computed(() => getHeroIcon(config.value.domain));
   align-items: center;
   justify-content: center;
   position: relative;
-  color: white;
+  color: var(--home-primary-light-text);
   background: var(--home-primary-dark-bg);
   padding: 2rem;
 }
@@ -201,7 +273,7 @@ const heroIcon = computed(() => getHeroIcon(config.value.domain));
   font-size: 3rem;
   font-weight: bold;
   margin-bottom: 1rem;
-  color: var(--home-accent);
+  color: var(--home-primary-light-text);
 }
 
 .hero p {
@@ -219,22 +291,22 @@ section {
 }
 
 .cta-button {
-  display: inline-flex;
-  align-items: center;
-  padding: 1rem 2.5rem;
-  font-size: 1.4rem;
-  color: var(--home-primary-light-text);
-  background-color: var(--home-accent);
-  border-radius: 10px;
-  text-decoration: none;
-  transition: all 0.3s ease-in-out;
-  gap: 10px;
-  font-weight: bold;
+	display: inline-flex;
+	align-items: center;
+	padding: 1rem 2.5rem;
+	font-size: 1.4rem;
+	color: white;
+	background-color: #FFD700; /* Gold */
+	border-radius: 10px;
+	text-decoration: none;
+	transition: all 0.3s ease-in-out;
+	gap: 10px;
+	font-weight: bold;
 }
 
 .cta-button:hover {
-  background-color: var(--home-accent-hover);
-  transform: scale(1.05);
+	background-color: #E6C200; /* Darker Gold */
+	transform: scale(1.05);
 }
 
 /* Scroll Indicator */
@@ -267,7 +339,7 @@ section {
   text-align: center;
   padding: 5rem 2rem;
   color: var(--home-primary-dark-text);
-  background: var(--home-secondary-bg);
+  background: var(--home-primary-light-bg);
 }
 
 .features h2 {
@@ -372,7 +444,7 @@ section {
 }
 
 .step {
-  background: var(--home-accent);
+  background: var(--home-primary-light-bg);
   color: var(--home-primary-dark-text);
   padding: 2rem;
   border-radius: 10px;
@@ -387,13 +459,14 @@ section {
   top: -15px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--home-primary-light-bg);
-  color: var(--home-primary-dark-text);
+  background: var(--home-active);
+  color: var(--home-primary-light-text);
   width: 40px;
   height: 40px;
   line-height: 40px;
   border-radius: 50%;
   font-size: 1.2rem;
+  font-weight: bold;
 }
 
 @media (max-width: 768px) {

@@ -7,6 +7,8 @@ export default {
 		return {
 			users: [],
 			newUser: { fullName: "", email: "", lastActive: "Just now", isAdmin: false },
+			searchName: "",
+			searchEmail: "",
 			editingIndex: null,
 			editedName: "",
 			showResetPasswordModal: false,
@@ -17,13 +19,18 @@ export default {
 			messageUserIndex: null,
 			userMessage: "",
 			userIsAdmin: false,
-			loading: true
+			loading: true,
+			// 👇 New state variables for delete confirmation modal
+			showDeleteModal: false,
+			deleteUserIndex: null,
+			adminPassword: "",
+			deleteError: ""
 		};
 	},
 	methods: {
 		async checkAdmin() {
 			try {
-				const response = await axios.get('http://localhost:5007/check_admin', { withCredentials: true });
+				const response = await axios.get('/api/messages/check_admin', { withCredentials: true });
 				if (response.status === 200) {
 					this.userIsAdmin = true;
 					this.fetchUsers(); // Load users only if authorized
@@ -36,13 +43,19 @@ export default {
 			}
 		},
 		fetchUsers() {
-			axios.get('http://localhost:5007/get_users_admin', { withCredentials: true })
+			axios.get('/api/messages/get_users_admin', { withCredentials: true })
 				.then(response => {
-					this.users = response.data.users.map(user => ({
+					const filteredUsers = response.data.users.filter(user => {
+						const nameMatches = user.name.toLowerCase().includes(this.searchName.toLowerCase());
+						const emailMatches = user.email.toLowerCase().includes(this.searchEmail.toLowerCase());
+						return nameMatches && emailMatches;
+					});
+
+					this.users = filteredUsers.map(user => ({
 						fullName: user.name,
 						email: user.email,
 						lastActive: user.last_login,
-						isAdmin: user.authority === "Admin"
+						isAdmin: user.authority === "Admin" || user.authority === "Super Admin"
 					}));
 				})
 				.catch(error => {
@@ -51,7 +64,12 @@ export default {
 		},
 		addUser() {
 			if (this.newUser.fullName && this.newUser.email) {
-				axios.post('http://localhost:5007/add_user', {
+				if (!this.newUser.email.includes('@fakecompany.co.uk')) {
+					alert("Email must belong to @fakecompany.co.uk domain.");
+					return;
+				}
+
+				axios.post('/api/messages/add_user', {
 					full_name: this.newUser.fullName,
 					email: this.newUser.email,
 					is_admin: this.newUser.isAdmin
@@ -69,52 +87,53 @@ export default {
 				alert("Full Name and Email are required.");
 			}
 		},
-		deleteUser(index) {
-			const userEmail = this.users[index].email;
-			axios.post('http://localhost:5007/delete_user', { email: userEmail }, { withCredentials: true })
-				.then(() => {
-					this.users.splice(index, 1);
-				})
-				.catch(error => {
-					console.error("Error deleting user:", error);
-				});
+		// 🔥 New method to open the delete modal
+		openDeleteModal(index) {
+			this.deleteUserIndex = index;
+			this.showDeleteModal = true;
+			this.adminPassword = ""; // Reset password field
+			this.deleteError = ""; // Clear previous errors
 		},
-		openResetPasswordModal(index) {
-			this.resetPasswordUserIndex = index;
-			this.showResetPasswordModal = true;
-			this.newPassword = "";
-			this.confirmPassword = "";
-		},
-		resetPassword() {
-			if (this.newPassword === this.confirmPassword && this.newPassword.trim()) {
-				const userEmail = this.users[this.resetPasswordUserIndex].email;
-				axios.post('http://localhost:5007/reset_password', { email: userEmail, new_password: this.newPassword }, { withCredentials: true })
-					.then(() => {
-						alert(`Password for ${this.users[this.resetPasswordUserIndex].fullName} has been reset.`);
-						this.showResetPasswordModal = false;
-					})
-					.catch(error => {
-						console.error("Error resetting password:", error);
-					});
-			} else {
-				alert("Passwords do not match or are empty.");
+		// 🔥 New method to handle user deletion with password confirmation
+		async confirmDeleteUser() {
+			if (!this.adminPassword) {
+				this.deleteError = "Please enter your password";
+				return;
 			}
-		},
-		openMessageModal(index) {
-			this.messageUserIndex = index;
-			this.showMessageModal = true;
-			this.userMessage = "";
-		},
-		sendMessage() {
-			const receiverEmail = this.users[this.messageUserIndex].email;
-			axios.post('http://localhost:5007/send_message', { receiver_email: receiverEmail, message: this.userMessage }, { withCredentials: true })
-				.then(() => {
-					alert(`Message sent to ${this.users[this.messageUserIndex].fullName}`);
-					this.showMessageModal = false;
-				})
-				.catch(error => {
-					console.error("Error sending message:", error);
-				});
+
+			try {
+				const session_id = document.cookie.replace(
+					/(?:(?:^|.*;\s*)session_id\s*\=\s*([^;]*).*$)|^.*$/,
+					"$1"
+				);
+
+				// Step 1: Validate admin password
+				const passwordResponse = await axios.post(
+					"/api/messages/check_password",
+					{ password: this.adminPassword },
+					{ withCredentials: true }
+				);
+
+				if (passwordResponse.status !== 200) {
+					this.deleteError = passwordResponse.data.error || "Incorrect password";
+					return;
+				}
+
+				// Step 2: Proceed with user deletion
+				const userEmail = this.users[this.deleteUserIndex].email;
+				await axios.post(
+					"/api/messages/delete_user",
+					{ email: userEmail },
+					{ withCredentials: true }
+				);
+
+				alert("User deleted successfully!");
+				this.users.splice(this.deleteUserIndex, 1);
+				this.showDeleteModal = false; // Close modal
+			} catch (error) {
+				console.error("Error deleting user:", error);
+				this.deleteError = "Incorrect password";
+			}
 		}
 	},
 	mounted() {
@@ -137,6 +156,22 @@ export default {
 			</label>
 			<button @click="addUser" class="button add">Add User</button>
 		</div>
+
+		<!-- Search Section for Full Name and Email -->
+		<div class="input-section">
+			<input v-model="searchName"
+				type="text"
+				placeholder="Search by Full Name"
+				class="input"
+				@input="fetchUsers" />
+			<input v-model="searchEmail"
+				type="email"
+				placeholder="Search by Email"
+				class="input"
+				@input="fetchUsers" />
+		</div>
+
+
 		<div class="table-container">
 			<table class="user-table">
 				<thead>
@@ -156,31 +191,31 @@ export default {
 						<td>{{ user.isAdmin ? 'Yes' : 'No' }}</td>
 						<td>
 							<button @click="openMessageModal(index)" class="btn-secondary btn btn-sm me-2">Message</button>
-							<button @click="deleteUser(index)" class="btn-danger btn btn-sm ">Delete</button>
-							<button @click="openResetPasswordModal(index)" class="btn-primary btn btn-sm mt-2" title="Reset user's password">Reset</button>
+							<button @click="openDeleteModal(index)" class="btn-danger btn btn-sm me-2">Delete</button>
+							<button @click="openResetPasswordModal(index)" class="btn-primary btn btn-sm me-2" title="Reset user's password">Reset</button>
 						</td>
 					</tr>
 				</tbody>
 			</table>
 		</div>
 	</div>
-	
+
 			<!-- ✅ Reset Password Modal -->
 			<div v-if="showResetPasswordModal" class="modal">
 			<div class="modal-content">
 				<h2>Reset Password</h2>
 				<p>Reset password for {{ users[resetPasswordUserIndex]?.fullName }}</p>
-				<input 
-					v-model="newPassword" 
-					type="password" 
-					placeholder="New Password" 
-					class="input password-input" 
+				<input
+					v-model="newPassword"
+					type="password"
+					placeholder="New Password"
+					class="input password-input"
 				/>
-				<input 
-					v-model="confirmPassword" 
-					type="password" 
-					placeholder="Confirm Password" 
-					class="input password-input" 
+				<input
+					v-model="confirmPassword"
+					type="password"
+					placeholder="Confirm Password"
+					class="input password-input"
 				/>
 				<div class="modal-actions">
 					<button @click="resetPassword" class="button send">Reset</button>
@@ -201,6 +236,26 @@ export default {
 				</div>
 			</div>
 		</div>
+
+		<!-- ✅ Delete Confirmation Modal -->
+		<div v-if="showDeleteModal" class="modal">
+			<div class="modal-content">
+				<h2>Confirm Deletion</h2>
+				<p>Enter your password to delete {{ users[deleteUserIndex]?.fullName }}.</p>
+				<input
+					v-model="adminPassword"
+					type="password"
+					placeholder="Enter your password"
+					class="password-input"
+				/>
+				<p v-if="deleteError" class="error">{{ deleteError }}</p>
+				<div class="modal-actions">
+					<button @click="confirmDeleteUser" class="button send">Confirm</button>
+					<button @click="showDeleteModal = false" class="button cancel">Cancel</button>
+				</div>
+			</div>
+		</div>
+
 </template>
 
 
@@ -374,4 +429,11 @@ export default {
 	border: 1px solid #ccc;
 	border-radius: 5px;
 }
+
+.error {
+	color: red;
+	font-size: 14px;
+	margin-top: 5px;
+}
+
 </style>

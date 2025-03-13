@@ -23,17 +23,17 @@ export const usePresetStore = defineStore("presetStore", () => {
       return canCreate.value && presetList.value.default + "" !== currentPreset.value + "";
     });
     let fetchSummaryRetry:number = 3;
-    
+
     async function validateUser() {
       try {
-        let userValidationRequest = await axios.get("http://localhost:5002/validate_cookie", {
+        let userValidationRequest = await axios.get("/api/login/validate_cookie", {
           withCredentials: true,
         });
-    
+
         let uid = userValidationRequest.data.uid;
         canDelete.value = presetData.value?.owner_id == uid;
         canEdit.value = presetData.value?.trusted?.includes(uid) || canDelete.value;
-        canCreate.value = userValidationRequest.data.authority == "Admin";
+        canCreate.value = userValidationRequest.data.authority == "Admin" || userValidationRequest.data.authority === "Super Admin";
       } catch (error) {
         console.error("Error validating user:", error);
         canEdit.value = false;
@@ -44,7 +44,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         });
       }
     }
-    
+
     const processPresetImage = () => {
       if (presetData.value.image?.data && presetData.value.image?.name) {
         const imageType = presetData.value.image.name.split('.').pop();
@@ -53,7 +53,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         presetImage.value = "";
       }
     };
-    
+
     const fetchSummary = async() => {
       if (fetchSummaryRetry == 0){
         if (pollingInterval) clearInterval(pollingInterval);
@@ -65,7 +65,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         return;
       }
       try {
-        let request = await axios.get("http://localhost:5003/summary", { withCredentials: true });
+        let request = await axios.get("/api/reader/summary", { withCredentials: true });
         summary.value = request.data;
         fetchSummaryRetry = 3;
       } catch (error) {
@@ -73,15 +73,15 @@ export const usePresetStore = defineStore("presetStore", () => {
         console.error("Error fetching summary:", error);
       }
     }
-    
+
     const fetchPresets = async() => {
       try {
         isLoading.value = true;
-        let request = await axios.get("http://localhost:5010/presets", { withCredentials: true });
+        let request = await axios.get("/api/assets-reader/presets", { withCredentials: true });
         presetList.value = request.data;
         // Set the default preset ID
         defaultPresetId.value = presetList.value.default;
-        if(currentPreset.value == -1 && presetList.value.presets.length > 0)
+        if(currentPreset.value == -1 && presetList.value.presets.length || 0 > 0)
           currentPreset.value = presetList.value.presets[0].id;
       } catch (error) {
         console.error("Error fetching presets:", error);
@@ -94,11 +94,11 @@ export const usePresetStore = defineStore("presetStore", () => {
         isLoading.value = false;
       }
     }
-    
+
     const fetchPreset = async() => {
       try {
         isLoading.value = true;
-        let request = await axios.get(`http://localhost:5010/presets/${currentPreset.value}`, { withCredentials: true });
+        let request = await axios.get(`/api/assets-reader/presets/${currentPreset.value}`, { withCredentials: true });
         //console.log(request.data);
         presetData.value = request.data;
         processPresetImage();
@@ -113,7 +113,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         isLoading.value = false;
       }
     }
-    
+
     const create_data = () => {
       boxes_and_data.value = {};
       // Add box data per room
@@ -139,7 +139,7 @@ export const usePresetStore = defineStore("presetStore", () => {
           boxes_and_data.value[box.roomID].label = box.label;
         }
       })
-    
+
       Object.entries(summary.value).forEach(([roomID, environment]: [string, environmentData]) => {
         if (boxes_and_data.value[roomID]) {
           boxes_and_data.value[roomID].tracker = environment;
@@ -148,10 +148,10 @@ export const usePresetStore = defineStore("presetStore", () => {
           boxes_and_data.value[roomID].tracker = environment;
         }
       });
-    
+
       //console.log("boxes and data", boxes_and_data.value)
     }
-    
+
     const update_data = () => {
       Object.entries(summary.value).forEach(([roomID, environment]: [string, environmentData]) => {
         if (boxes_and_data.value[roomID]) {
@@ -166,16 +166,16 @@ export const usePresetStore = defineStore("presetStore", () => {
     const handleSelectPreset = (id: number) => {
       currentPreset.value = id;
     }
-    
+
     const setDefaultPreset = async () => {
       try {
-        await axios.patch("http://localhost:5011/presets/default", {
+        await axios.patch("/api/editor/presets/default", {
           preset_id: currentPreset.value
         }, {
           withCredentials: true
         });
         alert("Default preset set successfully");
-        await fetchPresets();    
+        await fetchPresets();
       } catch (error) {
         console.error("Error setting default preset:", error);
         alert("Failed to set default preset");
@@ -186,15 +186,15 @@ export const usePresetStore = defineStore("presetStore", () => {
         });
       }
     };
-    
+
     const deletePreset = async () => {
       if(presetList.value.default == currentPreset.value){
         alert("Cannot delete default preset");
         return;
       }
-    
+
       try {
-        await axios.delete(`http://localhost:5011/presets/${currentPreset.value}`, {
+        await axios.delete(`/api/editor/presets/${currentPreset.value}`, {
           withCredentials: true
         });
       } catch (error) {
@@ -206,7 +206,7 @@ export const usePresetStore = defineStore("presetStore", () => {
           Summary: "Unable to delete preset, server may be down, try again later."
         });
       }
-    
+
       try {
         currentPreset.value = -1;
         await fetchPresets();
@@ -229,7 +229,7 @@ export const usePresetStore = defineStore("presetStore", () => {
         });
       }
     };
-    
+
     const createNewBox = (roomID: number | string) => {
       const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
       boxes_and_data.value[roomID].box = {
@@ -240,16 +240,16 @@ export const usePresetStore = defineStore("presetStore", () => {
         colour: randomColor,
       };
     }
-    
+
     const changeBoxColour =  (roomID: number | string, colour: string) => {
       if(boxes_and_data.value[roomID].box)
         boxes_and_data.value[roomID].box.colour = colour;
     }
-    
+
     const removeBox = (roomID: number | string) => {
       boxes_and_data.value[roomID].box = null;
     }
-    
+
     const uploadBoxes = async () => {
       const boxesToUpload = Object.entries(boxes_and_data.value)
         .filter(([_, data]) => data.box) // Filter out entries where data.box does not exist
@@ -258,7 +258,7 @@ export const usePresetStore = defineStore("presetStore", () => {
           ...data.box,
           label: data.label || ""
         }));
-    
+
       // Validation check
       for (const box of boxesToUpload) {
         console.log(box.label.trim().length);
@@ -267,11 +267,11 @@ export const usePresetStore = defineStore("presetStore", () => {
           return;
         }
       }
-    
+
       console.log("Uploading boxes:", boxesToUpload); // Log the boxes being uploaded
-    
+
       try {
-        await axios.patch(`http://localhost:5011/presets/${currentPreset.value}/boxes`, {
+        await axios.patch(`/api/editor/presets/${currentPreset.value}/boxes`, {
           boxes: boxesToUpload
         }, {
           withCredentials: true
@@ -289,7 +289,7 @@ export const usePresetStore = defineStore("presetStore", () => {
       }
       editMode.value = false;
     };
-    
+
     const cancelBoxEdit = () => {
       fetchPreset();
       create_data();
@@ -310,25 +310,25 @@ export const usePresetStore = defineStore("presetStore", () => {
         console.error("Error reloading presets:", error);
       }
     };
-    
+
     const handleColourChange = (roomID: string, newColor: string) => {
       console.log(`Colour change detected for Area ${roomID}: ${newColor}`);
-    
+
       // Update box color logic
       changeBoxColour(roomID, newColor);
     };
-    
+
     watch(currentPreset, async () => {
       console.log("Preset changed to: ", currentPreset.value);
       await fetchPreset();
       create_data();
       validateUser();
     });
-    
+
     watch(summary, () => {
       update_data();
     });
-    
+
     onMounted(async() => {
       // Make sure data is always being updated
       pollingInterval = setInterval(fetchSummary, 5000);
@@ -349,11 +349,11 @@ export const usePresetStore = defineStore("presetStore", () => {
       validateUser();
       create_data();
     });
-    
+
     onUnmounted(() => {
       if (pollingInterval) clearInterval(pollingInterval);
     });
-    
+
     return {
         isLoading,
         presetList,
@@ -367,16 +367,16 @@ export const usePresetStore = defineStore("presetStore", () => {
         canCreate,
         canDelete,
         settable,
-        editMode, 
+        editMode,
         reloadPresets,
         fetchPresets,
         fetchPreset,
         processPresetImage,
         create_data,
-        createNewBox, 
-        removeBox, 
-        uploadBoxes, 
-        cancelBoxEdit, 
+        createNewBox,
+        removeBox,
+        uploadBoxes,
+        cancelBoxEdit,
         handleColourChange,
         setDefaultPreset,
         deletePreset,

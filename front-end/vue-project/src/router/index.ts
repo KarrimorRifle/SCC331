@@ -23,6 +23,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/messages',
+      name: 'messages',
+      component: () => import('../views/MessagesView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/admin',
       name: 'admin',
       component: () => import('../views/AdminView.vue'),
@@ -51,8 +57,14 @@ const router = createRouter({
     },
     {
       path: '/change-domain',
-      name: 'inspection',
+      name: 'super admin',
       component: () => import('../views/SuperAdminView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/sensor-config',
+      name: 'sensor config',
+      component: () => import('../views/SensorConfigView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
     },
   ],

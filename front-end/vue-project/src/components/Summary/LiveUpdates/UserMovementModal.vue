@@ -14,6 +14,7 @@ const props = defineProps({
     required: true,
   },
 });
+console.log("jf: ", props.userRoomHistory);
 const emit = defineEmits(['close']);
 
 const presetStore = usePresetStore();
@@ -37,8 +38,8 @@ const convertToTimestamp = (date: string | Date | null): number => {
 
 const getRoomColor = (roomLabel: string): string => {
   return currentRoom.value === roomLabel
-    ? presetData.value.find(area => area.label === roomLabel)?.box?.colour || 'lightgray'
-    : 'lightgray';
+    ? props.userRoomHistory.find(entry => entry.roomLabel === roomLabel)?.roomColor || 'lightgray'
+    : 'lightgray'; // Show lightgray if it's not the current room
 };
 
 /* COMPUTED PROPERTIES */
