@@ -146,10 +146,6 @@ void handleConfigMessage(String message) {
 			}
 			currentSensorConfig->setup();
 		}
-
-		else if (recievedPicoType == UNASSIGNED_PICO) {
-
-		}
 	}
   
 	if (doc.containsKey("ReadableID")) {
@@ -235,8 +231,5 @@ void loop(void)
 	currentSensorConfig->loop();
 	if (configSubscription.hasMessage()) {
 		handleConfigMessage(configSubscription.getMessage());
-		if (currentSensorConfig->getSensorType() == UNASSIGNED_PICO) {
-			getInitialSensorType();
-		}
 	}
 }
