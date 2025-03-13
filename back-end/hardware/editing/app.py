@@ -265,30 +265,30 @@ def patch_config(pico_id = None):
 
 
         if "trackingGroupID" in data:
-            
-            update_query = """INSERT INTO bluetooth_tracker (picoID, trackingGroupID)
-                              VALUES(%s, %s) 
-                              ON DUPLICATE KEY UPDATE trackingGroupID = %s;"""
+            if data["trackingGroupID"] != -1:
+                update_query = """INSERT INTO bluetooth_tracker (picoID, trackingGroupID)
+                                VALUES(%s, %s) 
+                                ON DUPLICATE KEY UPDATE trackingGroupID = %s;"""
 
-            cursor.execute(update_query, (pico_id, data["trackingGroupID"], data["trackingGroupID"]))
+                cursor.execute(update_query, (pico_id, data["trackingGroupID"], data["trackingGroupID"]))
 
-                        #update hardware message
-            select_query = """SELECT tracking_groups.groupName
-                              FROM tracking_groups
-                              INNER JOIN bluetooth_tracker ON tracking_groups.groupID = bluetooth_tracker.trackingGroupID
-                              WHERE bluetooth_tracker.picoID = %s
-                              LIMIT 1;"""
+                            #update hardware message
+                select_query = """SELECT tracking_groups.groupName
+                                FROM tracking_groups
+                                INNER JOIN bluetooth_tracker ON tracking_groups.groupID = bluetooth_tracker.trackingGroupID
+                                WHERE bluetooth_tracker.picoID = %s
+                                LIMIT 1;"""
 
-            cursor.execute(select_query, (pico_id,))
+                cursor.execute(select_query, (pico_id,))
 
-            tracking_group_data = cursor.fetchone()
+                tracking_group_data = cursor.fetchone()
 
-            print(tracking_group_data)
+                print(tracking_group_data)
 
-            if (tracking_group_data == None):
-                hardware_message.update({"TrackerGroup" : ""})
-            else:
-                hardware_message.update({"TrackerGroup" : tracking_group_data["groupName"]})
+                if (tracking_group_data == None):
+                    hardware_message.update({"TrackerGroup" : ""})
+                else:
+                    hardware_message.update({"TrackerGroup" : tracking_group_data["groupName"]})
 
         send_individual_pico_message(pico_id, json.dumps(hardware_message))
 
