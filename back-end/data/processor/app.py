@@ -78,7 +78,7 @@ def on_message(client, user_data, message):
         try:
             cursor.execute(
                 "INSERT INTO environment_sensor_data (picoID, logged_at, sound, light, temperature, IAQ, pressure, humidity) "
-                "VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s, %s)",
+                "VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s)",
                 (str(data.PicoID), env_data[0], env_data[1], env_data[2], env_data[3], env_data[4], env_data[5])
             )
             db_connection.commit()

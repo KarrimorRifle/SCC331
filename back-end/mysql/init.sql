@@ -335,7 +335,7 @@ FLUSH PRIVILEGES;
 
 -- Data Processing Service (pico Insert)
 CREATE USER IF NOT EXISTS 'data_processor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'process_password';
-GRANT INSERT ON pico.* TO 'data_processor'@'%';
+GRANT SELECT, INSERT ON pico.* TO 'data_processor'@'%';
 ALTER USER 'data_processor'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
