@@ -76,12 +76,6 @@ void RoomSensor::loop() {
   if (currentTime - lastActionTime >= ENVIRONMENT_WAIT_DURATION) {
     lastActionTime = currentTime;
     environmentalData();
-
-    // Update display:
-    display->clearDisplay();
-    display->setCursor(0, 0);
-    display->println("Broadcasting...");
-    display->display(); 
   }
 
   BTstack.loop();

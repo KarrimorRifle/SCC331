@@ -265,7 +265,16 @@ def patch_config(pico_id = None):
 
 
         if "trackingGroupID" in data:
-            if data["trackingGroupID"] != -1:
+            if data["trackingGroupID"] == -1:
+                update_query = """UPDATE bluetooth_tracker
+                                  SET trackingGroupID = %s
+                                  WHERE picoID = %s;"""
+                
+                cursor.execute(update_query, (None, pico_id))
+
+                hardware_message.update({"TrackerGroup" : ""})
+                
+            else:
                 update_query = """INSERT INTO bluetooth_tracker (picoID, trackingGroupID)
                                 VALUES(%s, %s) 
                                 ON DUPLICATE KEY UPDATE trackingGroupID = %s;"""
