@@ -30,7 +30,7 @@ const authStore = useAuthStore();
 
 const handleLogout = async() => {
 	try {
-		await axios.post("http://localhost:5002/logout", {}, {
+		await axios.post("/api/login/logout", {}, {
 			withCredentials: true
 		})
 		cookies.remove('session_id');

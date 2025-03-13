@@ -13,7 +13,7 @@ export function useFetchData(picoIds: any) {
 
   const fetchWarnings = async () => {
     try {
-      // const response = await axios.get("http://localhost:5003/warnings", { withCredentials: true });
+      // const response = await axios.get("/api/reader/warnings", { withCredentials: true });
       const response = await axios.get("/data.json");
       //warnings.value = response.data;
 

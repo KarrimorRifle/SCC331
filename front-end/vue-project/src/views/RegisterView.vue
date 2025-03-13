@@ -58,7 +58,7 @@ const handleSubmit = async () => {
   // Add your form submission logic here
 
   try {
-      const response = await axios.post("http://localhost:5001/register", {}, {
+      const response = await axios.post("/api/register/register", {}, {
         headers: {
           "name": name.value,
           "email": email.value,

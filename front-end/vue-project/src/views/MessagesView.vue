@@ -32,7 +32,7 @@ const newChatUser = ref<string | null>(null);
 // This user's email, used for hiding the 'ghost chat' between the user and themselves
 const fetchUserEmail = async () => {
   try {
-    const response = await axios.get('http://localhost:5007/get_user_email', {
+    const response = await axios.get('/api/messages/get_user_email', {
       headers: { 'session-id': sessionId },
       withCredentials: true
     });
@@ -52,7 +52,7 @@ const fetchAllMessages = async () => {
   if (!userEmail) return;
 
   try {
-    const response = await axios.get('http://localhost:5007/get_messages', {
+    const response = await axios.get('/api/messages/get_messages', {
       headers: { 'session-id': sessionId },
       withCredentials: true
     });
@@ -93,7 +93,7 @@ const fetchChatMessages = async () => {
   if (!selectedUser.value) return;
 
   try {
-    const response = await axios.get(`http://localhost:5007/get_chat_messages?user_email=${selectedUser.value}`, {
+    const response = await axios.get(`/api/messages/get_chat_messages?user_email=${selectedUser.value}`, {
       headers: { 'session-id': sessionId },
       withCredentials: true
     });
@@ -147,7 +147,7 @@ onMounted(() => {
 // Fetch all of the users except this one to make a new chat
 const fetchAllUsers = async () => {
   try {
-    const response = await axios.get('http://localhost:5007/get_users_messages_page', {
+    const response = await axios.get('/api/messages/get_users_messages_page', {
       headers: { 'session-id': sessionId },
       withCredentials: true
     });
@@ -175,7 +175,7 @@ const sendMessage = async () => {
   if (!newMessage.value.trim() || !selectedUser.value) return;
 
   try {
-    await axios.post('http://localhost:5007/send_message', {
+    await axios.post('/api/messages/send_message', {
       receiver_email: selectedUser.value,
       message: newMessage.value
     }, {

@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5004"; // Ensure the correct backend URL
+const API_BASE_URL = "/api/warning"; // Ensure the correct backend URL
 
 // Warning Store State
 export const warningsList = ref<any[]>([]);
@@ -13,7 +13,7 @@ export const fullWarningConditions = ref<Record<string, any>>({});
 
 export const warningMessages = ref<any[]>([]);
 export const isRoomSelectionVisible = ref(false);
-export const activeSection = ref("warnings"); 
+export const activeSection = ref("warnings");
 
 // **Fetch All Warnings from Backend**
 export const fetchWarnings = async () => {
@@ -38,8 +38,8 @@ export const fetchWarningById = async (warningId: number) => {
 
     warningConditions.value = response.data.conditions.reduce((acc, item) => {
       acc[item.roomID] = {
-        conditions: [...item.conditions], 
-        messages: response.data.messages.filter(msg => msg.Location === item.roomID), 
+        conditions: [...item.conditions],
+        messages: response.data.messages.filter(msg => msg.Location === item.roomID),
       };
       return acc;
     }, {});
@@ -78,7 +78,7 @@ export const createWarning = async () => {
 
   try {
     await axios.post(`${API_BASE_URL}/warnings`, payload, { withCredentials: true });
-    await fetchWarnings(); 
+    await fetchWarnings();
   } catch (error) {
     console.error("Error creating warning:", error);
   }
@@ -119,7 +119,7 @@ export const updateWarning = async () => {
 
   const formattedMessages = [];
   Object.entries(warningConditions.value).forEach(([roomID, data]) => {
-    const seenTitles = new Set(); 
+    const seenTitles = new Set();
 
     data.messages.forEach(msg => {
       if (!msg.Summary || msg.Summary.trim() === "") return;
@@ -147,7 +147,7 @@ export const updateWarning = async () => {
 
   try {
     await axios.patch(`${API_BASE_URL}/warnings/${selectedWarningId.value}`, payload, { withCredentials: true });
-    await fetchWarnings(); 
+    await fetchWarnings();
   } catch (error) {
     console.error("Error updating warning:", error);
   }
@@ -168,5 +168,5 @@ export const resetWarningSelection = () => {
   selectedWarningId.value = null;
   selectedWarning.value = null;
   warningConditions.value = {};
-  isRoomSelectionVisible.value = false; 
+  isRoomSelectionVisible.value = false;
 };

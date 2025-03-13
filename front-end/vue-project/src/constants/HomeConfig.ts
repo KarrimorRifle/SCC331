@@ -94,7 +94,8 @@ export const domainConfig = ref(defaultDomainConfig);
 // to actual FontAwesome icon objects for use in the UI.
 export async function fetchDomainConfig() {
   try {
-    const response = await axios.get('http://localhost:5010/home', { withCredentials: true });
+    const response = await axios.get('/api/assets-reader/home', { withCredentials: true });
+    console.log(response.data);
     if (response.status === 200 && response.data) {
       const fetchedConfig = response.data;
 
@@ -107,7 +108,7 @@ export async function fetchDomainConfig() {
         plane: faPlaneDeparture,
         shoppingCart: faShoppingCart
       };
-      
+
       // Map icons in features if they are strings.
       if (Array.isArray(fetchedConfig.features)) {
         fetchedConfig.features = fetchedConfig.features.map((feature: any) => ({
@@ -115,7 +116,7 @@ export async function fetchDomainConfig() {
           icon: typeof feature.icon === 'string' ? iconMapping[feature.icon] || feature.icon : feature.icon
         }));
       }
-      
+
       // Merge fetched config with default (ensuring all keys are present)
       domainConfig.value = {
         config: { ...defaultDomainConfig.config, ...fetchedConfig.config },
@@ -137,7 +138,7 @@ export const showModal = ref(false);
 
 export async function fetchMessages() {
   try {
-    const response = await axios.get('http://localhost:5007/get_messages', {
+    const response = await axios.get('/api/messages/get_messages', {
       headers: {
         'session-id':
           document.cookie.split('; ').find(row => row.startsWith('session_id='))?.split('=')[1] || ''
