@@ -1,13 +1,12 @@
 <template>
   <div class="inspection bg-light text-dark mt-0 p-0" style="flex-grow: 1;">
     <div id="date-time-selector" :class="['row', 'bg-theme', 'p-3', 'py-1', 'rounded', 'sticky-top']" style="z-index: 1;">
-      <div class="w-100 row">
+      <div class="w-100 row" v-if="!live">
         <div class="g-3 align-middle align-items-center col-xxl-4 mt-0 col-md-4 col-12 flex-wrap d-flex">
           <div class="d-flex flex-row align-middle mt-2 mt-md-0">
             <label for="calendar-picker" class="form-label mb-0 d-flex align-items-center me-2">Date:</label>
             <input type="date" id="calendar-picker" v-model="selectedDate" class="form-control me-1" />
             <div class="d-flex align-items-center justify-content-center" style="min-width: 4rem;">
-              <!-- Reintroducing day navigation buttons -->
               <button @click="prevDay" class="btn-sm btn btn-secondary me-1">
                 <font-awesome-icon :icon="faChevronLeft" />
               </button>
@@ -31,15 +30,23 @@
           </div>
         </div>
       </div>
+      <div class="w-100 row" v-else>
+        <div class="d-flex justify-content-center">
+          <button class="px-3 btn btn-light text-secondary" @click="paused = !paused">
+            <font-awesome-icon v-if="paused" :icon="faPlay"/>
+            <font-awesome-icon v-else :icon="faPause" />
+          </button>
+        </div>
+      </div>
     </div>
 
-    <div v-if="isLoading" class="loading-throbber">
+    <div v-if="isLoading && !live" class="loading-throbber">
       <div class="spinner"></div>
       <p>Loading data...</p>
     </div>
 
-    <div v-else-if="!movementData || Object.keys(movementData).length === 0" class="no-data">
-      <p>No data selected</p>
+    <div v-else-if="!dayTimeKeys.length" class="no-data mt-3">
+      <p>No data available</p>
     </div>
 
     <div v-else class="movement-data p-3 pb-4 pb-md-0" style="flex-grow: 1; overflow: auto; padding-bottom: 60px;" @scroll="handleScroll" @click="hideDateTimeSelector">
@@ -66,6 +73,7 @@
           </div>
         </div>
         <div class="filter-container" style="position: relative;">
+          <button @click="live = !live" class="btn btn-sm me-2" :class="{'btn-success': live, 'btn-outline-secondary': !live}">Show Live</button>
           <button class="btn btn-sm btn-secondary" @click="toggleFilter" ref="filterButton">Filter</button>
           <div v-if="showFilter" class="filter-popout card p-2" style="position: absolute; top: 100%; right: 0; z-index: 1000; width: 15rem;" ref="filterPopout">
             <div class="mb-2">
@@ -123,90 +131,101 @@
         </div>
       </div>
       <div class="row">
-        <div v-for="(box, roomID) in boxes" :key="roomID" :id="'room-' + roomID" class="col-md-4 mb-4">
-          <div class="card">
-            <div @click="showTable[roomID] = !(showTable[roomID] ?? true)" class="card-header text-dark d-flex justify-content-between align-middle" :style="{backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor()}" :title="box.label.startsWith('%') ? 'Temporary value as no label available' : ''">
-              <div class="fw-bold">{{ box.label || generateTempLabel() }}</div>
-              <font-awesome-icon v-if="showTable[roomID] ?? true" :icon="faChevronUp" />
-              <font-awesome-icon v-else :icon="faChevronDown" />
-            </div>
-            <div class="card-body" v-if="movementData[selectedTime]?.[roomID]">
-              <!-- New statistical counter -->
-              <div class="stats mb-2">
-                <div class="d-inline-block rounded me-2 p-1">Total: {{ Object.keys(movementData[selectedTime]?.[roomID] || {}).length }}</div>
-                <button
-                  class="d-inline-block rounded me-2 p-1 border-0"
-                  @click="scrollToRoom(room)" v-for="(box, room) in boxes"
-                  :key="room"
-                  :style="{'background-color': box.colour}"
-                >
-                  {{box.label}}:
-                  {{
-                    //movementData = Record<timestamp, Record<picoID, type>>
-                    //previousLocation = Record<timestamp, record<picoID, locationInLast>>
-                    Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce(
-                      (total, obj) => {
-                        if(previousLocation[selectedTime][obj[0]] == room)
-                          return total? total + 1 : 1;
-                        return total? total : 0;
-                      }, 0)
-                  }}
-                </button>
-                <div class="d-inline-block rounded me-2 p-1">
-                  New: {{ Object.values(previousLocation[selectedTime]).filter(location => location === 'NEW').length }}
+        <template v-for="(box, roomID) in boxes" :key="roomID">
+          <div class="col-md-4 mb-4" :id="'room-' + roomID"  v-if="movementData[selectedTime]?.[roomID]">
+            <div class="card">
+              <div @click="showTable[roomID] = !(showTable[roomID] ?? true)" class="card-header text-dark d-flex justify-content-between align-middle" :style="{backgroundColor: box.colour || generateMutedColor(), borderColor: box.colour || generateMutedColor()}" :title="box.label.startsWith('%') ? 'Temporary value as no label available' : ''">
+                <div class="fw-bold">{{ box.label || generateTempLabel() }}</div>
+                <font-awesome-icon v-if="showTable[roomID] ?? true" :icon="faChevronUp" />
+                <font-awesome-icon v-else :icon="faChevronDown" />
+              </div>
+              <div class="card-body" v-if="movementData[selectedTime]?.[roomID]">
+                <!-- New statistical counter -->
+                <div class="stats mb-2">
+                  <div class="d-inline-block rounded me-2 p-1">Total: {{ Object.keys(movementData[selectedTime]?.[roomID] || {}).length }}</div>
+                  <template :key="room" v-for="(box, room) in boxes">
+                    <button
+                      class="d-inline-block rounded me-2 p-1 border-0"
+                      v-if="0 < Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce(
+                          (total, obj) => {
+                            if(previousLocation[selectedTime][obj[0]] == room)
+                              return total? total + 1 : 1;
+                            return total? total : 0;
+                          }, 0)"
+                      @click="scrollToRoom(room)"
+                      :style="{'background-color': box.colour}"
+                    >
+                      {{box.label}}:
+                      {{
+                        //movementData = Record<timestamp, Record<picoID, type>>
+                        //previousLocation = Record<timestamp, record<picoID, locationInLast>>
+                        Object.entries(movementData[selectedTime]?.[roomID] ?? {}).reduce(
+                          (total, obj) => {
+                            if(previousLocation[selectedTime][obj[0]] == room)
+                              return total? total + 1 : 1;
+                            return total? total : 0;
+                          }, 0)
+                      }}
+                    </button>
+                  </template>
+                  <div class="d-inline-block rounded me-2 p-1">
+                    New: {{ Object.values(previousLocation[selectedTime]).filter(location => location === 'NEW').length }}
+                  </div>
+                </div>
+                <div class="table-wrapper">
+                  <table class="table" v-show="showTable[roomID] ?? true">
+                    <thead>
+                      <tr class="rounded-top-1">
+                        <th class="rounded-top-1 rounded-end-0"
+                            @click="sortBy('picoID')"
+                            style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
+                          picoID <span v-html="getArrows('picoID')"></span>
+                        </th>
+                        <th @click="sortBy('type')"
+                            style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
+                          Type <span v-html="getArrows('type')"></span>
+                        </th>
+                        <th class="rounded-top-1 rounded-start-0"
+                            @click="sortBy('cameFrom')"
+                            style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
+                          Came From <span v-html="getArrows('cameFrom')"></span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="([picoID, type]) in Object.entries(movementData[selectedTime][roomID] || {}).filter(([picoID, type]) => {
+                          const filterPico = selectedFilterPicoIDs.length ? selectedFilterPicoIDs.includes(picoID) : true;
+                          const filterType = selectedFilterTypes.length ? selectedFilterTypes.includes(type) : true;
+                          const filterRoom = selectedFilterRooms.length ? selectedFilterRooms.includes(previousLocation[selectedTime][picoID]) : true;
+                          return filterPico && filterType && filterRoom;
+                      }).sort((a, b) => {
+                          let comp = 0;
+                          if (sortColumn === 'picoID') {
+                            comp = a[0].localeCompare(b[0]);
+                          } else if (sortColumn === 'type') {
+                            comp = a[1].localeCompare(b[1]);
+                          } else {
+                            const cameA = previousLocation[selectedTime][a[0]] || '';
+                            const cameB = previousLocation[selectedTime][b[0]] || '';
+                            comp = cameA.localeCompare(cameB);
+                          }
+                          return sortDirection === 'asc' ? comp : -comp;
+                        })" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
+                        <td @click="userID = picoID + ''; showModal = true" style="color: blue; text-decoration: underline; cursor: pointer;">{{ picoID }}</td>
+                        <td>
+                          <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/> {{ type }}
+                        </td>
+                        <td :style="{backgroundColor: boxes[previousLocation[selectedTime][picoID]]?.colour}">
+                          {{ boxes[previousLocation[selectedTime][picoID]]?.label || previousLocation[selectedTime][picoID] }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              <table class="table rounded-top-1" v-show="showTable[roomID] ?? true">
-                <thead class="rounded-top-1">
-                  <tr class="rounded-top-1">
-                    <th class="rounded-top-1 rounded-end-0"
-                        @click="sortBy('picoID')"
-                        style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
-                      picoID <span v-html="getArrows('picoID')"></span>
-                    </th>
-                    <th @click="sortBy('type')"
-                        style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
-                      Type <span v-html="getArrows('type')"></span>
-                    </th>
-                    <th class="rounded-top-1 rounded-start-0"
-                        @click="sortBy('cameFrom')"
-                        style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
-                      Came From <span v-html="getArrows('cameFrom')"></span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="([picoID, type]) in Object.entries(movementData[selectedTime][roomID] || {}).filter(([picoID, type]) => {
-                      const filterPico = selectedFilterPicoIDs.length ? selectedFilterPicoIDs.includes(picoID) : true;
-                      const filterType = selectedFilterTypes.length ? selectedFilterTypes.includes(type) : true;
-                      const filterRoom = selectedFilterRooms.length ? selectedFilterRooms.includes(previousLocation[selectedTime][picoID]) : true;
-                      return filterPico && filterType && filterRoom;
-                  }).sort((a, b) => {
-                      let comp = 0;
-                      if (sortColumn === 'picoID') {
-                        comp = a[0].localeCompare(b[0]);
-                      } else if (sortColumn === 'type') {
-                        comp = a[1].localeCompare(b[1]);
-                      } else {
-                        const cameA = previousLocation[selectedTime][a[0]] || '';
-                        const cameB = previousLocation[selectedTime][b[0]] || '';
-                        comp = cameA.localeCompare(cameB);
-                      }
-                      return sortDirection === 'asc' ? comp : -comp;
-                    })" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
-                    <td @click="userID = picoID + ''; showModal = true" style="color: blue; text-decoration: underline; cursor: pointer;">{{ picoID }}</td>
-                    <td>
-                      <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/> {{ type }}
-                    </td>
-                    <td :style="{backgroundColor: boxes[previousLocation[selectedTime][picoID]]?.colour}">
-                      {{ boxes[previousLocation[selectedTime][picoID]]?.label || previousLocation[selectedTime][picoID] }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
             </div>
           </div>
-        </div>
+        </template>
       </div>
       <div class="row">
         <div id="deactivated-devices" class="col-md-12 mb-4">
@@ -219,22 +238,30 @@
             <div class="card-body" v-if="movementData[selectedTime]">
               <div class="stats mb-2">
                 <div class="d-inline rounded me-2 p-1">Total: {{ Object.keys(filteredDeactivatedDevices || {}).length }}</div>
-                <div class="d-inline rounded me-2 p-1"
-                  v-for="(box, roomID) in boxes"
-                  :key="roomID" :style="{'background-color': box.colour}"
-                >
-                  {{box.label}}:
-                  {{
-                    //previousLocation = Record<timestamp, record<picoID, locationInLast>>
-                    filteredDeactivatedDevices.reduce(
-                      (total, [picoID, lastRoom]) => {
-                        if(lastRoom == roomID)
-                          return total + 1;
-                        return total;
-                      }
-                    , 0)
-                  }}
-              </div>
+                <template v-for="(box, roomID) in boxes" :key="roomID">
+                  <div class="d-inline rounded me-2 p-1"
+                    :style="{'background-color': box.colour}"
+                    v-if="filteredDeactivatedDevices.reduce(
+                        (total, [picoID, lastRoom]) => {
+                          if(lastRoom == roomID)
+                            return total + 1;
+                          return total;
+                        }
+                      , 0) > 0"
+                  >
+                    {{box.label}}:
+                    {{
+                      //previousLocation = Record<timestamp, record<picoID, locationInLast>>
+                      filteredDeactivatedDevices.reduce(
+                        (total, [picoID, lastRoom]) => {
+                          if(lastRoom == roomID)
+                            return total + 1;
+                          return total;
+                        }
+                      , 0)
+                    }}
+                  </div>
+                </template>
               </div>
               <table class="table" v-show="showTable['deactivated'] ?? true">
                 <thead>
@@ -292,7 +319,7 @@ import type { presetListType, preset, boxType } from '@/utils/mapTypes';
 import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModal.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { getIcon, getRoleColor } from '@/utils/helper/colourIcon';
-import { faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL } from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL, faPlay, faPause } from '@fortawesome/free-solid-svg-icons';
 
 
 const showTable = ref<Record<string, boolean>>({});
@@ -307,10 +334,10 @@ const showModal = ref(false);
 const isLoading = ref(false);
 const movementData = ref<Record<string, Record<string, Record<string, string>>>>({});
 const boxes = ref<Record<string, { label: string; colour: string }>>({});
-
+const live = ref<boolean>(false);
 const userID = ref<string>("");
 const userMovementHistory = ref<{ roomLabel: string; loggedAt: string }[]>([]);
-
+const paused = ref<boolean>(false);
 const hideHeader = ref(false);
 let lastScrollTop = 0;
 
@@ -325,43 +352,100 @@ const startOfDay = new Date();
 startOfDay.setHours(0,0,0,0);
 const endOfDay = new Date();
 endOfDay.setHours(23,59,59,999);
+const hasData = ref<boolean>(true);
 
+let firstLiveFetch = true;
 const fetchMovementData = async () => {
   try {
     isLoading.value = true;
-    const response = await axios.get('http://localhost:5003/movement', {
-      headers: {
-        'time_start': startOfDay.toISOString(),
-        'time_end': endOfDay.toISOString()
-      },
-      withCredentials: true
-    });
-    isLoading.value = false;
-    // Detect and fill gaps in timestamps
-    const temp = response.data;
-    const timestamps = Object.keys(temp).sort();
-    for (let i = 1; i < timestamps.length; i++) {
-      const prevTime = new Date(timestamps[i - 1]);
-      const currTime = new Date(timestamps[i]);
-      const diff = (currTime.getTime() - prevTime.getTime()) / 1000; // difference in seconds
+    hasData.value = false;
+    let response;
+    if (live.value) {
+      const now = new Date();
+      const twoMinutesAgo = new Date(now.getTime() - 2 * 60000);
+      response = await axios.get('/api/reader/summary', {
+        withCredentials: true
+      });
 
-      if (diff > 60) { // assuming a gap is more than 60 seconds
-        const newTime = new Date(prevTime.getTime() + 60000).toISOString(); // add 1 minute
-        temp[newTime] = {}; // add empty data for the new timestamp
+      interface CountData {
+        count: number;
+        id: string[];
       }
+
+
+      // Data for each "room" key
+      interface RoomData {
+        users: CountData;
+        luggage: CountData;
+        staff: CountData;
+        guard: CountData;
+      }
+
+      interface MovementData {
+        [roomID: string]: RoomData;
+      }
+
+      const data = response.data as MovementData
+      //previousLocation = Record<timestamp, record<picoID, locationInLast>>
+      if(firstLiveFetch){
+        firstLiveFetch = false;
+        movementData.value = {};
+      }
+      movementData.value[now.toISOString()] = {};
+      Object.entries(data).forEach(([picoID, item]) => {
+        movementData.value[now.toISOString()][picoID] = {};
+        Object.entries(item).forEach(([type, { id, count }]) => {
+          // Skip environment
+          if (type === 'environment') return;
+
+          // For each ID in the array, create a separate property
+          id.forEach((ID) => {
+            movementData.value[now.toISOString()][picoID][ID] = type;
+          });
+        });
+      })
+
+      selectedDayTimeIndex.value = Object.keys(movementData.value).length - 1;
+
+      console.log(movementData.value)
+    } else {
+      firstLiveFetch = true;
+      response = await axios.get('/api/reader/movement', {
+        headers: {
+          'time_start': startOfDay.toISOString(),
+          'time_end': endOfDay.toISOString()
+        },
+        withCredentials: true
+      });
+
+      // Detect and fill gaps in timestamps
+      const temp = response.data;
+      const timestamps = Object.keys(temp).sort();
+      for (let i = 1; i < timestamps.length; i++) {
+        const prevTime = new Date(timestamps[i - 1]);
+        const currTime = new Date(timestamps[i]);
+        const diff = (currTime.getTime() - prevTime.getTime()) / 1000; // difference in seconds
+
+        if (diff > 60) { // assuming a gap is more than 60 seconds
+          const newTime = new Date(prevTime.getTime() + 60000).toISOString(); // add 1 minute
+          temp[newTime] = {}; // add empty data for the new timestamp
+        }
+      }
+
+      const sortedTemp = Object.keys(temp).sort().reduce((acc, key) => {
+        acc[key] = temp[key];
+        return acc;
+      }, {});
+      movementData.value = sortedTemp;
     }
-
-    const sortedTemp = Object.keys(temp).sort().reduce((acc, key) => {
-      acc[key] = temp[key];
-      return acc;
-    }, {});
-
-    movementData.value = sortedTemp;
-
+    isLoading.value = false;
+    hasData.value = true;
+    console.log(previousLocation.value);
   } catch (error) {
     if (error.response?.status === 404) {
       movementData.value = {};
     }
+    isLoading.value = false;
     console.error('Error fetching movement data:', error);
   }
 };
@@ -489,9 +573,9 @@ onMounted(async () => {
   await fetchMovementData();
   let presetData
   try {
-    const presetListData = (await axios.get<presetListType>("http://localhost:5010/presets", { withCredentials: true })).data;
+    const presetListData = (await axios.get<presetListType>("/api/assets-reader/presets", { withCredentials: true })).data;
     const defaultID = presetListData.default;
-    presetData = (await axios.get<preset>(`http://localhost:5010/presets/${defaultID}`, { withCredentials: true })).data;
+    presetData = (await axios.get<preset>(`/api/assets-reader/presets/${defaultID}`, { withCredentials: true })).data;
   } catch {
     console.error("Unable to fetch preset data");
   }
@@ -523,7 +607,7 @@ onMounted(async () => {
 const fetchUserMovementData = async () => {
   if (userID.value && selectedTime.value) {
     try {
-      const response = await axios.get(`http://localhost:5003/pico/${userID.value}`, { data: {time: selectedTime.value},withCredentials: true });
+      const response = await axios.get(`/api/reader/pico/${userID.value}`, { data: {time: selectedTime.value},withCredentials: true });
       const picoMovementData = response.data.movement;
       // Add console.log to see the object
       userMovementHistory.value = Object.entries(picoMovementData).map(([timestamp, roomID]) => ({
@@ -600,6 +684,10 @@ const handleClickOutsideFilter = (event: MouseEvent) => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutsideFilter);
+  if (liveFetchTimer) {
+    clearInterval(liveFetchTimer);
+    liveFetchTimer = null;
+  }
 });
 
 const searchPico = ref('');
@@ -849,6 +937,22 @@ const canGoNextDay = computed(() => {
   today.setHours(0,0,0,0);
   return selected < today;
 });
+
+let liveFetchTimer: number | null = null;
+watch([live, paused], ([liveVal, pausedVal]) => {
+  if (liveVal && !pausedVal) {
+    if (!liveFetchTimer) {
+      fetchMovementData(); // immediate update
+      liveFetchTimer = window.setInterval(fetchMovementData, 30000);
+    }
+  } else {
+    if (liveFetchTimer) {
+      clearInterval(liveFetchTimer);
+      liveFetchTimer = null;
+    }
+    fetchMovementData();
+  }
+});
 </script>
 
 <style scoped>
@@ -978,5 +1082,17 @@ const canGoNextDay = computed(() => {
 }
 .dropdown-list li.active {
   background-color: #e0e0e0;
+}
+
+.table-wrapper {
+  overflow-y: scroll;
+  max-height: 25rem;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 0;
 }
 </style>

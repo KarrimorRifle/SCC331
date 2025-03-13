@@ -64,7 +64,7 @@ watch(
 );
 
 const homeConfig = computed(() => {
-  return domainConfig.value 
+  return domainConfig.value
 });
 
 const themeStyles = computed(() => ({
@@ -131,7 +131,7 @@ onUnmounted(() => {
 
 onMounted(async () => {
   try {
-    const response = await axios.get('http://localhost:5010/home', { withCredentials: true });
+    const response = await axios.get('/api/assets-reader/home', { withCredentials: true });
     if (response.status === 200 && response.data) {
       form.value.theme = response.data.theme;
     }
@@ -155,7 +155,7 @@ const refreshCookie = () => {
     const tenMinutes = 10 * 60 * 1000;
 
     if (expiryTime - currentTime < tenMinutes) {
-      axios.post("http://localhost:5002/refresh_cookie", {}, { withCredentials: true })
+      axios.post("/api/login/refresh_cookie", {}, { withCredentials: true })
         .then((response) => {
           // Update the expiration date (if present)
           if (response.data && response.data.expires) {
@@ -195,11 +195,11 @@ watch(
 <template>
   <!--<div id="app" class="d-flex flex-column max-vh-100" @click="refreshCookie">-->
   <div id="app" class="d-flex flex-column max-vh-100" :style="themeStyles">
-    <Navbar 
+    <Navbar
       :style="themeStyles"
-      class="nav" 
-      :isMobile="isMobile" 
-      :isWarningModalOpen="isWarningModalOpen" 
+      class="nav"
+      :isMobile="isMobile"
+      :isWarningModalOpen="isWarningModalOpen"
       :warnings="notificationQueue"
       :warningCount="warningCount"
       :loggedIn="authStore.isLoggedIn"

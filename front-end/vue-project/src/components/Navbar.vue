@@ -13,11 +13,11 @@ const props = defineProps({
 	isMobile: Boolean,
 	isWarningModalOpen: Boolean,
 	warnings: Array,
-	warningCount: Number, 
+	warningCount: Number,
 	loggedIn: {
 		type: Boolean,
 		default: null
-	}, 
+	},
 	isAdmin: Boolean,
 });
 
@@ -30,7 +30,7 @@ const authStore = useAuthStore();
 
 const handleLogout = async() => {
 	try {
-		await axios.post("http://localhost:5002/logout", {}, {
+		await axios.post("/api/login/logout", {}, {
 			withCredentials: true
 		})
 		cookies.remove('session_id');
@@ -69,11 +69,11 @@ watch(() => authStore.userAuthority, (newVal) => {
 				<font-awesome-icon :icon="faBars" />
 			</button>
 
-      <NotificationIcon 
-        v-if="props.isMobile && loggedIn" 
-        :warnings="props.warnings" 
+      <NotificationIcon
+        v-if="props.isMobile && loggedIn"
+        :warnings="props.warnings"
         :warningCount="props.warningCount"
-        :isWarningModalOpen="props.isWarningModalOpen" 
+        :isWarningModalOpen="props.isWarningModalOpen"
         @toggleWarningModal="emit('toggleWarningModal')"
       />
     </div>

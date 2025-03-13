@@ -251,7 +251,7 @@ if __name__ == '__main__':
         print("Starting live simulation (press CTRL+C to stop)...")
         try:
             while True:
-                current_time = datetime.now().replace(second=0, microsecond=0)
+                current_time = datetime.now()
                 print(f"\n--- Live Simulation: {current_time.strftime('%Y-%m-%d %H:%M:%S')} ---")
                 
                 user_records = simulate_minute(current_time, live_user_state)
