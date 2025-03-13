@@ -269,8 +269,8 @@ CREATE TABLE IF NOT EXISTS rule_messages (
   `location` VARCHAR(100),
   severity ENUM("doomed", "danger", "warning", "notification") NOT NULL,
   summary VARCHAR(255),
-  FOREIGN KEY (rule_id) REFERENCES warning.rule(id) ON DELETE CASCADE,
-	FOREIGN KEY (authority)  REFERENCES pico.tracking_groups(groupName)
+  FOREIGN KEY (rule_id) REFERENCES warning.rule(id) ON DELETE CASCADE
+	-- FOREIGN KEY (authority)  REFERENCES pico.tracking_groups(groupName)
 );
 
 
