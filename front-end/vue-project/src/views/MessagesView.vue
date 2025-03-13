@@ -205,9 +205,9 @@ const sendMessage = async () => {
 </script>
 
 <template>
-  <div class="messages-container text-dark">
+  <div class="messages-container">
     <!-- Sidebar with User List -->
-    <div class="sidebar">
+    <div class="sidebar" :class="{ hidden: selectedUser }">
       <h2>Chats</h2>
 
       <button @click="showNewChat = !showNewChat" class="new-chat-btn">New Chat</button>
@@ -228,11 +228,11 @@ const sendMessage = async () => {
           :key="user.email"
           @click="selectUser(user.email)"
           class="mb-1"
-          :class="{ active: selectedUser === user.email, 'btn btn-outline-primary': selectUser !== user.email }"
+          :class="{ active: selectedUser === user.email, 'btn btn-outline-primary': selectedUser !== user.email }"
         >
           <div class="user-info">
             <span>{{ user.email }}</span>
-            <span v-if="user.unreadCount > 0" class="unread-count"> <!-- Doesn't really work at the moment -->
+            <span v-if="user.unreadCount > 0" class="unread-count">
               {{ user.unreadCount }}
             </span>
           </div>
@@ -241,10 +241,15 @@ const sendMessage = async () => {
       <p v-else>No messages yet.</p>
     </div>
 
-    <!-- Main Chat Panel -->
-    <div class="chat-panel">
+    <!-- Chat Panel -->
+    <div class="chat-panel" :class="{ active: selectedUser }">
       <div v-if="selectedUser" class="chat-box">
-        <h2>{{ selectedUser }}</h2>
+        <!-- Back Button (Only visible on mobile) -->
+        <div class="chat-header">
+          <button class="back-button" @click="selectedUser = null">←</button>
+          <h2>{{ selectedUser }}</h2>
+        </div>
+
         <div class="messages" ref="messagesContainer">
           <div
             v-for="message in messages"
@@ -263,12 +268,10 @@ const sendMessage = async () => {
           <button @click="sendMessage">Send</button>
         </div>
       </div>
-      <div v-else class="no-chat-selected">
-        <p>Select a chat to view messages</p>
-      </div>
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .new-chat-btn {
@@ -448,4 +451,81 @@ const sendMessage = async () => {
   font-size: 1.2rem;
   color: #aaa;
 }
+
+@media (max-width: 768px) {
+  .messages-container {
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: white;
+    padding: 15px;
+    transition: transform 0.3s ease-in-out;
+    z-index: 1000;
+  }
+
+  .sidebar.hidden {
+    transform: translateX(-100%);
+  }
+
+  .chat-panel {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    background: white;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(100%);
+  }
+
+  .chat-panel.active {
+    transform: translateX(0);
+  }
+
+  .chat-box {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .messages {
+    height: calc(100vh - 120px);
+    padding: 10px;
+  }
+
+  .message {
+    max-width: 80%;
+  }
+
+  .chat-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #007bff;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+
+  .back-button {
+    cursor: pointer;
+    font-size: 1.5rem;
+    background: none;
+    border: none;
+    color: white;
+  }
+}
+
 </style>
