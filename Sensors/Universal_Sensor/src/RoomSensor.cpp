@@ -87,6 +87,7 @@ void RoomSensor::loop() {
 
 void RoomSensor::unsetup() {
   BTstack.stopAdvertising();
+  PDM.end();
 }
 
 
