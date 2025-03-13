@@ -18,27 +18,30 @@
 
 class BluetoothSensor : public SensorType {
     public:
-        BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds, uint16_t BluetoothID);
+        BluetoothSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, Adafruit_NeoPixel* Leds, String TrackerGroup, String* ReadableID);
 
         virtual void setup();
         virtual void loop();
         virtual void unsetup();
         virtual int getSensorType();
-        void setSensorType(int PicoType);
         // Bluetooth Receiver Methods:
         static void advertisementCallback(BLEAdvertisement *adv);
+        String getCurrentTrackerGroup();
+        void setCurrentTrackerGroup(String newTrackerGroup);
+
 
     private:
         Adafruit_SSD1306* display;
         MqttConnection* mqtt;
         Adafruit_NeoPixel* leds;
+        String* readableID;
+        String trackerGroup;
         // BLE Scanning Variables:
         static int strongestScanBluetoothID;
         static int strongestRSSI;
         unsigned long lastActionTime;
         bool isScanning;
-        int picoType;
-        uint16_t bluetoothID; // The room the user / luggage is currently in, according to the majorID picked up
+        bool currentlySetUp;
 
         MqttSubscription globalWarningSubscription;
         MqttSubscription warningSubscription;
@@ -46,12 +49,10 @@ class BluetoothSensor : public SensorType {
         bool warningLive;
         
         void sendToServer(String data);
-
         void setWarningSubscriptions();
         void unsetWarningSubscriptions();
         void handleWarning(String message, String source);
         void checkForAcknowledgement();
         void warningOver();
-
         void ledSetup();
 };

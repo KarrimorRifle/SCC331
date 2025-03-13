@@ -35,48 +35,99 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 
 -- pico
+-- USE pico;
+-- CREATE TABLE IF NOT EXISTS users (
+-- 	id INT AUTO_INCREMENT PRIMARY KEY,
+-- 	picoID VARCHAR(50) NOT NULL,
+-- 	roomID VARCHAR(50) NOT NULL,
+-- 	logged_at TIMESTAMP NOT NULL
+-- );
+
+-- CREATE TABLE IF NOT EXISTS luggage ( -- Consider storing it paired up
+-- 	id INT AUTO_INCREMENT PRIMARY KEY,
+-- 	picoID VARCHAR(50) NOT NULL,
+-- 	roomID VARCHAR(50) NOT NULL,
+-- 	logged_at TIMESTAMP NOT NULL
+-- );
+
+
+-- CREATE TABLE IF NOT EXISTS staff(
+--   id INT AUTO_INCREMENT PRIMARY KEY,
+--   picoID VARCHAR(50) NOT NULL,
+--   roomID VARCHAR(50) NOT NULL,
+--   logged_at TIMESTAMP NOT NULL
+-- );
+
+-- CREATE TABLE IF NOT EXISTS guard (
+--   id INT AUTO_INCREMENT PRIMARY KEY,
+--   picoID VARCHAR(50) NOT NULL,
+--   roomID VARCHAR(50) NOT NULL,
+--   logged_at TIMESTAMP NOT NULL
+-- );
+
+-- CREATE TABLE IF NOT EXISTS environment (
+-- 	id INT AUTO_INCREMENT PRIMARY KEY,
+-- 	picoID VARCHAR(50) NOT NULL,
+-- 	roomID VARCHAR(50) NOT NULL,
+-- 	logged_at TIMESTAMP NOT NULL,
+-- 	sound FLOAT NOT NULL,
+-- 	light FLOAT NOT NULL,
+-- 	temperature FLOAT NOT NULL,
+-- 	IAQ FLOAT NOT NULL,
+-- 	pressure FLOAT NOT NULL,
+-- 	humidity FLOAT NOT NULL
+-- );
+
+-- new pico 
 USE pico;
-CREATE TABLE IF NOT EXISTS users (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	picoID VARCHAR(50) NOT NULL,
-	roomID VARCHAR(50) NOT NULL,
-	logged_at TIMESTAMP NOT NULL
+
+CREATE TABLE IF NOT EXISTS pico_device (
+	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  -- Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+	readablePicoID VARCHAR(50) NOT NULL UNIQUE,
+	bluetoothID INT UNIQUE,   -- may be null for a un-activated pico and in which case it will be sent out as 0
+	picoType INT DEFAULT 0  -- may 0 is unassigned, 1 is environment, 2 is bluetooth tracker
 );
 
-CREATE TABLE IF NOT EXISTS luggage ( -- Consider storing it paired up
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	picoID VARCHAR(50) NOT NULL,
-	roomID VARCHAR(50) NOT NULL,
-	logged_at TIMESTAMP NOT NULL
+CREATE TABLE IF NOT EXISTS tracking_groups (
+	groupID INT AUTO_INCREMENT PRIMARY KEY,
+	groupName VARCHAR(50) NOT NULL UNIQUE
 );
 
-
-CREATE TABLE IF NOT EXISTS staff(
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  picoID VARCHAR(50) NOT NULL,
-  roomID VARCHAR(50) NOT NULL,
-  logged_at TIMESTAMP NOT NULL
+CREATE TABLE IF NOT EXISTS bluetooth_tracker (
+	picoID VARCHAR(17) NOT NULL PRIMARY KEY,  -- Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+	trackingGroupID INT,
+	FOREIGN KEY (picoID) REFERENCES pico_device(picoID) ON DELETE CASCADE,
+	FOREIGN KEY (trackingGroupID) REFERENCES tracking_groups(groupID) ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS guard (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  picoID VARCHAR(50) NOT NULL,
-  roomID VARCHAR(50) NOT NULL,
-  logged_at TIMESTAMP NOT NULL
+CREATE TABLE IF NOT EXISTS bluetooth_tracker_data -- 1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
+(
+	databaseID INT AUTO_INCREMENT PRIMARY KEY,
+	picoID VARCHAR(17) NOT NULL,  -- Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+	roomID VARCHAR(17) NOT NULL,  -- Mac addresses have a maximum length of 17 characters, storing more is unnecessary
+	logged_at TIMESTAMP NOT NULL,
+	FOREIGN KEY (picoID) REFERENCES pico_device(picoID) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS environment (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	picoID VARCHAR(50) NOT NULL,
-	roomID VARCHAR(50) NOT NULL,
+CREATE TABLE IF NOT EXISTS environment_sensor_data  -- 1 to 1 relationship with picoDevice, as it is an optional relationship it has its own table
+(
+	databaseID INT AUTO_INCREMENT PRIMARY KEY,
+	picoID VARCHAR(17) NOT NULL,
 	logged_at TIMESTAMP NOT NULL,
 	sound FLOAT NOT NULL,
 	light FLOAT NOT NULL,
 	temperature FLOAT NOT NULL,
 	IAQ FLOAT NOT NULL,
 	pressure FLOAT NOT NULL,
-	humidity FLOAT NOT NULL
+	humidity FLOAT NOT NULL,
+	FOREIGN KEY (picoID) REFERENCES pico_device(picoID)
 );
+
+
+-- Test Data 
+-- INSERT INTO pico_device(picoID, )
+
+--
 
 -- Use the assets database
 USE assets;
@@ -333,6 +384,18 @@ FLUSH PRIVILEGES;
 -- Data Reading Service (pico Read)
 CREATE USER IF NOT EXISTS 'data_reader'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'read_password';
 GRANT SELECT ON pico.* TO 'data_reader'@'%';
+FLUSH PRIVILEGES;
+
+-- Hardware Activation Service (pico Read, Insert, Update and Delete)
+CREATE USER IF NOT EXISTS 'hardware_activator'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'hardware_activator_password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON pico.* TO 'hardware_activator'@'%';
+ALTER USER 'hardware_activator'@'%' WITH MAX_USER_CONNECTIONS 1;
+FLUSH PRIVILEGES;
+
+-- Hardware Activation Service (pico Read, Insert, Update and Delete)
+CREATE USER IF NOT EXISTS 'hardware_editor'@'%' IDENTIFIED WITH 'caching_sha2_password' BY 'hardware_editor_password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON pico.* TO 'hardware_editor'@'%';
+ALTER USER 'hardware_editor'@'%' WITH MAX_USER_CONNECTIONS 1;
 FLUSH PRIVILEGES;
 
 -- Data Deletion Service (pico Delete + Read)

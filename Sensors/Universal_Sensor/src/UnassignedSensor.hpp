@@ -1,17 +1,12 @@
 #pragma once
+#include "SensorType.hpp"
 
-// Pico Configurables:
-#define UNASSIGNED_PICO 0
-#define ROOM_PICO 1
-#define TRACKER_PICO 2
-
-class SensorType {
+class UnassignedSensor : public SensorType {
     public:
+        UnassignedSensor();
+
         virtual void setup();
         virtual void loop();
         virtual void unsetup();
         virtual int getSensorType();
-
-    private:
-
 };
