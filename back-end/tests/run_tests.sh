@@ -20,6 +20,10 @@ echo "Running tests..."
 # Wait for warning_editor service to be available
 /wait-for-it.sh warning_editor 5004 -- echo "warning_editor is up"
 
+# Wait for hardware_editing service to be available
+/wait-for-it.sh hardware_editing 5006 -- echo "hardware_editing is up"
+
+
 # Grab the test target(s) from the first argument (default to "all" if none provided)
 TEST_TARGETS=$1
 if [ -z "$TEST_TARGETS" ]; then
@@ -55,9 +59,13 @@ for TARGET in "${TARGET_ARRAY[@]}"; do
       echo "Running data tests..."
       python -m unittest discover -s tests -p "test_4_data.py" -v
       ;;
+    "hardware_config")
+      echo "Running data tests..."
+      python -m unittest discover -s tests -p "test_5_hardware_config.py" -v
+      ;;
     *)
       echo "Invalid test target: $TARGET"
-      echo "Valid targets: all,accounts,assets,warnings,data"
+      echo "Valid targets: all,accounts,assets,warnings,data,hardware_config"
       ;;
   esac
 done

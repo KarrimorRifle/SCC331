@@ -8,12 +8,15 @@ short RoomSensor::sampleBuffer[512]; // Sound
 volatile int RoomSensor::samplesRead = 0;
 
 
-RoomSensor::RoomSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, uint16_t BluetoothID) {
+RoomSensor::RoomSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, uint16_t BluetoothID, String* ReadableID) {
     display = Display;
     mqtt = Mqtt;
+    readableID = ReadableID;
     lastActionTime = millis();
-    bluetoothID = 1;
+    bluetoothID = BluetoothID;
+    currentlyActive = false;
 }
+
 
 void RoomSensor::setup() {
   // Initialise Climate Sensors:
@@ -45,21 +48,27 @@ void RoomSensor::setup() {
   PDM.setCLK(3);
   PDM.setDIN(2);
   if(!PDM.begin(1, 16000)){
-    display->clearDisplay();
-    display->setCursor(0,0);
-    display->println("Failed to start PDM");
-    display->display();
+    Serial.println("failed to start PDM");
     while(1);
   }
   
   // Initialise Bluetooth Stuff:
   BTstack.iBeaconConfigure(&ROOM_UUID, bluetoothID, 0);
   BTstack.startAdvertising();
+
+  currentlyActive = true;
 }
 
 
 void RoomSensor::loop() {
   unsigned long currentTime = millis();
+  display->clearDisplay();
+  display->println("Environment Sensor");
+  display->print("Device Name: ");
+  display->println((*readableID));
+  display->println("BTid: " + String(bluetoothID));
+  display->setCursor(0, 0);
+  display->display();
 
   if (currentTime - lastActionTime >= ENVIRONMENT_WAIT_DURATION) {
     lastActionTime = currentTime;
@@ -77,7 +86,20 @@ void RoomSensor::loop() {
 
 
 void RoomSensor::unsetup() {
+  BTstack.stopAdvertising();
+}
 
+
+void RoomSensor::setBluetoothID(uint16_t newBluetoothID) {
+  if (newBluetoothID != bluetoothID) {
+    bluetoothID = newBluetoothID;
+
+    if (currentlyActive) {
+      BTstack.stopAdvertising();
+      BTstack.iBeaconConfigure(&ROOM_UUID, bluetoothID, 0);
+      BTstack.startAdvertising();
+    }
+  }
 }
 
 
@@ -88,12 +110,6 @@ int RoomSensor::getSensorType() {
 
 //private methods
 void RoomSensor::environmentalData() {
-  // Update display:
-  display->clearDisplay();
-  display->setCursor(0, 0);
-  display->println("Status: Getting Environment Data!");
-  display->display(); 
-
   // Get the data:
   iaqSensor.run();
   bh1745nuc.read();  
@@ -143,14 +159,6 @@ void RoomSensor::onPDMdata() {
 
 
 void RoomSensor::sendToServer(String data) {
-	// Update display:
-  display->clearDisplay();
-  display->setCursor(0, 0);
-  display->println("Status: Communicating.");
-  display->println("Sending to Server...");
-  display->println("Room ID: " + String(bluetoothID));
-  display->display(); 
-
   // Create JSON document to send to server:
   StaticJsonDocument<256> json;
 
