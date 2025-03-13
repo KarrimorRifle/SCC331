@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="table-container">
     <table>
       <thead>
         <tr>
@@ -24,7 +24,6 @@
             </select>
           </td>
           <td>
-            <!-- Show tracking group only if picoType === 2 -->
             <div v-if="config.picoType === 2">
               <select v-model="config.trackingGroupID">
                 <option :value="-1">None</option>
@@ -37,9 +36,7 @@
                 </option>
               </select>
             </div>
-            <div v-else>
-              N/A
-            </div>
+            <div v-else>N/A</div>
           </td>
           <td>
             <button @click="updateDeviceConfig(config)">Update</button>
@@ -54,19 +51,13 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 
-// Reactive arrays to store data
 const deviceConfigs = ref([]);
 const trackingGroups = ref([]);
 
-/**
- * Load device configs from /get/device/configs and tracking groups from /get/tracking/groups.
- * Both endpoints are on port 5006 (Flask server).
- */
 const loadData = async () => {
   try {
-    // Fetch device configs
     const configRes = await axios.get('http://localhost:5006/get/device/configs', {
-      withCredentials: true, // Important to send session_id cookie
+      withCredentials: true,
     });
     deviceConfigs.value = configRes.data.configs;
   } catch (err) {
@@ -74,7 +65,6 @@ const loadData = async () => {
   }
 
   try {
-    // Fetch tracking groups
     const groupsRes = await axios.get('http://localhost:5006/get/tracking/groups', {
       withCredentials: true,
     });
@@ -84,24 +74,17 @@ const loadData = async () => {
   }
 };
 
-/**
- * Send a PATCH request to update a single device config.
- * Endpoint: /patch/device/config/<pico_id>
- */
 const updateDeviceConfig = async (config: any) => {
   try {
-    // Construct the PATCH data. We always send `readablePicoID` & `picoType`.
     const patchData: any = {
       readablePicoID: config.readablePicoID,
       picoType: config.picoType,
     };
 
-    // If it's a BT Tracker (picoType=2), also send trackingGroupID
     if (config.picoType === 2) {
       patchData.trackingGroupID = config.trackingGroupID;
     }
 
-    // Make the PATCH request
     await axios.patch(
       `http://localhost:5006/patch/device/config/${config.picoID}`,
       patchData,
@@ -115,31 +98,84 @@ const updateDeviceConfig = async (config: any) => {
   }
 };
 
-/**
- * onMounted: load data from the server as soon as this component is mounted.
- */
 onMounted(() => {
   loadData();
 });
 </script>
 
 <style scoped>
+/* Ensure the table container allows horizontal scrolling on smaller screens */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Style the table */
 table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 600px; 
 }
+
+/* Style the table headers and cells */
 th, td {
   border: 1px solid #ccc;
-  padding: 0.5rem;
+  padding: 0.75rem;
   text-align: left;
+  white-space: nowrap; /* Prevent text from breaking in an ugly way */
 }
+
+/* Make inputs and select fields responsive */
 input[type="text"], select {
   width: 100%;
-  padding: 0.25rem;
+  padding: 0.5rem;
   box-sizing: border-box;
+  font-size: 1rem;
 }
+
+/* Style the button */
 button {
   padding: 0.5rem;
   cursor: pointer;
+  background-color: var(--primary-dark-bg);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  transition: background 0.3s ease;
+}
+
+button:hover {
+  background-color: var(--primary-dark-bg-hover);
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .table-container {
+    overflow-x: auto;
+    display: block;
+  }
+
+  /* Reduce padding and font sizes */
+  th, td {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  /* Hide Pico ID and Tracking Group on very small screens */
+  th:nth-child(1), td:nth-child(1), 
+  th:nth-child(4), td:nth-child(4) {
+    display: none;
+  }
+
+  /* Ensure input fields are touch-friendly */
+  input[type="text"], select {
+    font-size: 0.875rem;
+  }
+
+  /* Reduce button size */
+  button {
+    font-size: 0.875rem;
+    padding: 0.4rem;
+  }
 }
 </style>
