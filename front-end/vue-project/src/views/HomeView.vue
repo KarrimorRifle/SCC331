@@ -239,12 +239,6 @@ const closeModal = () => {
   padding: 2rem;
 }
 
-.hero .overlay {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-}
-
 .hero-content-container {
   display: flex;
   flex-direction: row;
@@ -296,7 +290,7 @@ section {
 	padding: 1rem 2.5rem;
 	font-size: 1.4rem;
 	color: white;
-	background-color: #FFD700; /* Gold */
+	background-color: var(--home-active); /* Gold */
 	border-radius: 10px;
 	text-decoration: none;
 	transition: all 0.3s ease-in-out;
@@ -305,7 +299,7 @@ section {
 }
 
 .cta-button:hover {
-	background-color: #E6C200; /* Darker Gold */
+	background-color: var(--home-active); /* Gold */
 	transform: scale(1.05);
 }
 
@@ -472,6 +466,9 @@ section {
 @media (max-width: 768px) {
   .hero-image {
     display: none;
+  }
+  section{
+    height: auto !important;
   }
 }
 </style>
