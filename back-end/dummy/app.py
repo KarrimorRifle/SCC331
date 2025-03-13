@@ -144,8 +144,8 @@ def insert_or_update_bluetooth_tracker(conn, picoID, trackingGroupID):
     cursor = conn.cursor()
     sql = """INSERT INTO bluetooth_tracker (picoID, trackingGroupID)
              VALUES (%s, %s)
-             ON DUPLICATE KEY UPDATE trackingGroupID = VALUES(trackingGroupID)
-    """
+             ON DUPLICATE KEY UPDATE trackingGroupID = VALUES(trackingGroupID)"""
+    
     try:
         cursor.execute(sql, (picoID, trackingGroupID))
         conn.commit()
@@ -305,12 +305,14 @@ if __name__ == '__main__':
 
     # 1) Insert environment sensor devices for each room.
     env_rooms = ['d83add67ed84', 'd83add41a997', 'd83add8af3cf']
+    i = 1
     for room in env_rooms:
         # Use a short hash to ensure unique readable IDs
         import hashlib
         short_hash = hashlib.md5(room.encode()).hexdigest()[:6]
         env_readable = f"Env-{short_hash}"
-        insert_pico_device(conn, room, env_readable, None, 1)
+        insert_pico_device(conn, room, env_readable, i, 1)
+        i += 1
 
     # 2) Ensure tracking groups exist for built-in types + "unknown"
     tracking_groups = {}
