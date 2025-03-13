@@ -14,7 +14,7 @@
 
 class RoomSensor : public SensorType {
     public:
-        RoomSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, uint16_t BluetoothID);
+        RoomSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, uint16_t BluetoothID, String* ReadableID);
 
         virtual void setup();
         virtual void loop();
@@ -25,6 +25,8 @@ class RoomSensor : public SensorType {
     private:
         Adafruit_SSD1306* display;
         MqttConnection* mqtt;
+        String* readableID;
+        bool currentlyActive;
         Bsec iaqSensor; // Climate
         static short sampleBuffer[512]; // Sound
         static volatile int samplesRead;

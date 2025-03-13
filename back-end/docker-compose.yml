@@ -127,6 +127,8 @@ services:
   hardware_editor:
     build: ./hardware/editing
     container_name: hardware_editing
+    ports:
+      - "5006:5006"
     environment:
       mqtt_token: ${mqtt_token}
       DB_HOST: mysql

@@ -69,7 +69,7 @@ void BluetoothSensor::setup() {
 
   display->clearDisplay();
   display->println((*readableID));
-  display->println("User Type: " + trackerGroup);
+  display->println("User Group: " + trackerGroup);
   display->setCursor(0, 0);
   display->display();
 
@@ -116,6 +116,13 @@ void BluetoothSensor::loop() {
 
   if(warningLive){
     this->checkForAcknowledgement();
+  }
+  else {
+    display->clearDisplay();
+    display->println((*readableID));
+    display->println("User Group: " + trackerGroup);
+    display->setCursor(0, 0);
+    display->display();
   }
   
   BTstack.loop();
