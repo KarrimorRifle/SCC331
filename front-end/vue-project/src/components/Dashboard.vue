@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { ref, PropType, onMounted, onUnmounted, computed, defineProps, defineEmits} from 'vue';
+import { ref, PropType, onMounted, onUnmounted, computed, defineProps, defineEmits } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faExpand, faCompress, faExclamationTriangle} from '@fortawesome/free-solid-svg-icons';
+import { faExpand, faCompress, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import { handleWarningButtonPressed } from '@/utils/helper/warningUtils';
 import { updateTabHeight } from '@/utils/helper/domUtils';
 import { boxAndData } from '@/utils/mapTypes';
 import { Sketch } from '@ckpack/vue-color';
 import { usePresetStore } from '../utils/useFetchPresets';
-import { sensors, updateSensorMappings } from '../stores/sensorTypeStore';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 import LiveUpdates from './Summary/LiveUpdates/LiveUpdates.vue';
 import LoadingSpinner from "@/components/LoadingSpinner/LoadingSpinner.vue";
+import { 
+  faUser, faClipboardCheck, faShieldAlt, faSuitcase, 
+  faVolumeUp, faArrowDown, faLightbulb, faTint, faQuestion 
+} from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
   modelValue: {
@@ -35,9 +38,8 @@ const props = defineProps({
     required: true
   },
   isLoading: Boolean,
-
 });
-const emit = defineEmits(["update:modelValue", "newBox","colourChange", "removeBox"]);
+const emit = defineEmits(["update:modelValue", "newBox", "colourChange", "removeBox"]);
 
 const presetStore = usePresetStore();
 const presetData = computed(() =>
@@ -46,6 +48,7 @@ const presetData = computed(() =>
     tracker: area.tracker || {},
   }))
 );
+
 const colourPickerVisible = ref<string | null>(null);
 const selectedColour = ref({});
 const isExpanded = ref(false);
@@ -55,17 +58,14 @@ const toggleDashboard = () => {
   isExpanded.value = !isExpanded.value;
 };
 
-
 function updateLabel(key: string, newLabel: string) {
   const updatedData = { ...props.modelValue };
-
   if (updatedData[key]) {
     updatedData[key] = {
       ...updatedData[key],
       label: newLabel,
     };
   }
-
   emit("update:modelValue", updatedData);
 }
 
@@ -73,8 +73,7 @@ function getTextColour(colour: string | undefined): string {
   if (typeof colour !== 'string') {
     return "black";
   }
-  const c = colour ?? "#FFFFFF";
-  const hex = c.replace("#", "");
+  const hex = colour.replace("#", "");
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
@@ -82,26 +81,11 @@ function getTextColour(colour: string | undefined): string {
   return brightness < 128 ? "white" : "black";
 }
 
-const getUpdatesForArea = (areaKey) => {
-  // Filter updates to only include users in this specific area
-  const filteredUpdates: Record<number, { logged_at: string; roomID: number }[]> = {};
-
-  Object.entries(props.updates).forEach(([userId, userUpdates]) => {
-    const relevantUpdates = userUpdates.filter(update => update.roomID === areaKey);
-    filteredUpdates[Number(userId)] = relevantUpdates;
-    
-  });
-
-  return filteredUpdates;
-};
-
 const warningsByArea = computed(() => {
   const acc: Record<string, { Title: string; Location: string; Severity: string; Summary: string }[]> = {};
-  
   presetData.value?.forEach(area => {
     acc[area.label] = props.warnings.filter(warning => warning.Location === area.roomID);
   });
-
   return acc;
 });
 const onWarningButtonClick = (areaLabel: string) => {
@@ -124,53 +108,55 @@ function changeColour(key: string) {
   hideColourPicker();
 }
 
-function lookupTracker(tracker: any, key: string): any {
-  if (!tracker) return undefined;
-  // Try the key as-is, then lowercase, then uppercase.
-  return tracker?.[key] ?? tracker[key.toLowerCase()] ?? tracker[key.toUpperCase()];
-}
-// Object Trackers (picoType: 2)
-const getObjectTrackers = (area) => {
-  console.log(area);
-  return Object.entries(sensors?.value)
-    .filter(([_, sensor]) => sensor.type === 2) // Only Object Trackers
-    .map(([key, sensor]) => ({
-      key,
-      name: sensor.name,
-      displayName: sensor.displayName,
-      icon: sensor.icon,
-      count: lookupTracker(area?.tracker, sensor.name)?.count ?? 0,// Default to 0 if missing
-    }));
+// --- New Sensor Display Helpers ---
+// Returns all sensors from the tracker except those under 'environment'
+const getNonEnvironmentSensors = (tracker: Record<string, any>) => {
+  if (!tracker) return [];
+  return Object.entries(tracker).filter(([key]) => key !== "environment");
 };
 
-// Environment Sensors (picoType: 1)
-const getEnvironmentSensors = (area) => {
-  return Object.entries(sensors?.value)
-    .filter(([_, sensor]) => sensor.type === 1) // Only Environment Sensors
-    .map(([key, sensor]) => ({
-      key,
-      name: sensor.name,
-      displayName: sensor.displayName,
-      icon: sensor.icon,
-      value: lookupTracker(area.tracker?.environment, sensor.name) ?? '--',// Default to "N/A" if missing
-    }));
+// Returns sensors under the 'environment' key
+const getEnvironmentSensors = (tracker: Record<string, any>) => {
+  if (tracker && tracker.environment) {
+    return Object.entries(tracker.environment);
+  }
+  return [];
 };
 
-const formatSensorName = (name: string): string => {
+function formatSensorName(name: string): string {
   return name.replace(/\s*Sensor\s*/i, '').trim();
+}
+
+// Add helper function to return icon mapping based on type using imported icons
+const getIcon = (type: string) => {
+  if (!type) return faQuestion; // Default icon if undefined
+
+  const iconMapping: Record<string, any> = {
+    guard: faShieldAlt,
+    luggage: faSuitcase,
+    users: faUser,
+    staff: faClipboardCheck,
+    temperature: faArrowDown,
+    IAQ: faClipboardCheck,
+    sound: faVolumeUp,
+    pressure: faArrowDown,
+    light: faLightbulb,
+    humidity: faTint,
+  };
+
+  return iconMapping[type.toLowerCase()] || faQuestion; // Return valid icon or default
 };
 
-onMounted(async () => {
-  await updateSensorMappings();
+
+onMounted(() => {
   updateTabHeight('.tab-bar', bottomTabHeight);
-  window.addEventListener('resize', updateTabHeight);
+  window.addEventListener('resize', () => updateTabHeight('.tab-bar', bottomTabHeight));
 });
 
 // Cleanup event listener
 onUnmounted(() => {
   window.removeEventListener('resize', () => updateTabHeight('.tab-bar', bottomTabHeight));
 });
-console.log(sensors.value)
 </script>
 
 <template>
@@ -185,113 +171,110 @@ console.log(sensors.value)
     <LoadingSpinner v-if="isLoading" message="Loading dashboard..." />
     <div v-else>
       <!-- Dashboard Header -->
-    <div class="dashboard-header">
-      <h2 v-if="!isExpanded">Dashboard</h2>
-      <h2 v-else>Detailed Dashboard</h2>
-
-      <button class="expand-btn" @click="toggleDashboard">
-        <font-awesome-icon :icon="isExpanded ? faCompress : faExpand" />
-      </button>
-    </div>
-
-    <!-- Show "No data available" if empty -->
-    <div v-if="!modelValue || Object.keys(modelValue).length === 0">
-      No data available
-    </div>
-
-    <!-- Render each item -->
-    <div class="dashboard-areas">
-      <div
-        v-for="([key, data]) in Object.entries(modelValue)"
-        :key="key"
-        class="dashboard-area"
-        :style="{ backgroundColor: data.box?.colour ?? 'var(--primary-light-text)', color: getTextColour(data.box?.colour) }"
-      >
-        <!-- Colour Picker Popover -->
-        <div v-if="colourPickerVisible === key" class="colour-picker-popover">
-          <Sketch v-model="selectedColour" />
-          <button class="btn btn-success me-2 mt-2 btn-sm" @click="changeColour(key)">Done</button>
-          <button class="btn btn-secondary mt-2 btn-sm" @click="hideColourPicker">Cancel</button>
-        </div>
-
-        <!-- Update only the label -->
-        <div class="area-header">
-          <input
-            v-if="editMode"
-            type="text"
-            :value="data.label"
-            :placeholder="data.label || key"
-            class="input-group-text text-start"
-            style="width: 80%;"
-            @input="(evt) => updateLabel(key, evt.target.value)"
-          />
-
-          <div
-            v-else
-            class="input-group-text text-start border-0"
-            style="width: 80%;"
-          >
-            {{ data.label || key }}
-          </div>
-
-          <template v-if="editMode">
-            <button class="btn btn-success add-button" @click="emit('newBox', key)" v-if="!data.box">+</button>
-            <button class="btn btn-danger add-button" @click="emit('removeBox', key)" v-else-if="data.box && !data.tracker">-</button>
-            <button
-              title="Change box colour"
-              class="btn add-button d-flex align-items-center justify-content-center"
-              style="max-width: 2.5rem; background-color: var(--primary-bg);"
-              @click="showColourPicker(key, data.box.colour)"
-              v-else
-            >
-              <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
-            </button>
-          </template>
-          <button
-            v-if="warningsByArea[key]?.length && !editMode"
-            class="warning-btn"
-            @click="onWarningButtonClick(key)"
-          >
-            <font-awesome-icon :icon="faExclamationTriangle" />
-          </button>
-        </div>
-
-        <div class="object-grid">
-          <div v-for="tracker in getObjectTrackers(data)" :key="tracker.key" class="pico-data">
-            <span class="pico-data-icon">
-              <FontAwesomeIcon :icon="tracker.icon" />
-            </span> 
-            <span class="pico-data-value">
-              {{ tracker.displayName }}: {{ tracker.count }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Environment Sensors -->
-        <div v-if="isExpanded" class="environment-grid">
-          <div v-for="sensor in getEnvironmentSensors(data)" :key="sensor.key" class="pico-data">
-            <span class="pico-data-icon">
-              <FontAwesomeIcon :icon="sensor.icon" />
-            </span> 
-            <span class="pico-data-value">
-              {{ formatSensorName(sensor.displayName) }}: {{ sensor.value }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Live Updates for Each Area (Expanded View Only)
-        <div v-if="isExpanded" class="live-updates-section">
-          <LiveUpdates 
-            :userIds="userIds" 
-            :areaKey="key"
-            :dataLabel="data.label"
-            :updates="getUpdatesForArea(key)" 
-            :fullUpdates="updates"
-          />
-        </div>
-        -->
+      <div class="dashboard-header">
+        <h2 v-if="!isExpanded">Dashboard</h2>
+        <h2 v-else>Detailed Dashboard</h2>
+        <button class="expand-btn" @click="toggleDashboard">
+          <font-awesome-icon :icon="isExpanded ? faCompress : faExpand" />
+        </button>
       </div>
-    </div>
+
+      <!-- Show "No data available" if empty -->
+      <div v-if="!modelValue || Object.keys(modelValue).length === 0">
+        No data available
+      </div>
+
+      <!-- Render each area -->
+      <div class="dashboard-areas">
+        <div
+          v-for="([key, data]) in Object.entries(modelValue)"
+          :key="key"
+          class="dashboard-area"
+          :style="{ backgroundColor: data.box?.colour ?? 'var(--primary-light-text)', color: getTextColour(data.box?.colour) }"
+        >
+          <!-- Colour Picker Popover -->
+          <div v-if="colourPickerVisible === key" class="colour-picker-popover">
+            <Sketch v-model="selectedColour" />
+            <button class="btn btn-success me-2 mt-2 btn-sm" @click="changeColour(key)">Done</button>
+            <button class="btn btn-secondary mt-2 btn-sm" @click="hideColourPicker">Cancel</button>
+          </div>
+
+          <!-- Area Header with Label and Warnings -->
+          <div class="area-header">
+            <input
+              v-if="editMode"
+              type="text"
+              :value="data.label"
+              :placeholder="data.label || key"
+              class="input-group-text text-start"
+              style="width: 80%;"
+              @input="(evt) => updateLabel(key, evt.target.value)"
+            />
+            <div v-else class="input-group-text text-start border-0" style="width: 80%;">
+              {{ data.label || key }}
+            </div>
+            <template v-if="editMode">
+              <button class="btn btn-success add-button" @click="emit('newBox', key)" v-if="!data.box">+</button>
+              <button class="btn btn-danger add-button" @click="emit('removeBox', key)" v-else-if="data.box && !data.tracker">-</button>
+              <button
+                title="Change box colour"
+                class="btn add-button d-flex align-items-center justify-content-center"
+                style="max-width: 2.5rem; background-color: var(--primary-bg);"
+                @click="showColourPicker(key, data.box.colour)"
+                v-else
+              >
+                <img src="@/assets/cog.svg" alt="" style="max-width: 1.5rem;">
+              </button>
+            </template>
+            <button
+              v-if="warningsByArea[key]?.length && !editMode"
+              class="warning-btn"
+              @click="onWarningButtonClick(key)"
+            >
+              <font-awesome-icon :icon="faExclamationTriangle" />
+            </button>
+          </div>
+
+          <!-- Display Non-Environment Sensors -->
+          <div class="object-grid">
+            <div v-for="([sensorKey, sensorData]) in getNonEnvironmentSensors(data.tracker)" :key="sensorKey" class="pico-data">
+              
+              <span class="pico-data-icon">
+                <FontAwesomeIcon :icon="getIcon(sensorKey)" />
+              </span>
+              
+              <span class="pico-data-value">
+                {{ sensorKey }}: {{ sensorData.count }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Display Environment Sensors (Expanded View) -->
+          <div v-if="isExpanded" class="environment-grid">
+            <div v-for="([sensorKey, sensorValue]) in getEnvironmentSensors(data.tracker)" :key="sensorKey" class="pico-data">
+              
+              <span class="pico-data-icon">
+                <FontAwesomeIcon :icon="getIcon(sensorKey)" />
+              </span>
+              
+              <span class="pico-data-value">
+                {{ formatSensorName(sensorKey) }}: {{ sensorValue }}
+              </span>
+            </div>
+          </div>
+
+          <!-- (Optional) Live Updates Section -->
+          <!-- <div v-if="isExpanded" class="live-updates-section">
+            <LiveUpdates 
+              :userIds="userIds" 
+              :areaKey="key"
+              :dataLabel="data.label"
+              :updates="getUpdatesForArea(key)" 
+              :fullUpdates="updates"
+            />
+          </div> -->
+        </div>
+      </div>
     </div>
   </div>
 </template>
