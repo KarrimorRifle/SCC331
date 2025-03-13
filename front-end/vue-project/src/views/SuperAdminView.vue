@@ -195,7 +195,7 @@ const heroIcon = computed(() => getHeroIcon(form.value.config.domain));
 const processHomeImage = () => {
   if (form.value.config.hero.image.data && form.value.config.hero.image.name) {
     const imageType = form.value.config.hero.image.name.split('.').pop();
-    homeImage.value = `data:image/${imageType};base64,${form.value.config.hero.image.data }`;
+    homeImage.value = `data:image/${imageType};base64,${atob(form.value.config.hero.image.data) }`;
   } else {
     homeImage.value = "";
   }

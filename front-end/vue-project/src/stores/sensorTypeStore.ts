@@ -1,81 +1,232 @@
 import { ref } from 'vue';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faUser, faEye, faUsers, faTemperatureLow, faTint, faLightbulb, faArrowDown, faVolumeUp, faThermometerHalf, faSuitcaseRolling, faClipboardCheck, faShieldHalved} from '@fortawesome/free-solid-svg-icons';
-library.add(faUser, faEye, faUsers, faTemperatureLow, faTint, faLightbulb, faArrowDown, faVolumeUp, faThermometerHalf, faSuitcaseRolling, faClipboardCheck, faShieldHalved);
+import {
+  faUser, faShoppingCart, faUsers, faTemperatureLow, faTint,
+  faLightbulb, faArrowDown, faVolumeUp, faThermometerHalf,
+  faSuitcaseRolling, faClipboardCheck, faShieldHalved, faTowerBroadcast
+} from '@fortawesome/free-solid-svg-icons';
+import { fetchDomainConfig, domainConfig } from '@/constants/HomeConfig';
+import axios from 'axios';
+
+library.add(
+  faUser, faShoppingCart, faUsers, faTemperatureLow, faTint,
+  faLightbulb, faArrowDown, faVolumeUp, faThermometerHalf,
+  faSuitcaseRolling, faClipboardCheck, faShieldHalved, faTowerBroadcast
+);
 
 /**
- * This is the mapping for all the sensors (in the future, can add whatever over here)
+ * Interfaces for device configs and sensors.
  */
-export const sensorMapping = ref({
-  "users": { name: "User", icon: faUser, type: 2 },
-  "luggage": { name: "Luggage", icon: faSuitcaseRolling, type: 2 },
-  "guard": { name: "Guard", icon: faShieldHalved, type: 2 },
-  "staff": { name: "Staff", icon: faClipboardCheck, type: 2 },
-  "iaq": { name: "IAQ Sensor", icon: faTemperatureLow, type: 1 },
-  "humidity": { name: "Humidity Sensor", icon: faTint, type: 1 },
-  "light": { name: "Light Sensor", icon: faLightbulb, type: 1 },
-  "pressure": { name: "Pressure Sensor", icon: faArrowDown, type: 1 },
-  "sound": { name: "Sound Sensor", icon: faVolumeUp, type: 1 },
-  "temperature": { name: "Temperature Sensor", icon: faThermometerHalf, type: 1 }
-});
+interface DeviceConfig {
+  picoID: string;
+  readablePicoID: string;
+  picoType: number;
+  trackingGroupID: number;
+}
+
+interface Sensor {
+  /** Canonical key – remains unchanged and used for mapping icons */
+  name: string;
+  /** Admin‑editable display name; if not modified, defaults to domain override. */
+  displayName?: string;
+  icon: any; // FontAwesome icon type
+  type: number;
+}
 
 /**
- * This is the list of all the sensors we have, which can be changed when converted to supermarket
+ * Reactive state for the current domain.
  */
-export const sensors = ref([
-  { name: "users", displayName: sensorMapping.value["users"].name, icon: sensorMapping.value["users"].icon.iconName, checked: true, disconnected: true, type: 2 },
-  { name: "luggage", displayName: sensorMapping.value["luggage"].name, icon: sensorMapping.value["luggage"].icon.iconName, checked: true, disconnected: true, type: 2 },
-  { name: "guard", displayName: sensorMapping.value["guard"].name, icon: sensorMapping.value["guard"].icon.iconName, checked: true, disconnected: true, type: 2 },
-  { name: "staff", displayName: sensorMapping.value["staff"].name, icon: sensorMapping.value["staff"].icon.iconName, checked: true, disconnected: true, type: 2 },
-  { name: "iaq", displayName: sensorMapping.value["iaq"].name, icon: sensorMapping.value["iaq"].icon.iconName, checked: true, disconnected: true, type: 1 },
-  { name: "humidity", displayName: sensorMapping.value["humidity"].name, icon: sensorMapping.value["humidity"].icon.iconName, checked: true, disconnected: true, type: 1 },
-  { name: "light", displayName: sensorMapping.value["light"].name, icon: sensorMapping.value["light"].icon.iconName, checked: true, disconnected: true, type: 1 },
-  { name: "pressure", displayName: sensorMapping.value["pressure"].name, icon: sensorMapping.value["pressure"].icon.iconName, checked: true, disconnected: true, type: 1 },
-  { name: "sound", displayName: sensorMapping.value["sound"].name, icon: sensorMapping.value["sound"].icon.iconName, checked: true, disconnected: true, type: 1 },
-  { name: "temperature", displayName: sensorMapping.value["temperature"].name, icon: sensorMapping.value["temperature"].icon.iconName, checked: true, disconnected: true, type: 1 }
-]);
-
-
+export const currentDomain = ref<string>(domainConfig.value.config.domain.toLowerCase());
 
 /**
-export const sensors = ref([]);
+ * Domain-specific sensor name overrides.
+ * Each key maps to an array of allowed default names.
+ */
+const domainOverrides: Record<string, Record<string, string[]>> = {
+  airport: {
+    user: ["User", "Passenger"],
+    luggage: ["Luggage"],
+    guard: ["Guard"],
+    staff: ["Staff"],
+    iaq: ["IAQ Sensor"],
+    humidity: ["Humidity Sensor"],
+    light: ["Light Sensor"],
+    pressure: ["Pressure Sensor"],
+    sound: ["Sound Sensor"],
+    temperature: ["Temperature Sensor"]
+  },
+  supermarket: {
+    // For supermarket, we want the canonical default to be the first value:
+    user: ["Customer", "User", "Passenger"],
+    luggage: ["Trolley"],
+    guard: ["Security"],
+    staff: ["Employee"],
+    iaq: ["Air Quality Sensor"],
+    humidity: ["Humidity Sensor"],
+    light: ["Lighting Sensor"],
+    pressure: ["Pressure Sensor", "Air Conditioning Sensor"],
+    sound: ["Sound Sensor"],
+    temperature: ["Temperature Sensor"]
+  }
+};
+
+/**
+ * Domain-specific icons.
+ */
+const domainIcons: Record<string, Record<string, any>> = {
+  airport: {
+    user: faUser,
+    luggage: faSuitcaseRolling,
+    guard: faShieldHalved,
+    staff: faClipboardCheck,
+    pressure: faArrowDown
+  },
+  supermarket: {
+    user: faUser,
+    luggage: faShoppingCart,
+    guard: faShieldHalved,
+    staff: faClipboardCheck,
+    pressure: faThermometerHalf
+  }
+};
+
+/**
+ * Utility: convert a word to its singular form.
+ */
+function toSingular(word: string): string {
+  if (word.endsWith("ies")) return word.slice(0, -3) + "y";
+  if (word.endsWith("es") && !["oes", "ses", "xes"].some(suffix => word.endsWith(suffix))) return word.slice(0, -2);
+  if (word.endsWith("s") && !word.endsWith("ss")) return word.slice(0, -1);
+  return word;
+}
+
+/**
+ * Map an incoming readablePicoID to a canonical sensor key.
+ * This ensures that names like "Passengers" or "Users" always map to "user".
+ */
+function mapReadablePicoID(readablePicoID: string): string {
+  const normalizedInput = toSingular(readablePicoID.toLowerCase());
+  const domainMap = domainOverrides[currentDomain.value] || {};
+
+  for (const canonicalKey in domainMap) {
+    const normalizedCanonical = toSingular(canonicalKey.toLowerCase());
+    const normalizedOverrides = domainMap[canonicalKey].map(name => toSingular(name.toLowerCase()));
+    if (normalizedInput === normalizedCanonical || normalizedOverrides.includes(normalizedInput)) {
+      return canonicalKey;
+    }
+  }
+  return normalizedInput;
+}
+
+/**
+ * Base sensor mapping (canonical defaults).
+ */
+const baseSensorMapping: Record<string, Sensor> = {
+  user: { name: "user", displayName: "User", icon: faUser, type: 2 },
+  luggage: { name: "luggage", displayName: "Luggage", icon: faSuitcaseRolling, type: 2 },
+  guard: { name: "guard", displayName: "Guard", icon: faShieldHalved, type: 2 },
+  staff: { name: "staff", displayName: "Staff", icon: faClipboardCheck, type: 2 },
+  iaq: { name: "iaq", displayName: "IAQ Sensor", icon: faTemperatureLow, type: 1 },
+  humidity: { name: "humidity", displayName: "Humidity Sensor", icon: faTint, type: 1 },
+  light: { name: "light", displayName: "Light Sensor", icon: faLightbulb, type: 1 },
+  pressure: { name: "pressure", displayName: "Pressure Sensor", icon: faArrowDown, type: 1 },
+  sound: { name: "sound", displayName: "Sound Sensor", icon: faVolumeUp, type: 1 },
+  temperature: { name: "temperature", displayName: "Temperature Sensor", icon: faThermometerHalf, type: 1 }
+};
+
+/**
+ * Reactive sensor mapping and sensor list.
+ */
+export const sensorMapping = ref<Record<string, Sensor>>({ ...baseSensorMapping });
+export const sensors = ref<Sensor[]>([]);
+
+/**
+ * Apply domain overrides first.
+ * For the "supermarket" domain, force the displayName to be the default override if the current value equals the base default.
+ */
+const applyDomainOverrides = async () => {
+  const overrides = domainOverrides[currentDomain.value] || {};
+  const icons = domainIcons[currentDomain.value] || {};
+  const updatedMapping: Record<string, Sensor> = {};
+
+  Object.keys(sensorMapping.value).forEach((key) => {
+    const currentSensor = sensorMapping.value[key];
+    // For supermarket, if the current displayName equals the base default, use the override default.
+    updatedMapping[key] = {
+      name: currentSensor.name,
+      displayName:
+        currentDomain.value === 'supermarket'
+          ? (currentSensor.displayName === baseSensorMapping[key].displayName
+               ? (overrides[key]?.[0] || currentSensor.name)
+               : currentSensor.displayName)
+          : (currentSensor.displayName || (overrides[key]?.[0] || currentSensor.name)),
+      icon: icons[key] || currentSensor.icon,
+      type: currentSensor.type
+    };
+  });
+  sensorMapping.value = updatedMapping;
+};
+
+/**
+ * Fetch and update sensor mappings dynamically from API.
+ * We first apply the domain overrides, then merge in API names.
+ */
 export const updateSensorMappings = async () => {
   try {
-    const response = await fetch('http://localhost:5010/get/device/configs');
-    const data = await response.json();
+    // Apply domain overrides as baseline.
+    await applyDomainOverrides();
 
+    const response = await axios.get("/data.json");
+    const data: { configs: DeviceConfig[] } = response.data;
     if (!data.configs) return;
 
-    data.configs.forEach(device => {
-      const { readablePicoID, picoType } = device;
+    // Start with current mapping (which has domain defaults).
+    const updatedMapping: Record<string, Sensor> = { ...sensorMapping.value };
 
-      // Skip unassigned devices
+    data.configs.forEach((device: DeviceConfig) => {
+      let { readablePicoID, picoType } = device;
+      const mappedKey = mapReadablePicoID(readablePicoID);
       if (picoType === 0) return;
 
-      // If sensor does not exist in mapping, add it
-      if (!sensorMapping.value[readablePicoID]) {
-        sensorMapping.value[readablePicoID] = {
-          name: readablePicoID,
-          icon: faQuestion, // Default icon if not mapped
-          type: picoType
+      if (!updatedMapping[mappedKey]) {
+        updatedMapping[mappedKey] = {
+          name: mappedKey,
+          displayName: readablePicoID,
+          icon: domainIcons[currentDomain.value]?.[mappedKey] || faTowerBroadcast,
+          type: picoType,
         };
+      } else {
+        // If the current displayName is still the default from the override, update it from API.
+        const defaultOverride = domainOverrides[currentDomain.value]?.[mappedKey]?.[0] || baseSensorMapping[mappedKey]?.displayName;
+        if (updatedMapping[mappedKey].displayName === defaultOverride) {
+          updatedMapping[mappedKey].displayName = readablePicoID;
+        }
       }
     });
 
-    // Update reactive `sensors` list
+    sensorMapping.value = updatedMapping;
+    await applyDomainOverrides();
+
     sensors.value = Object.entries(sensorMapping.value).map(([key, sensor]) => ({
       name: key,
-      displayName: sensor.name,
+      displayName: sensor.displayName,
       icon: sensor.icon.iconName,
       checked: true,
       disconnected: true,
       type: sensor.type
     }));
-
   } catch (error) {
     console.error("Failed to fetch sensor mappings:", error);
   }
 };
-// Run this function on app startup to load mappings
-updateSensorMappings();
+
+/**
+ * Initialization function.
  */
+export const initializeSensors = async () => {
+  await fetchDomainConfig();
+  currentDomain.value = domainConfig.value.config.domain.toLowerCase();
+  await updateSensorMappings();
+  console.log("Initialized Domain:", currentDomain.value);
+  console.log("Sensors:", sensors.value);
+};

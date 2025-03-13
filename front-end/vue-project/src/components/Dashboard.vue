@@ -7,7 +7,7 @@ import { updateTabHeight } from '@/utils/helper/domUtils';
 import { boxAndData } from '@/utils/mapTypes';
 import { Sketch } from '@ckpack/vue-color';
 import { usePresetStore } from '../utils/useFetchPresets';
-import { sensorMapping } from '../stores/sensorTypeStore';
+import { sensors, updateSensorMappings } from '../stores/sensorTypeStore';
 import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 import LiveUpdates from './Summary/LiveUpdates/LiveUpdates.vue';
@@ -40,7 +40,12 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue", "newBox","colourChange", "removeBox"]);
 
 const presetStore = usePresetStore();
-const presetData = computed(() => Object.values(presetStore.presetData));
+const presetData = computed(() =>
+  Object.values(presetStore.boxes_and_data).map(area => ({
+    ...area,
+    tracker: area.tracker || {},
+  }))
+);
 const colourPickerVisible = ref<string | null>(null);
 const selectedColour = ref({});
 const isExpanded = ref(false);
@@ -91,12 +96,14 @@ const getUpdatesForArea = (areaKey) => {
 };
 
 const warningsByArea = computed(() => {
-  return presetData.value[0].reduce((acc, area) => {
+  const acc: Record<string, { Title: string; Location: string; Severity: string; Summary: string }[]> = {};
+  
+  presetData.value?.forEach(area => {
     acc[area.label] = props.warnings.filter(warning => warning.Location === area.roomID);
-    return acc;
-  }, {} as Record<string, { Title: string; Location: string; Severity: string; Summary: string }[]>);
-});
+  });
 
+  return acc;
+});
 const onWarningButtonClick = (areaLabel: string) => {
   const warningsForArea = warningsByArea.value[areaLabel] || [];
   handleWarningButtonPressed(areaLabel, warningsForArea);
@@ -117,27 +124,35 @@ function changeColour(key: string) {
   hideColourPicker();
 }
 
+function lookupTracker(tracker: any, key: string): any {
+  if (!tracker) return undefined;
+  // Try the key as-is, then lowercase, then uppercase.
+  return tracker?.[key] ?? tracker[key.toLowerCase()] ?? tracker[key.toUpperCase()];
+}
 // Object Trackers (picoType: 2)
 const getObjectTrackers = (area) => {
-  return Object.entries(sensorMapping.value)
+  console.log(area);
+  return Object.entries(sensors?.value)
     .filter(([_, sensor]) => sensor.type === 2) // Only Object Trackers
     .map(([key, sensor]) => ({
       key,
       name: sensor.name,
+      displayName: sensor.displayName,
       icon: sensor.icon,
-      count: area?.tracker?.[key]?.count ?? "--" // Default to 0 if missing
+      count: lookupTracker(area?.tracker, sensor.name)?.count ?? 0,// Default to 0 if missing
     }));
 };
 
 // Environment Sensors (picoType: 1)
 const getEnvironmentSensors = (area) => {
-  return Object.entries(sensorMapping.value)
+  return Object.entries(sensors?.value)
     .filter(([_, sensor]) => sensor.type === 1) // Only Environment Sensors
     .map(([key, sensor]) => ({
       key,
       name: sensor.name,
+      displayName: sensor.displayName,
       icon: sensor.icon,
-      value: area.tracker?.environment?.[key] ?? '--' // Default to "N/A" if missing
+      value: lookupTracker(area.tracker?.environment, sensor.name) ?? '--',// Default to "N/A" if missing
     }));
 };
 
@@ -145,7 +160,8 @@ const formatSensorName = (name: string): string => {
   return name.replace(/\s*Sensor\s*/i, '').trim();
 };
 
-onMounted(() => {
+onMounted(async () => {
+  await updateSensorMappings();
   updateTabHeight('.tab-bar', bottomTabHeight);
   window.addEventListener('resize', updateTabHeight);
 });
@@ -154,6 +170,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', () => updateTabHeight('.tab-bar', bottomTabHeight));
 });
+console.log(sensors.value)
 </script>
 
 <template>
@@ -240,12 +257,12 @@ onUnmounted(() => {
         </div>
 
         <div class="object-grid">
-          <div v-for="tracker in getObjectTrackers(area)" :key="tracker.key" class="pico-data">
+          <div v-for="tracker in getObjectTrackers(data)" :key="tracker.key" class="pico-data">
             <span class="pico-data-icon">
               <FontAwesomeIcon :icon="tracker.icon" />
             </span> 
             <span class="pico-data-value">
-              {{ tracker.name }}: {{ tracker.count }}
+              {{ tracker.displayName }}: {{ tracker.count }}
             </span>
           </div>
         </div>
@@ -257,7 +274,7 @@ onUnmounted(() => {
               <FontAwesomeIcon :icon="sensor.icon" />
             </span> 
             <span class="pico-data-value">
-              {{ formatSensorName(sensor.name) }}: {{ sensor.value }}
+              {{ formatSensorName(sensor.displayName) }}: {{ sensor.value }}
             </span>
           </div>
         </div>
@@ -290,7 +307,7 @@ onUnmounted(() => {
   overflow-y: auto;
   transition: all 0.8s ease-in-out;
   position: relative;
-  flex: 0.2;
+  flex: 0.3;
 }
 
 .dashboard-header {
