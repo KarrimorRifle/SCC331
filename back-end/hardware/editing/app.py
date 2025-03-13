@@ -75,14 +75,13 @@ def send_individual_pico_message(pico_id, hardware_message):
     client.connect("mqtt.flespi.io", 1883)
     client.loop_start()
 
-    publish_info = client.publish("hardware_config/server_message/" + pico_id, hardware_message, qos=2)
-    publish_info.wait_for_publish()
+    client.publish("hardware_config/server_message/" + pico_id, hardware_message, qos=2)
 
     client.loop_stop()
     client.disconnect()
 
 
-def sync_tracking_grp_names_with_hardware(group_id, new_group_name = ""):
+def sync_tracking_grp_name_with_hardware(group_id, new_group_name = ""):
     connection = get_db_connection()
     if connection is None:
         return
@@ -93,9 +92,11 @@ def sync_tracking_grp_names_with_hardware(group_id, new_group_name = ""):
                       FROM bluetooth_tracker
                       WHERE trackingGroupID = %s"""
     
-    pico_data = cursor.execute(select_query, (group_id, ))
+    cursor.execute(select_query, (group_id, ))
 
-    cursor.close()
+    pico_data = cursor.fetchall()
+
+    cursor.close() 
 
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     
@@ -106,16 +107,11 @@ def sync_tracking_grp_names_with_hardware(group_id, new_group_name = ""):
     client.connect("mqtt.flespi.io", 1883)
     client.loop_start()
 
-    publishes_info = []
-
     for pico in pico_data:
         pico_id = pico["picoID"]
 
         hardware_message = json.dumps({"TrackerGroup" : new_group_name})
-        publishes_info.append(client.publish("hardware_config/server_message/" + pico_id, hardware_message, qos=2))
-    
-    for publish_info in publishes_info:
-        publish_info.wait_for_publish()
+        client.publish("hardware_config/server_message/" + pico_id, hardware_message, qos=2)
     
     client.loop_stop()
     client.disconnect()
@@ -153,7 +149,7 @@ def get_configs():
            
             data_to_send.append(current_config)
 
-        return jsonify(data_to_send), 200
+        return jsonify({"configs" : data_to_send}), 200
     
     except Error as e:
         print(f"Error querying data: {e}")
@@ -201,6 +197,8 @@ def patch_config(pico_id = None):
                                 WHERE picoID = %s;"""
             
             cursor.execute(delete_query, (pico_id,))
+
+            new_bt_id = 0
             
             if (data["picoType"] == UNASSIGNED_PICO_TYPE):
                 update_query = """UPDATE pico_device
@@ -210,74 +208,75 @@ def patch_config(pico_id = None):
                 cursor.execute(update_query, (UNASSIGNED_PICO_TYPE, pico_id))
 
             elif (data["picoType"] == ENVIRONMENT_PICO_TYPE):
+                select_query = """SELECT MAX(bluetoothID) AS btMax
+                                  FROM pico_device
+                                  WHERE bluetoothID < 1000;"""
+
+                cursor.execute(select_query)
+                current_bt_max = cursor.fetchone()
+                if current_bt_max["btMax"] is None:
+                    new_bt_id = 1000
+                elif current_bt_max["btMax"] == 999:
+                    new_bt_id = None
+                else:
+                    new_bt_id = current_bt_max["btMax"] + 1
+
                 update_query = """UPDATE pico_device
-                                    SET picoType = %s, bluetoothID = (
-                                    IFNULL((
-                                        SELECT MAX(bluetoothID)
-                                        FROM pico_device
-                                        WHERE bluetoothID < 1000
-                                    ), 0) + 1)
-                                    WHERE picoID = %s;"""
+                                  SET picoType = %s, bluetoothID = %s
+                                  WHERE picoID = %s;"""
                 
-                cursor.execute(update_query, (ENVIRONMENT_PICO_TYPE, pico_id))
+                cursor.execute(update_query, (ENVIRONMENT_PICO_TYPE, new_bt_id, pico_id))
+
+                if new_bt_id is None:
+                    new_bt_id = 0
 
             elif (data["picoType"] == BT_TRACKER_PICO_TYPE):
+                select_query = """SELECT MAX(bluetoothID) AS btMax
+                                  FROM pico_device
+                                  WHERE bluetoothID >= 1000;"""
+
+                cursor.execute(select_query)
+                current_bt_max = cursor.fetchone()
+                if current_bt_max["btMax"] is None:
+                    new_bt_id = 1000
+                else:
+                    new_bt_id = current_bt_max["btMax"] + 1
+
                 update_query = """UPDATE pico_device
-                                    SET picoType = %s, bluetoothID = (
-                                    IFNULL((
-                                        SELECT MAX(bluetoothID)
-                                        FROM pico_device
-                                        WHERE bluetoothID >= 1000
-                                    ), 999) + 1)
-                                    WHERE picoID = %s;"""
+                                  SET picoType = %s, bluetoothID = %s
+                                  WHERE picoID = %s;"""
                 
-                cursor.execute(update_query, (BT_TRACKER_PICO_TYPE, pico_id))
+                cursor.execute(update_query, (BT_TRACKER_PICO_TYPE, new_bt_id, pico_id))
 
-                insert_query = """INSERT INTO bluetooth_tracker(picoID)
-                                  VALUES (%s);"""
-
-                cursor.execute(insert_query, (pico_id, data["trackingGroupID"]))
-
-
-            #update hardware message
-            select_query = """SELECT bluetoothID
-                              FROM pico_device
-                              WHERE picoID = %s
-                              LIMIT 1"""
-
-            cursor.execute(select_query, (pico_id,))
-
-            bt_data = cursor.fetchone()
-
-            if (bt_data["bluetoothID"] == None):
-                hardware_message.update({"BluetoothID" : 0})
-            else:
-                hardware_message.update({"BluetoothID" : bt_data["bluetoothID"]})
-
+            hardware_message.update({"BluetoothID" : new_bt_id})
             hardware_message.update({"PicoType" : data["picoType"]})
 
 
         if "trackingGroupID" in data:
-            update_query = """UPDATE bluetooth_tracker 
-                              SET trackingGroupID = %s
-                              WHERE picoID = %s;"""
+            
+            update_query = """INSERT INTO bluetooth_tracker (picoID, trackingGroupID)
+                              VALUES(%s, %s) 
+                              ON DUPLICATE KEY UPDATE trackingGroupID = %s;"""
 
-            cursor.execute(update_query, (data["trackingGroupID"], pico_id))
+            cursor.execute(update_query, (pico_id, data["trackingGroupID"], data["trackingGroupID"]))
 
                         #update hardware message
-            select_query = """SELECT trackingGroupID
-                              FROM bluetooth_tracker
-                              WHERE picoID = %s
-                              LIMIT 1"""
+            select_query = """SELECT tracking_groups.groupName
+                              FROM tracking_groups
+                              INNER JOIN bluetooth_tracker ON tracking_groups.groupID = bluetooth_tracker.trackingGroupID
+                              WHERE bluetooth_tracker.picoID = %s
+                              LIMIT 1;"""
 
             cursor.execute(select_query, (pico_id,))
 
             tracking_group_data = cursor.fetchone()
 
-            if (tracking_group_data["trackingGroupID"] == None):
+            print(tracking_group_data)
+
+            if (tracking_group_data == None):
                 hardware_message.update({"TrackerGroup" : ""})
             else:
-                hardware_message.update({"TrackerGroup" : tracking_group_data["trackingGroupID"]})
+                hardware_message.update({"TrackerGroup" : tracking_group_data["groupName"]})
 
         send_individual_pico_message(pico_id, json.dumps(hardware_message))
 
@@ -295,7 +294,7 @@ def patch_config(pico_id = None):
 
 
 # MUST ONLY BE USED IN TESTING
-@app.route("/delete/device/config/<pico_id>")
+@app.route("/delete/device/config/<pico_id>", methods=['POST'])
 def delete_config(pico_id = None):
     cookie_validation_error = validate_session_cookie(request)
     if len(cookie_validation_error) == 2:
@@ -308,13 +307,12 @@ def delete_config(pico_id = None):
     if pico_id is None:
         return jsonify({"error": "PicoID must be supplied in route"}), 400
 
-    data = request.json
-
     cursor = connection.cursor(dictionary=True)
     try:
         delete_sql = """DELETE FROM pico_device WHERE picoID = %s"""
 
         cursor.execute(delete_sql, (pico_id,))
+        cursor.fetchall()
 
         connection.commit()
 
@@ -347,7 +345,7 @@ def get_tracking_groups():
        
         cursor.execute(query)
 
-        return jsonify(cursor.fetchall()), 200
+        return jsonify({"groups" : cursor.fetchall()}), 200
 
     except Error as e:
         print(f"Error querying data: {e}")
@@ -394,11 +392,13 @@ def add_tracking_group():
 
         select_query = """SELECT groupID
                           FROM tracking_groups
-                          WHERE groupName = %s;"""
+                          WHERE groupName = %s
+                          LIMIT 1;"""
 
         cursor.execute(select_query, (data["groupName"],))
 
         new_id = cursor.fetchone()["groupID"]
+        cursor.fetchall()
 
         connection.commit()
 
@@ -453,7 +453,7 @@ def patch_tracking_group(group_id = None):
 
         connection.commit()
 
-        sync_tracking_grp_names_with_hardware(group_id, data["groupName"])
+        sync_tracking_grp_name_with_hardware(group_id, data["groupName"])
 
         return jsonify({"message" : "success"}), 200
     
@@ -466,7 +466,7 @@ def patch_tracking_group(group_id = None):
         connection.close()
 
 
-@app.route('/delete/tracking/group/<int:group_id>', methods=['DELETE'])
+@app.route('/delete/tracking/group/<int:group_id>', methods=['POST'])
 def delete_tracking_group(group_id = None):
     cookie_validation_error = validate_session_cookie(request)
     if len(cookie_validation_error) == 2:
@@ -481,12 +481,13 @@ def delete_tracking_group(group_id = None):
 
     cursor = connection.cursor(dictionary=True)
     try:
-        sync_tracking_grp_names_with_hardware(group_id, "")
+        sync_tracking_grp_name_with_hardware(group_id, "")
 
         delete_query = """DELETE FROM tracking_groups 
                           WHERE groupID = %s;"""
 
         cursor.execute(delete_query, (group_id,))
+        cursor.fetchall()
 
         connection.commit()
 
