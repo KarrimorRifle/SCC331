@@ -254,6 +254,8 @@ services:
     networks:
       - my_network
     profiles: ["dummy"]
+    volumes:
+      - ./dummy/store.png:/app/store.png
 
 networks:
   my_network:

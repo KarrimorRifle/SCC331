@@ -67,7 +67,7 @@ const uploadImage = async () => {
   loading.value = true;
 
   try {
-    const response = await axios.post(`http://localhost:5011/presets/${props.currentPresetId}/image`, {
+    const response = await axios.post(`/api/editor/presets/${props.currentPresetId}/image`, {
       name: imageName.value,
       data: imageData.value,
     }, {

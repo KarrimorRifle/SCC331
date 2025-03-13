@@ -19,7 +19,7 @@ interface ChatUser {
 const chatUsers = ref<ChatUser[]>([]);
 const selectedUser = ref<string | null>(null);
 const messages = ref<Message[]>([]);
-const newMessage = ref(''); 
+const newMessage = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
 const sessionId = document.cookie
   .split('; ')
@@ -32,7 +32,7 @@ const newChatUser = ref<string | null>(null);
 // This user's email, used for hiding the 'ghost chat' between the user and themselves
 const fetchUserEmail = async () => {
   try {
-    const response = await axios.get('http://localhost:5007/get_user_email', {
+    const response = await axios.get('/api/messages/get_user_email', {
       headers: { 'session-id': sessionId },
       withCredentials: true
     });
@@ -52,7 +52,7 @@ const fetchAllMessages = async () => {
   if (!userEmail) return;
 
   try {
-    const response = await axios.get('http://localhost:5007/get_messages', {
+    const response = await axios.get('/api/messages/get_messages', {
       headers: { 'session-id': sessionId },
       withCredentials: true
     });
@@ -80,7 +80,7 @@ const processChatUsers = (allMessages: Message[], unreadCounts: Record<string, n
     userMap.get(otherUser)?.push(msg);
   });
 
-  // Add unread message count to the user object 
+  // Add unread message count to the user object
   chatUsers.value = Array.from(userMap, ([email, messages]) => ({
     email,
     messages,
@@ -93,7 +93,7 @@ const fetchChatMessages = async () => {
   if (!selectedUser.value) return;
 
   try {
-    const response = await axios.get(`http://localhost:5007/get_chat_messages?user_email=${selectedUser.value}`, {
+    const response = await axios.get(`/api/messages/get_chat_messages?user_email=${selectedUser.value}`, {
       headers: { 'session-id': sessionId },
       withCredentials: true
     });
@@ -147,7 +147,7 @@ onMounted(() => {
 // Fetch all of the users except this one to make a new chat
 const fetchAllUsers = async () => {
   try {
-    const response = await axios.get('http://localhost:5007/get_users_messages_page', {
+    const response = await axios.get('/api/messages/get_users_messages_page', {
       headers: { 'session-id': sessionId },
       withCredentials: true
     });
@@ -163,7 +163,7 @@ const fetchAllUsers = async () => {
 // Start a new chat
 const startNewChat = () => {
   if (!newChatUser.value) return;
-  
+
   selectedUser.value = newChatUser.value;
   messages.value = [];
   showNewChat.value = false;
@@ -175,7 +175,7 @@ const sendMessage = async () => {
   if (!newMessage.value.trim() || !selectedUser.value) return;
 
   try {
-    await axios.post('http://localhost:5007/send_message', {
+    await axios.post('/api/messages/send_message', {
       receiver_email: selectedUser.value,
       message: newMessage.value
     }, {
@@ -207,11 +207,11 @@ const sendMessage = async () => {
 <template>
   <div class="messages-container">
     <!-- Sidebar with User List -->
-    <div class="sidebar">
+    <div class="sidebar" :class="{ hidden: selectedUser }">
       <h2>Chats</h2>
-      
+
       <button @click="showNewChat = !showNewChat" class="new-chat-btn">New Chat</button>
-      
+
       <!-- Dropdown for Selecting New Chat -->
       <div v-if="showNewChat" class="new-chat-dropdown">
         <select v-model="newChatUser">
@@ -223,15 +223,16 @@ const sendMessage = async () => {
       </div>
 
       <ul v-if="chatUsers.length > 0">
-        <li 
-          v-for="user in chatUsers" 
-          :key="user.email" 
+        <li
+          v-for="user in chatUsers.filter(item => item.email)"
+          :key="user.email"
           @click="selectUser(user.email)"
-          :class="{ active: selectedUser === user.email }"
+          class="mb-1"
+          :class="{ active: selectedUser === user.email, 'btn btn-outline-primary': selectedUser !== user.email }"
         >
           <div class="user-info">
             <span>{{ user.email }}</span>
-            <span v-if="user.unreadCount > 0" class="unread-count"> <!-- Doesn't really work at the moment -->
+            <span v-if="user.unreadCount > 0" class="unread-count">
               {{ user.unreadCount }}
             </span>
           </div>
@@ -240,13 +241,18 @@ const sendMessage = async () => {
       <p v-else>No messages yet.</p>
     </div>
 
-    <!-- Main Chat Panel -->
-    <div class="chat-panel">
+    <!-- Chat Panel -->
+    <div class="chat-panel" :class="{ active: selectedUser }">
       <div v-if="selectedUser" class="chat-box">
-        <h2>Chat with {{ selectedUser }}</h2>
+        <!-- Back Button (Only visible on mobile) -->
+        <div class="chat-header">
+          <button class="back-button" @click="selectedUser = null">←</button>
+          <h2>{{ selectedUser }}</h2>
+        </div>
+
         <div class="messages" ref="messagesContainer">
-          <div 
-            v-for="message in messages" 
+          <div
+            v-for="message in messages"
             :key="message.message_id"
             class="message"
             :class="{ 'sent': message.sender_email !== selectedUser, 'received': message.sender_email === selectedUser }"
@@ -262,12 +268,10 @@ const sendMessage = async () => {
           <button @click="sendMessage">Send</button>
         </div>
       </div>
-      <div v-else class="no-chat-selected">
-        <p>Select a chat to view messages</p>
-      </div>
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .new-chat-btn {
@@ -447,4 +451,81 @@ const sendMessage = async () => {
   font-size: 1.2rem;
   color: #aaa;
 }
+
+@media (max-width: 768px) {
+  .messages-container {
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: white;
+    padding: 15px;
+    transition: transform 0.3s ease-in-out;
+    z-index: 1000;
+  }
+
+  .sidebar.hidden {
+    transform: translateX(-100%);
+  }
+
+  .chat-panel {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    background: white;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(100%);
+  }
+
+  .chat-panel.active {
+    transform: translateX(0);
+  }
+
+  .chat-box {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .messages {
+    height: calc(100vh - 120px);
+    padding: 10px;
+  }
+
+  .message {
+    max-width: 80%;
+  }
+
+  .chat-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #007bff;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+
+  .back-button {
+    cursor: pointer;
+    font-size: 1.5rem;
+    background: none;
+    border: none;
+    color: white;
+  }
+}
+
 </style>

@@ -30,7 +30,7 @@ export default {
 	methods: {
 		async checkAdmin() {
 			try {
-				const response = await axios.get('http://localhost:5007/check_admin', { withCredentials: true });
+				const response = await axios.get('/api/messages/check_admin', { withCredentials: true });
 				if (response.status === 200) {
 					this.userIsAdmin = true;
 					this.fetchUsers(); // Load users only if authorized
@@ -43,19 +43,19 @@ export default {
 			}
 		},
 		fetchUsers() {
-			axios.get('http://localhost:5007/get_users_admin', { withCredentials: true })
+			axios.get('/api/messages/get_users_admin', { withCredentials: true })
 				.then(response => {
 					const filteredUsers = response.data.users.filter(user => {
 						const nameMatches = user.name.toLowerCase().includes(this.searchName.toLowerCase());
 						const emailMatches = user.email.toLowerCase().includes(this.searchEmail.toLowerCase());
 						return nameMatches && emailMatches;
 					});
-					
+
 					this.users = filteredUsers.map(user => ({
 						fullName: user.name,
 						email: user.email,
 						lastActive: user.last_login,
-						isAdmin: user.authority === "Admin"
+						isAdmin: user.authority === "Admin" || user.authority === "Super Admin"
 					}));
 				})
 				.catch(error => {
@@ -69,7 +69,7 @@ export default {
 					return;
 				}
 
-				axios.post('http://localhost:5007/add_user', {
+				axios.post('/api/messages/add_user', {
 					full_name: this.newUser.fullName,
 					email: this.newUser.email,
 					is_admin: this.newUser.isAdmin
@@ -109,7 +109,7 @@ export default {
 
 				// Step 1: Validate admin password
 				const passwordResponse = await axios.post(
-					"http://localhost:5007/check_password",
+					"/api/messages/check_password",
 					{ password: this.adminPassword },
 					{ withCredentials: true }
 				);
@@ -122,7 +122,7 @@ export default {
 				// Step 2: Proceed with user deletion
 				const userEmail = this.users[this.deleteUserIndex].email;
 				await axios.post(
-					"http://localhost:5007/delete_user",
+					"/api/messages/delete_user",
 					{ email: userEmail },
 					{ withCredentials: true }
 				);
@@ -159,15 +159,15 @@ export default {
 
 		<!-- Search Section for Full Name and Email -->
 		<div class="input-section">
-			<input v-model="searchName" 
-				type="text" 
-				placeholder="Search by Full Name" 
-				class="input" 
+			<input v-model="searchName"
+				type="text"
+				placeholder="Search by Full Name"
+				class="input"
 				@input="fetchUsers" />
-			<input v-model="searchEmail" 
-				type="email" 
-				placeholder="Search by Email" 
-				class="input" 
+			<input v-model="searchEmail"
+				type="email"
+				placeholder="Search by Email"
+				class="input"
 				@input="fetchUsers" />
 		</div>
 
@@ -199,23 +199,23 @@ export default {
 			</table>
 		</div>
 	</div>
-	
+
 			<!-- ✅ Reset Password Modal -->
 			<div v-if="showResetPasswordModal" class="modal">
 			<div class="modal-content">
 				<h2>Reset Password</h2>
 				<p>Reset password for {{ users[resetPasswordUserIndex]?.fullName }}</p>
-				<input 
-					v-model="newPassword" 
-					type="password" 
-					placeholder="New Password" 
-					class="input password-input" 
+				<input
+					v-model="newPassword"
+					type="password"
+					placeholder="New Password"
+					class="input password-input"
 				/>
-				<input 
-					v-model="confirmPassword" 
-					type="password" 
-					placeholder="Confirm Password" 
-					class="input password-input" 
+				<input
+					v-model="confirmPassword"
+					type="password"
+					placeholder="Confirm Password"
+					class="input password-input"
 				/>
 				<div class="modal-actions">
 					<button @click="resetPassword" class="button send">Reset</button>
@@ -242,10 +242,10 @@ export default {
 			<div class="modal-content">
 				<h2>Confirm Deletion</h2>
 				<p>Enter your password to delete {{ users[deleteUserIndex]?.fullName }}.</p>
-				<input 
-					v-model="adminPassword" 
-					type="password" 
-					placeholder="Enter your password" 
+				<input
+					v-model="adminPassword"
+					type="password"
+					placeholder="Enter your password"
 					class="password-input"
 				/>
 				<p v-if="deleteError" class="error">{{ deleteError }}</p>

@@ -54,7 +54,19 @@ const router = createRouter({
       name: 'inspection',
       component: () => import('../views/InspectionView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
-    }
+    },
+    {
+      path: '/change-domain',
+      name: 'super admin',
+      component: () => import('../views/SuperAdminView.vue'),
+      meta: { requiresAuth: true, requiresSuperAdmin: true }
+    },
+    {
+      path: '/sensor-config',
+      name: 'sensor config',
+      component: () => import('../views/SensorConfigView.vue'),
+      meta: { requiresAuth: true, requiresSuperAdmin: true }
+    },
   ],
 });
 
@@ -65,8 +77,10 @@ router.beforeEach(async (to, from, next) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!authStore.isLoggedIn) {
       next({ path: '/login' });
-    } else if (to.matched.some(record => record.meta.requiresAdmin) && authStore.userAuthority !== 'Admin') {
-      next({ path: '/' }); // Redirect to home if not admin
+    } else if (to.matched.some(record => record.meta.requiresSuperAdmin) && authStore.userAuthority !== 'Super Admin') {
+      next({ path: '/' }); // Redirect if not a Super Admin
+    } else if (to.matched.some(record => record.meta.requiresAdmin) && authStore.userAuthority !== 'Admin' && authStore.userAuthority !== 'Super Admin') {
+      next({ path: '/' }); // Redirect if not an Admin or Super Admin
     } else {
       next();
     }
