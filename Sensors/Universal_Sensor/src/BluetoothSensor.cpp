@@ -51,7 +51,7 @@ void BluetoothSensor::ledSetup() {
   // Colour System:
   leds->begin(); // initializes WS2812B strip object (REQUIRED)
   leds->setPixelColor(1, leds->Color(100, 100, 100));
-  leds->setBrightness(100);     //just to make the brightness more bearable, feel free to adjust
+  leds->setBrightness(50);     //just to make the brightness more bearable, feel free to adjust
   leds->show();
 }
 
@@ -257,7 +257,7 @@ void BluetoothSensor::handleWarning(String message, String source) {
 //for reply - staff/security??
   //buttons used to acknowledge y/n
 void BluetoothSensor::checkForAcknowledgement() {
-  if (digitalRead(RED_BUTTON) == HIGH) {
+  if (digitalRead(RED_BUTTON) == HIGH && warningLive) { //added the use of warningLive boolean to free up red button, will remove if buggy
     warningLive = false;
     leds->clear();
     leds->setPixelColor(1, leds->Color(255, 255, 255));
@@ -271,6 +271,17 @@ void BluetoothSensor::checkForAcknowledgement() {
     display->println("Understood");
     display->display();
 
+    // StaticJsonDocument<256> json;
+    // json["PicoID"] = mqtt->getHardwareIdentifier();
+    // json["RoomID"] = String(strongestScanBluetoothID);
+    // json["PicoType"] = picoType;
+    // json["SUmmary"] = "I acknowledge and will take the appropriate actions";
+
+    // String jsonString;
+    // serializeJson(json, jsonString);
+
+    // mqtt->publishDataWithIdentifier(jsonString, "warnings/admin");
+
     delay(2000);
 
     display->clearDisplay();
@@ -279,6 +290,26 @@ void BluetoothSensor::checkForAcknowledgement() {
     display->setCursor(0, 0);
     display->display();
   }
+  // else if (digitalRead(BLACK_BUTTON) == HIGH && warningLive) { //added the use of warningLive boolean to free up red button, will remove if buggy
+  //   warningLive = false;
+  //   leds->clear();
+  //   leds->setPixelColor(1, leds->Color(255, 255, 255));
+  //   leds->show();
+    
+  //   noTone(BUZZER);
+
+  //   display->clearDisplay();
+  //   display->setCursor(0, 0);
+  //   display->println("Acknowledgement:");
+  //   display->println("Ignored");
+  //   display->display();
+
+  //   delay(2000);
+
+  //   display->clearDisplay();
+  //   display->setCursor(0, 0);
+  //   display->display();
+  // }
 }
 
 
@@ -301,6 +332,110 @@ void BluetoothSensor::warningOver() {
   display->clearDisplay();
   display->setCursor(0, 0);
   display->display(); 
+}
+
+
+void BluetoothSensor::SOSCall(){
+  //black button to confirm
+  //piggy back off warning system channels
+    //Hard code message
+    //Send in json (base off of sendToServer)
+    //display message (on their way, stay in the room)
+      //could light up an LED to a colour to match customer and staff??? (would have to add method to recieve message and decipher LED config)
+      //OR just shine on customer a known colour
+
+  //both buttons to suggest
+  if(digitalRead(BLACK_BUTTON) == HIGH && digitalRead(RED_BUTTON)){//loop waiting for response??
+    //display message
+    display->clearDisplay();
+    display->setCursor(0, 0);
+    display->println("Would you like some assisstance?");
+    display->println("Black - Confirm\tRed - Cancel");
+    display->display(); 
+    if(digitalRead(BLACK_BUTTON) == HIGH){
+      //confirm
+        //display message (sending)
+        //gather room id and sensor id 
+        //set LEDs
+        //send json
+        //display message
+      display->clearDisplay();
+      display->setCursor(0, 0);
+      display->println("Sending request");
+      display->display(); 
+
+      //json file
+      /*FORMAT
+      {
+        "Title": "A string with the name of the warning",
+        "Location": "RoomID",
+        "Severity": "ENUM['doomed','danger','warning','notification']",
+        "Summary": "String with summary",
+        "ID": 302, // ID of the warning
+      }
+      */
+
+      StaticJsonDocument<256> json;
+      json["Title"] = "Assistance call";
+      json["Location"] = String(strongestScanBluetoothID);
+      json["Summary"] = "Request for assistance in Room " + String(strongestScanBluetoothID) + ", person with bright device";
+      json["ID"] = -1;
+
+      String jsonString;
+      serializeJson(json, jsonString);
+
+      mqtt->publishDataWithIdentifier(jsonString, "warnings/staff");
+      mqtt->publishDataWithIdentifier(jsonString, "warnings/security");
+
+      display->clearDisplay();
+      display->setCursor(0, 0);
+      display->println("Request sent");
+      display->println("An assistant is on their way");
+      display->display(); 
+
+      rainbowLEDs(50);
+      
+    }else if(digitalRead(RED_BUTTON) == HIGH){
+      //cancel
+        //display message
+      display->clearDisplay();
+      display->setCursor(0, 0);
+      display->println("Cancelled");
+      display->println("\tPress both buttons simultaneously to try again");
+      display->display(); 
+    }
+  }
+}
+
+//calls to 'leds' below throwing errors
+void BluetoothSensor::rainbowLEDs(uint8_t wait) {
+  int pixelInterval = 50;
+  int pixelCycle = 0;
+  if(pixelInterval != wait){
+    pixelInterval = wait;
+  }  
+  for(uint16_t i = 0; i < 3; i++) {
+    leds->setPixelColor(i, Wheel((i + pixelCycle) & 255)); //  Update delay time  
+  }
+  leds->show();                             //  Update strip to match
+  delay(50);
+  pixelCycle++;                             //  Advance current cycle
+  if(pixelCycle >= 256){
+    pixelCycle = 0;                        //  Loop the cycle back to the begining
+  }
+}
+
+uint32_t BluetoothSensor::Wheel(byte WheelPos) {
+  WheelPos = 255 - WheelPos;
+  if(WheelPos < 85) {
+    return leds->Color(255 - WheelPos * 3, 0, WheelPos * 3);
+  }
+  if(WheelPos < 170) {
+    WheelPos -= 85;
+    return leds->Color(0, WheelPos * 3, 255 - WheelPos * 3);
+  }
+  WheelPos -= 170;
+  return leds->Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
 
 
