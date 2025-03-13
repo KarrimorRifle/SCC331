@@ -193,63 +193,73 @@ def patch_config(pico_id = None):
                 connection.rollback()
                 return jsonify({"error": "Error querying data", "message": "Invalid picoType"}), 400
 
-            delete_query = """DELETE FROM bluetooth_tracker 
-                                WHERE picoID = %s;"""
-            
-            cursor.execute(delete_query, (pico_id,))
+            select_query = """SELECT picoType
+                              FROM pico_device
+                              WHERE picoID = %s"""
 
-            new_bt_id = 0
-            
-            if (data["picoType"] == UNASSIGNED_PICO_TYPE):
-                update_query = """UPDATE pico_device
-                                    SET picoType = %s, bluetoothID = NULL
+            cursor.execute(select_query, (pico_id,))
+
+            type_data = cursor.fetchone()
+            if (type_data == None):
+                return jsonify({"error": "PicoID not recognised"}), 400
+            elif (type_data["picoType"] != data["picoType"]):
+                delete_query = """DELETE FROM bluetooth_tracker 
                                     WHERE picoID = %s;"""
                 
-                cursor.execute(update_query, (UNASSIGNED_PICO_TYPE, pico_id))
+                cursor.execute(delete_query, (pico_id,))
 
-            elif (data["picoType"] == ENVIRONMENT_PICO_TYPE):
-                select_query = """SELECT MAX(bluetoothID) AS btMax
-                                  FROM pico_device
-                                  WHERE bluetoothID < 1000;"""
-
-                cursor.execute(select_query)
-                current_bt_max = cursor.fetchone()
-                if current_bt_max["btMax"] is None:
-                    new_bt_id = 1000
-                elif current_bt_max["btMax"] == 999:
-                    new_bt_id = None
-                else:
-                    new_bt_id = current_bt_max["btMax"] + 1
-
-                update_query = """UPDATE pico_device
-                                  SET picoType = %s, bluetoothID = %s
-                                  WHERE picoID = %s;"""
+                new_bt_id = 0
                 
-                cursor.execute(update_query, (ENVIRONMENT_PICO_TYPE, new_bt_id, pico_id))
+                if (data["picoType"] == UNASSIGNED_PICO_TYPE):
+                    update_query = """UPDATE pico_device
+                                        SET picoType = %s, bluetoothID = NULL
+                                        WHERE picoID = %s;"""
+                    
+                    cursor.execute(update_query, (UNASSIGNED_PICO_TYPE, pico_id))
 
-                if new_bt_id is None:
-                    new_bt_id = 0
+                elif (data["picoType"] == ENVIRONMENT_PICO_TYPE):
+                    select_query = """SELECT MAX(bluetoothID) AS btMax
+                                    FROM pico_device
+                                    WHERE bluetoothID < 1000;"""
 
-            elif (data["picoType"] == BT_TRACKER_PICO_TYPE):
-                select_query = """SELECT MAX(bluetoothID) AS btMax
-                                  FROM pico_device
-                                  WHERE bluetoothID >= 1000;"""
+                    cursor.execute(select_query)
+                    current_bt_max = cursor.fetchone()
+                    if current_bt_max["btMax"] is None:
+                        new_bt_id = 1
+                    elif current_bt_max["btMax"] == 999:
+                        new_bt_id = None
+                    else:
+                        new_bt_id = current_bt_max["btMax"] + 1
 
-                cursor.execute(select_query)
-                current_bt_max = cursor.fetchone()
-                if current_bt_max["btMax"] is None:
-                    new_bt_id = 1000
-                else:
-                    new_bt_id = current_bt_max["btMax"] + 1
+                    update_query = """UPDATE pico_device
+                                    SET picoType = %s, bluetoothID = %s
+                                    WHERE picoID = %s;"""
+                    
+                    cursor.execute(update_query, (ENVIRONMENT_PICO_TYPE, new_bt_id, pico_id))
 
-                update_query = """UPDATE pico_device
-                                  SET picoType = %s, bluetoothID = %s
-                                  WHERE picoID = %s;"""
-                
-                cursor.execute(update_query, (BT_TRACKER_PICO_TYPE, new_bt_id, pico_id))
+                    if new_bt_id is None:
+                        new_bt_id = 0
 
-            hardware_message.update({"BluetoothID" : new_bt_id})
-            hardware_message.update({"PicoType" : data["picoType"]})
+                elif (data["picoType"] == BT_TRACKER_PICO_TYPE):
+                    select_query = """SELECT MAX(bluetoothID) AS btMax
+                                    FROM pico_device
+                                    WHERE bluetoothID >= 1000;"""
+
+                    cursor.execute(select_query)
+                    current_bt_max = cursor.fetchone()
+                    if current_bt_max["btMax"] is None:
+                        new_bt_id = 1000
+                    else:
+                        new_bt_id = current_bt_max["btMax"] + 1
+
+                    update_query = """UPDATE pico_device
+                                    SET picoType = %s, bluetoothID = %s
+                                    WHERE picoID = %s;"""
+                    
+                    cursor.execute(update_query, (BT_TRACKER_PICO_TYPE, new_bt_id, pico_id))
+
+                hardware_message.update({"BluetoothID" : new_bt_id})
+                hardware_message.update({"PicoType" : data["picoType"]})
 
 
         if "trackingGroupID" in data:
