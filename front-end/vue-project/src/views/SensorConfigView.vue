@@ -5,7 +5,10 @@
     <section class="device-config-section">
       <h2 @click="toggleSection('deviceConfigs')">
         Device Configurations
-        <span>{{ openSections.deviceConfigs ? '-' : '+' }}</span>
+        <span >
+          <font-awesome-icon v-if="openSections.deviceConfigs" :icon="faChevronUp"/>
+          <font-awesome-icon v-else :icon="faChevronDown"/>
+        </span>
       </h2>
       <div v-show="openSections.deviceConfigs">
         <DeviceConfigs />
@@ -15,7 +18,10 @@
     <section class="tracking-groups-section">
       <h2 @click="toggleSection('trackingGroups')">
         Tracking Groups
-        <span>{{ openSections.trackingGroups ? '-' : '+' }}</span>
+        <span>
+          <font-awesome-icon v-if="openSections.trackingGroups" :icon="faChevronUp"/>
+          <font-awesome-icon v-else :icon="faChevronDown"/>
+        </span>
       </h2>
       <div v-show="openSections.trackingGroups">
         <TrackingGroups />
@@ -41,6 +47,8 @@
 import { ref } from 'vue';
 import DeviceConfigs from '../components/SensorConfig/DeviceConfig.vue';
 import TrackingGroups from '../components/SensorConfig/TrackingGroups.vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 // import SensorMappingEditor from '@/components/SensorMappingEditor.vue';
 
 // Define reactive state for section visibility

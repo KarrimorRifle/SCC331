@@ -1,34 +1,45 @@
 <template>
   <div>
+    <!-- Add new group -->
+    <div class="d-flex">
+        <div class="new-group input-group mt-0 me-2" style="max-width: 20rem;">
+          <input
+            type="text"
+            v-model="newGroupName"
+            placeholder="Group name"
+            class="form-control border"
+          />
+          <button @click="addGroup" class="input-group-text btn btn-success">Add Group</button>
+        </div>
+      <button @click="updateAllGroups" class="btn btn-primary d-inline block">Update</button>
+      <button @click="cancelUpdate" class="btn btn-secondary d-inline block ms-1">Cancel</button>
+    </div>
     <ul>
-      <li v-for="group in groups" :key="group.groupID">
-        <!-- Editable group name -->
-        <input type="text" v-model="group.groupName" />
-        <!-- Update button -->
-        <button @click="updateGroup(group)">Update</button>
+      <li
+        v-for="group in groups"
+        :key="group.groupID"
+        class="new-group input-group mb-3"
+        style="max-width: 30rem;"
+      >
+        <!-- Editable group name with change detection -->
+        <input type="text" v-model="group.groupName" @input="markDirty(group)" class="form-control me-4 rounded"/>
         <!-- Delete button -->
-        <button @click="deleteGroup(group)">Delete</button>
+        <button class="btn btn-danger rounded" @click="deleteGroup(group)">
+          <font-awesome-icon :icon="faTrash" />
+        </button>
       </li>
     </ul>
-
-    <!-- Add new group -->
-    <div class="new-group">
-      <input
-        type="text"
-        v-model="newGroupName"
-        placeholder="New group name"
-      />
-      <button @click="addGroup">Add Group</button>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
 
-// Reactive array for groups loaded from backend
-const groups = ref<Array<{ groupID: number; groupName: string }>>([]);
+// Reactive array for groups loaded from backend, now with an optional dirty flag.
+const groups = ref<Array<{ groupID: number; groupName: string; dirty?: boolean }>>([]);
 
 // For creating a new group
 const newGroupName = ref("");
@@ -67,18 +78,31 @@ const addGroup = async () => {
   }
 };
 
-// Update a group name via PATCH /patch/tracking/group/<groupID>
-const updateGroup = async (group: { groupID: number; groupName: string }) => {
-  try {
-    await axios.patch(
-      `/api/hardware/patch/tracking/group/${group.groupID}`,
-      { groupName: group.groupName },
-      { withCredentials: true }
-    );
-    alert(`Group ${group.groupID} updated!`);
-  } catch (error) {
-    console.error("Failed to update group:", error);
+// Mark group as modified
+const markDirty = (group: { groupID: number; groupName: string; dirty?: boolean }) => {
+  group.dirty = true;
+};
+
+// Global update for all modified groups
+const updateAllGroups = async () => {
+  const dirtyGroups = groups.value.filter((group) => group.dirty);
+  for (const group of dirtyGroups) {
+    try {
+      await axios.patch(
+        `/api/hardware/patch/tracking/group/${group.groupID}`,
+        { groupName: group.groupName },
+        { withCredentials: true }
+      );
+      group.dirty = false;
+    } catch (error) {
+      console.error("Failed to update group:", error);
+    }
   }
+};
+
+// New cancelUpdate function to revert unsaved changes by reloading groups
+const cancelUpdate = async () => {
+  await loadTrackingGroups();
 };
 
 // Delete a group via POST /delete/tracking/group/<groupID>
@@ -115,7 +139,6 @@ li {
 }
 
 input[type="text"] {
-  margin-right: 0.5rem;
   padding: 0.25rem;
 }
 
