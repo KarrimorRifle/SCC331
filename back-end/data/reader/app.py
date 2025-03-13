@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import os
 import requests
 import time
+import re
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -35,11 +36,9 @@ def get_db_connection():
 def validate_session_cookie(request):
     VALIDATION_SITE = "http://account_login:5002/validate_cookie"
     cookie = request.cookies.get("session_id")
-
     if not cookie:
         print("No session_id cookie found.")
         return {"error": "Invalid cookie", "message": "Cookie missing"}, 401
-
     print(f"Cookie found: {cookie}")
     r = requests.get(VALIDATION_SITE, headers={"session-id": cookie})
     if r.status_code != 200:
@@ -49,7 +48,62 @@ def validate_session_cookie(request):
     # Return None if everything is valid (no error)
     return None
 
-# make route for most recent pico session
+# -------------------------------
+# Helper Functions for Type Mapping
+# -------------------------------
+def get_tracker_type(picoID):
+    """
+    Returns the old-style device type (singular) based on picoID.
+    """
+    if picoID.startswith("PICO-USER"):
+        return "user"
+    elif picoID.startswith("PICO-LUGGAGE"):
+        return "luggage"
+    elif picoID.startswith("PICO-STAFF"):
+        return "staff"
+    elif picoID.startswith("PICO-SECURITY"):
+        return "guard"
+    else:
+        return "unknown"
+
+def map_tracker_type(picoID):
+    """
+    Returns the old-style type in plural form for summary aggregation.
+    """
+    t = get_tracker_type(picoID)
+    if t == "user":
+        return "users"
+    elif t == "luggage":
+        return "luggage"
+    elif t == "staff":
+        return "staff"
+    elif t == "guard":
+        return "guard"
+    else:
+        return "unknown"
+
+# -------------------------------
+# Helper for /summary/average: Initialize a room structure.
+# -------------------------------
+def init_average_room():
+    def occ_obj():
+        return {"average": 0, "peak": 0, "trough": 0}
+    return {
+        "users": occ_obj(),
+        "luggage": occ_obj(),
+        "staff": occ_obj(),
+        "guard": occ_obj(),
+        "temperature": occ_obj(),
+        "sound": occ_obj(),
+        "light": occ_obj(),
+        "IAQ": occ_obj(),
+        "pressure": occ_obj(),
+        "humidity": occ_obj()
+    }
+
+# -------------------------------
+# /pico Endpoint
+# -------------------------------
 @app.route('/pico/<string:PICO>', methods=['GET'])
 def pico(PICO):
     cookie_validation_error = validate_session_cookie(request)
@@ -62,25 +116,35 @@ def pico(PICO):
 
     cursor = connection.cursor(dictionary=True)
     try:
-        # Check if a "time" attribute was passed in the JSON request body
+        # Lookup device info
+        cursor.execute("SELECT picoType, readablePicoID FROM pico_device WHERE picoID = %s", (PICO,))
+        device = cursor.fetchone()
+        if not device:
+            return jsonify({"error": "Pico device not found"}), 404
+
+        picoType = device['picoType']
+        if picoType == 2:
+            data_table = "bluetooth_tracker_data"
+            device_label = get_tracker_type(PICO)
+        elif picoType == 1:
+            data_table = "environment_sensor_data"
+            device_label = "environment"
+        else:
+            return jsonify({"error": "Pico device not activated or unknown type"}), 400
+
         req_data = request.get_json(silent=True)
         provided_time = None
         if req_data and req_data.get("time"):
             provided_time = datetime.fromisoformat(req_data.get("time"))
 
         if provided_time:
-            # Fetch all logs for PicoID in ascending order
-            query = """
-            SELECT roomID, logged_at, 'user' as pico_type FROM users WHERE PicoID = %s
-            UNION ALL
-            SELECT roomID, logged_at, 'luggage' as pico_type FROM luggage WHERE PicoID = %s
-            UNION ALL
-            SELECT roomID, logged_at, 'staff' as pico_type FROM staff WHERE PicoID = %s
-            UNION ALL
-            SELECT roomID, logged_at, 'guard' as pico_type FROM guard WHERE PicoID = %s
-            ORDER BY logged_at ASC;
+            query = f"""
+                SELECT roomID, logged_at
+                FROM {data_table}
+                WHERE picoID = %s AND logged_at >= %s
+                ORDER BY logged_at ASC;
             """
-            cursor.execute(query, (PICO, PICO, PICO, PICO))
+            cursor.execute(query, (PICO, provided_time))
             logs = cursor.fetchall()
             if not logs:
                 return jsonify({"error": "No logs found for the specified Pico"}), 404
@@ -104,79 +168,45 @@ def pico(PICO):
 
             # Expand upward (later times)
             end_idx = idx
-            while end_idx + 1 < len(logs):
-                if logs[end_idx + 1]['logged_at'] - logs[end_idx]['logged_at'] <= gap:
-                    end_idx += 1
-                else:
-                    break
-
-            # Expand downward (earlier times)
+            while end_idx + 1 < len(logs) and logs[end_idx + 1]['logged_at'] - logs[end_idx]['logged_at'] <= gap:
+                end_idx += 1
             start_idx = idx
-            while start_idx - 1 >= 0:
-                if logs[start_idx]['logged_at'] - logs[start_idx - 1]['logged_at'] <= gap:
-                    start_idx -= 1
-                else:
-                    break
+            while start_idx - 1 >= 0 and logs[start_idx]['logged_at'] - logs[start_idx - 1]['logged_at'] <= gap:
+                start_idx -= 1
 
-            # Select contiguous block
             contiguous_logs = logs[start_idx:end_idx+1]
             movement = { row['logged_at'].isoformat(): row['roomID'] for row in contiguous_logs }
-            pico_type = contiguous_logs[0]['pico_type'] if contiguous_logs else "unknown"
-            return jsonify({"type": pico_type, "movement": movement})
+            return jsonify({"type": device_label, "movement": movement})
         else:
-            # Fallback: use the old algorithm (using a 2-minute gap to pick session_start)
-            query = """
-            SELECT roomID, logged_at, pico_type FROM (
-                SELECT roomID, logged_at, pico_type,
-                       LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
-                FROM (
-                    SELECT roomID, logged_at, 'user' as pico_type FROM users WHERE PicoID = %s
-                    UNION ALL
-                    SELECT roomID, logged_at, 'luggage' FROM luggage WHERE PicoID = %s
-                    UNION ALL
-                    SELECT roomID, logged_at, 'staff' FROM staff WHERE PicoID = %s
-                    UNION ALL
-                    SELECT roomID, logged_at, 'guard' FROM guard WHERE PicoID = %s
-                ) AS combined
+            # Fallback: return latest session block
+            query = f"""
+                SELECT roomID, logged_at
+                FROM {data_table}
+                WHERE picoID = %s
                 ORDER BY logged_at DESC
-            ) AS ordered_logs
-            WHERE TIMESTAMPDIFF(MINUTE, prev_log, logged_at) >= 2 OR prev_log IS NULL
-            ORDER BY logged_at DESC
-            LIMIT 1;
+                LIMIT 1;
             """
-            cursor.execute(query, (PICO, PICO, PICO, PICO))
-            session_start = cursor.fetchone()
-            if not session_start:
-                return jsonify({"error": "No session found for the specified Pico"}), 404
-
-            pico_type = session_start['pico_type']
-            query = """
-            SELECT roomID, logged_at FROM (
-                SELECT roomID, logged_at, pico_type,
-                       LAG(logged_at) OVER (ORDER BY logged_at) AS prev_log
-                FROM (
-                    SELECT roomID, logged_at, 'user' as pico_type FROM users WHERE PicoID = %s
-                    UNION ALL
-                    SELECT roomID, logged_at, 'luggage' FROM luggage WHERE PicoID = %s
-                    UNION ALL
-                    SELECT roomID, logged_at, 'staff' FROM staff WHERE PicoID = %s
-                    UNION ALL
-                    SELECT roomID, logged_at, 'guard' FROM guard WHERE PicoID = %s
-                ) AS combined
-                ORDER BY logged_at DESC
-            ) AS ordered_logs
-            WHERE logged_at >= %s
-            ORDER BY logged_at;
+            cursor.execute(query, (PICO,))
+            last_log = cursor.fetchone()
+            if not last_log:
+                return jsonify({"error": "No logs found for the specified Pico"}), 404
+            
+            session_start = last_log['logged_at']
+            query = f"""
+                SELECT roomID, logged_at
+                FROM {data_table}
+                WHERE picoID = %s AND logged_at >= %s
+                ORDER BY logged_at ASC;
             """
-            cursor.execute(query, (PICO, PICO, PICO, PICO, session_start['logged_at']))
+            cursor.execute(query, (PICO, session_start))
             session_logs = cursor.fetchall()
             for row in session_logs:
                 if not hasattr(row['logged_at'], 'isoformat'):
                     row['logged_at'] = datetime.strptime(row['logged_at'], "%Y-%m-%d %H:%M:%S")
             movement = { row['logged_at'].isoformat(): row['roomID'] for row in session_logs }
-            return jsonify({"type": pico_type, "movement": movement})
+            return jsonify({"type": device_label, "movement": movement})
     except Error as e:
-        print(f"Error querying data: {e}")
+        print(f"Error in /pico: {e}")
         return jsonify({"error": "Error querying data", "message": str(e)}), 500
     finally:
         cursor.close()
@@ -199,70 +229,58 @@ def summary():
 
     # Set snapshot_time: use provided time if valid, otherwise current UTC time.
     now = datetime.utcnow()
-    if time_str:
-        try:
-            snapshot_time = datetime.fromisoformat(time_str.replace("Z", ""))
-        except ValueError:
-            return jsonify({"error": "Invalid time format"}), 400
-    else:
-        snapshot_time = now
+    try:
+        snapshot_time = datetime.fromisoformat(time_str.replace("Z", "")) if time_str else now
+    except ValueError:
+        return jsonify({"error": "Invalid time format"}), 400
 
     connection = get_db_connection()
     if connection is None:
         return jsonify({"error": "MySQL connection unavailable"}), 500
-
     cursor = connection.cursor(dictionary=True)
     summary = {}
     try:
         # Occupancy Data: only if mode is "all" or "picos"
         if mode in ("all", "picos"):
-            # Define occupancy types in priority order.
-            occupancy_types = ["users", "luggage", "staff", "guard"]
-            # Global set to track PicoIDs already added (across all occupancy types)
-            tracked_picos = set()
-            for occ in occupancy_types:
-                occ_query = f"""
-                SELECT t.roomID, t.PicoID
-                FROM {occ} t
+            occ_query = """
+                SELECT t.roomID, t.picoID
+                FROM bluetooth_tracker_data t
                 JOIN (
-                    SELECT PicoID, MAX(logged_at) AS max_time
-                    FROM {occ}
+                    SELECT picoID, MAX(logged_at) AS max_time
+                    FROM bluetooth_tracker_data
                     WHERE logged_at <= %s AND logged_at >= (%s - INTERVAL 1 MINUTE)
-                    GROUP BY PicoID
-                ) latest ON t.PicoID = latest.PicoID AND t.logged_at = latest.max_time;
-                """
-                cursor.execute(occ_query, (snapshot_time, snapshot_time))
-                results = cursor.fetchall()
-                for row in results:
-                    pico_id = str(row["PicoID"])
-                    # Only add this PicoID if it hasn't been seen already.
-                    if pico_id in tracked_picos:
-                        continue
-                    room_id = str(row["roomID"])
-                    if room_id not in summary:
-                        summary[room_id] = {
-                            "users": {"count": 0, "id": []},
-                            "luggage": {"count": 0, "id": []},
-                            "staff": {"count": 0, "id": []},
-                            "guard": {"count": 0, "id": []},
-                            "environment": {}
-                        }
-                    summary[room_id][occ]["id"].append(pico_id)
-                    summary[room_id][occ]["count"] += 1
-                    tracked_picos.add(pico_id)
+                    GROUP BY picoID
+                ) latest ON t.picoID = latest.picoID AND t.logged_at = latest.max_time
+            """
+            cursor.execute(occ_query, (snapshot_time, snapshot_time))
+            occ_rows = cursor.fetchall()
+            for row in occ_rows:
+                room_id = str(row["roomID"])
+                tracker_type = map_tracker_type(row["picoID"])
+                if tracker_type == "unknown":
+                    continue
+                if room_id not in summary:
+                    summary[room_id] = {
+                        "users": {"count": 0, "id": []},
+                        "luggage": {"count": 0, "id": []},
+                        "staff": {"count": 0, "id": []},
+                        "guard": {"count": 0, "id": []},
+                        "environment": {}
+                    }
+                summary[room_id][tracker_type]["count"] += 1
+                summary[room_id][tracker_type]["id"].append(row["picoID"])
 
-        # Environment Data: only if mode is "all" or "environment"
+        # Environment Data from environment_sensor_data: latest record per sensor (treat picoID as roomID)
         if mode in ("all", "environment"):
-            # Query only records with logged_at in the last minute relative to snapshot_time.
             env_query = """
-            SELECT e.roomID, e.temperature, e.sound, e.light, e.IAQ, e.pressure, e.humidity
-            FROM environment e
-            JOIN (
-                SELECT roomID, MAX(logged_at) AS max_time
-                FROM environment
-                WHERE logged_at BETWEEN (%s - INTERVAL 1 MINUTE) AND %s
-                GROUP BY roomID
-            ) latest ON e.roomID = latest.roomID AND e.logged_at = latest.max_time;
+                SELECT e.picoID as roomID, e.temperature, e.sound, e.light, e.IAQ, e.pressure, e.humidity
+                FROM environment_sensor_data e
+                JOIN (
+                    SELECT picoID, MAX(logged_at) AS latest_time
+                    FROM environment_sensor_data
+                    WHERE logged_at BETWEEN (%s - INTERVAL 1 MINUTE) AND %s
+                    GROUP BY picoID
+                ) latest ON e.picoID = latest.picoID AND e.logged_at = latest.latest_time
             """
             cursor.execute(env_query, (snapshot_time, snapshot_time))
             env_results = cursor.fetchall()
@@ -292,7 +310,7 @@ def summary():
         cursor.close()
         connection.close()
 
-import re
+
 
 def parse_period(period_str):
     """
@@ -322,13 +340,6 @@ def summary_average():
         return jsonify(cookie_validation_error[0]), cookie_validation_error[1]
 
     req_data = request.get_json(silent=True) or {}
-    
-    if req_data:
-        if "start_time" in req_data and not req_data["start_time"].strip():
-            return jsonify({"error": "Missing or invalid parameters: start_time is empty"}), 400
-        if "rooms" in req_data and isinstance(req_data["rooms"], list) and len(req_data["rooms"]) == 0:
-            return jsonify({"error": "Missing or invalid parameters: rooms list is empty"}), 400
-
     now = datetime.utcnow()
     # Updated: check start_time and end_time from JSON first, then from query parameters.
     start_time_str = req_data.get("start_time") or request.args.get("start_time")
@@ -341,38 +352,29 @@ def summary_average():
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
 
-    if not start_time_str:
-        start_dt = now - timedelta(hours=24)
-    else:
-        try:
-            start_dt = datetime.fromisoformat(start_time_str.replace("Z", ""))
-        except ValueError:
-            return jsonify({"error": "Invalid start_time format"}), 400
+    try:
+        start_dt = datetime.fromisoformat(start_time_str.replace("Z", "")) if start_time_str else now - timedelta(hours=24)
+    except ValueError:
+        return jsonify({"error": "Invalid start_time format"}), 400
 
-    if not end_time_str:
-        end_dt = now
-    else:
-        try:
-            end_dt = datetime.fromisoformat(end_time_str.replace("Z", ""))
-        except ValueError:
-            return jsonify({"error": "Invalid end_time format"}), 400
+    try:
+        end_dt = datetime.fromisoformat(end_time_str.replace("Z", "")) if end_time_str else now
+    except ValueError:
+        return jsonify({"error": "Invalid end_time format"}), 400
 
     if start_dt >= end_dt:
-        return jsonify({"error": "Invalid request parameters: start_time must be before end_time"}), 400
+        return jsonify({"error": "start_time must be before end_time"}), 400
 
     connection = get_db_connection()
     if connection is None:
         return jsonify({"error": "MySQL connection unavailable"}), 500
-
     cursor = connection.cursor(dictionary=True)
+    average_summary = {}
     try:
-        average_summary = {}
-
-        # Updated Environment Query:
-        # Map roomID '694904231' to '3' (adjust or extend this mapping as needed).
-        env_query = f"""
+        # 1) Environment: Aggregate by environment_sensor_data grouped by picoID (as roomID) and bucket.
+        env_query = """
         SELECT 
-            CASE WHEN roomID = '694904231' THEN '3' ELSE roomID END as roomID,
+            e.picoID as roomID,
             FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(logged_at)/%s)*%s) as bucket,
             AVG(temperature) as avg_temperature, MAX(temperature) as peak_temperature, MIN(temperature) as trough_temperature,
             AVG(sound) as avg_sound, MAX(sound) as peak_sound, MIN(sound) as trough_sound,
@@ -380,105 +382,102 @@ def summary_average():
             AVG(IAQ) as avg_IAQ, MAX(IAQ) as peak_IAQ, MIN(IAQ) as trough_IAQ,
             AVG(pressure) as avg_pressure, MAX(pressure) as peak_pressure, MIN(pressure) as trough_pressure,
             AVG(humidity) as avg_humidity, MAX(humidity) as peak_humidity, MIN(humidity) as trough_humidity
-        FROM environment
+        FROM environment_sensor_data e
         WHERE logged_at BETWEEN %s AND %s
         """
-        params = [period_seconds, period_seconds, start_dt, end_dt]
+        env_params = [period_seconds, period_seconds, start_dt, end_dt]
         if rooms:
-            env_query += " AND roomID IN (" + ",".join(["%s"] * len(rooms)) + ")"
-            params.extend(rooms)
-        env_query += " GROUP BY roomID, bucket ORDER BY bucket ASC;"
-        cursor.execute(env_query, params)
+            env_query += " AND e.picoID IN (" + ",".join(["%s"] * len(rooms)) + ")"
+            env_params.extend(rooms)
+        env_query += " GROUP BY e.picoID, bucket ORDER BY bucket ASC;"
+        cursor.execute(env_query, env_params)
         env_results = cursor.fetchall()
-
-        # Process environment results.
         for row in env_results:
-            bucket = row['bucket']
-            if isinstance(bucket, datetime):
-                bucket = bucket.isoformat() + "Z"
-            else:
-                bucket = str(bucket)
-            room_id = str(row['roomID'])
+            bucket = row["bucket"]
+            bucket = bucket.isoformat() + "Z" if isinstance(bucket, datetime) else str(bucket)
+            room_id = str(row["roomID"])
             if bucket not in average_summary:
                 average_summary[bucket] = {}
             if room_id not in average_summary[bucket]:
-                average_summary[bucket][room_id] = {}
+                average_summary[bucket][room_id] = init_average_room()
             average_summary[bucket][room_id]["temperature"] = {
-                "average": row["avg_temperature"], "peak": row["peak_temperature"], "trough": row["trough_temperature"]
+                "average": row["avg_temperature"],
+                "peak": row["peak_temperature"],
+                "trough": row["trough_temperature"]
             }
             average_summary[bucket][room_id]["sound"] = {
-                "average": row["avg_sound"], "peak": row["peak_sound"], "trough": row["trough_sound"]
+                "average": row["avg_sound"],
+                "peak": row["peak_sound"],
+                "trough": row["trough_sound"]
             }
             average_summary[bucket][room_id]["light"] = {
-                "average": row["avg_light"], "peak": row["peak_light"], "trough": row["trough_light"]
+                "average": row["avg_light"],
+                "peak": row["peak_light"],
+                "trough": row["trough_light"]
             }
             average_summary[bucket][room_id]["IAQ"] = {
-                "average": row["avg_IAQ"], "peak": row["peak_IAQ"], "trough": row["trough_IAQ"]
+                "average": row["avg_IAQ"],
+                "peak": row["peak_IAQ"],
+                "trough": row["trough_IAQ"]
             }
             average_summary[bucket][room_id]["pressure"] = {
-                "average": row["avg_pressure"], "peak": row["peak_pressure"], "trough": row["trough_pressure"]
+                "average": row["avg_pressure"],
+                "peak": row["peak_pressure"],
+                "trough": row["trough_pressure"]
             }
             average_summary[bucket][room_id]["humidity"] = {
-                "average": row["avg_humidity"], "peak": row["peak_humidity"], "trough": row["trough_humidity"]
+                "average": row["avg_humidity"],
+                "peak": row["peak_humidity"],
+                "trough": row["trough_humidity"]
             }
 
-        # Query occupancy data.
-        occupancy_types = ["users", "luggage", "staff", "guard"]
-        for occ in occupancy_types:
-            occ_query = f"""
+        # 2) Occupancy: Aggregate counts from bluetooth_tracker_data grouped by room and bucket.
+        occ_query = """
             SELECT 
                 roomID,
-                FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(logged_at)/%s)*%s) as bucket,
-                COUNT(*) as occ_count
-            FROM {occ}
+                picoID,
+                FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(logged_at)/%s)*%s) as bucket
+            FROM bluetooth_tracker_data
             WHERE logged_at BETWEEN %s AND %s
-            """
-            occ_params = [period_seconds, period_seconds, start_dt, end_dt]
-            if rooms:
-                occ_query += " AND roomID IN (" + ",".join(["%s"] * len(rooms)) + ")"
-                occ_params.extend(rooms)
-            occ_query += " GROUP BY roomID, bucket ORDER BY bucket ASC;"
-            cursor.execute(occ_query, occ_params)
-            occ_results = cursor.fetchall()
-            for row in occ_results:
-                bucket = row['bucket']
-                if isinstance(bucket, datetime):
-                    bucket = bucket.isoformat() + "Z"
-                else:
-                    bucket = str(bucket)
-                room_id = str(row['roomID'])
-                count = row["occ_count"]
-                if bucket not in average_summary:
-                    average_summary[bucket] = {}
-                if room_id not in average_summary[bucket]:
-                    # Initialize environment metrics to zeros.
-                    average_summary[bucket][room_id] = {
-                        "temperature": {"average": 0, "peak": 0, "trough": 0},
-                        "sound": {"average": 0, "peak": 0, "trough": 0},
-                        "light": {"average": 0, "peak": 0, "trough": 0},
-                        "IAQ": {"average": 0, "peak": 0, "trough": 0},
-                        "pressure": {"average": 0, "peak": 0, "trough": 0},
-                        "humidity": {"average": 0, "peak": 0, "trough": 0}
-                    }
-                average_summary[bucket][room_id][occ] = {
-                    "average": count,
-                    "peak": count,
-                    "trough": count
-                }
-        
-        # Ensure that for each bucket and each room, every occupancy type and environment metric is present.
-        default_occ = {"average": 0, "peak": 0, "trough": 0}
-        default_env = {"average": 0, "peak": 0, "trough": 0}
-        env_keys = ["temperature", "sound", "light", "IAQ", "pressure", "humidity"]
-        for bucket in average_summary:
-            for room in average_summary[bucket]:
-                for occ in occupancy_types:
-                    if occ not in average_summary[bucket][room]:
-                        average_summary[bucket][room][occ] = default_occ.copy()
-                for key in env_keys:
-                    if key not in average_summary[bucket][room]:
-                        average_summary[bucket][room][key] = default_env.copy()
-        
+        """
+        occ_params = [period_seconds, period_seconds, start_dt, end_dt]
+        if rooms:
+            occ_query += " AND roomID IN (" + ",".join(["%s"] * len(rooms)) + ")"
+            occ_params.extend(rooms)
+        occ_query += " ORDER BY logged_at ASC;"
+        cursor.execute(occ_query, occ_params)
+        occ_rows = cursor.fetchall()
+        occupant_counts = {}
+        for row in occ_rows:
+            bucket = row["bucket"]
+            bucket = bucket.isoformat() + "Z" if isinstance(bucket, datetime) else str(bucket)
+            room_id = str(row["roomID"])
+            tracker = map_tracker_type(row["picoID"])
+            if tracker == "unknown":
+                continue
+            key = (bucket, room_id, tracker)
+            occupant_counts[key] = occupant_counts.get(key, 0) + 1
+
+        for (bucket, room_id, tracker), count in occupant_counts.items():
+            if bucket not in average_summary:
+                average_summary[bucket] = {}
+            if room_id not in average_summary[bucket]:
+                average_summary[bucket][room_id] = init_average_room()
+            average_summary[bucket][room_id][tracker] = {
+                "average": count,
+                "peak": count,
+                "trough": count
+            }
+
+        # Ensure every bucket/room has all keys to avoid KeyErrors.
+        for bucket_key, rooms_dict in average_summary.items():
+            for room_key, data_dict in rooms_dict.items():
+                for t in ["users", "luggage", "staff", "guard"]:
+                    if t not in data_dict:
+                        data_dict[t] = {"average": 0, "peak": 0, "trough": 0}
+                for env_var in ["temperature", "sound", "light", "IAQ", "pressure", "humidity"]:
+                    if env_var not in data_dict:
+                        data_dict[env_var] = {"average": 0, "peak": 0, "trough": 0}
         return jsonify(average_summary)
     except Error as e:
         print(f"Error querying data: {e}")
@@ -498,20 +497,14 @@ def movement():
     time_start_str = request.args.get("time_start")
     time_end_str = request.args.get("time_end")
     now = datetime.utcnow()
-    if time_start_str:
-        try:
-            time_start = datetime.fromisoformat(time_start_str.replace("Z", ""))
-        except ValueError:
-            return jsonify({"error": "Invalid time_start format"}), 400
-    else:
-        time_start = now - timedelta(hours=24)
-    if time_end_str:
-        try:
-            time_end = datetime.fromisoformat(time_end_str.replace("Z", ""))
-        except ValueError:
-            return jsonify({"error": "Invalid time_end format"}), 400
-    else:
-        time_end = now
+    try:
+        time_start = datetime.fromisoformat(time_start_str.replace("Z", "")) if time_start_str else now - timedelta(hours=24)
+    except ValueError:
+        return jsonify({"error": "Invalid time_start format"}), 400
+    try:
+        time_end = datetime.fromisoformat(time_end_str.replace("Z", "")) if time_end_str else now
+    except ValueError:
+        return jsonify({"error": "Invalid time_end format"}), 400
 
     if time_start >= time_end:
         return jsonify({"error": "time_start must be before time_end"}), 400
@@ -530,65 +523,28 @@ def movement():
     connection = get_db_connection()
     if connection is None:
         return jsonify({"error": "MySQL connection unavailable"}), 500
-
     cursor = connection.cursor(dictionary=True)
     movement_summary = {}
     try:
-        # For each minute bucket, query the occupancy data.
         for bucket in buckets:
             bucket_end = bucket + timedelta(minutes=1)
-            # Use a JOIN to select only the latest record per PicoID in this bucket.
             query = """
-            SELECT c.roomID, c.PicoID, c.type, c.logged_at as latest_log,
-                   DATE_FORMAT(c.logged_at, '%%Y-%%m-%%dT%%H:%%i:00Z') as bucket
-            FROM (
-                SELECT roomID, logged_at, PicoID, 'User' as type
-                FROM users
-                WHERE logged_at >= %s AND logged_at < %s
-                UNION ALL
-                SELECT roomID, logged_at, PicoID, 'Luggage' as type
-                FROM luggage
-                WHERE logged_at >= %s AND logged_at < %s
-                UNION ALL
-                SELECT roomID, logged_at, PicoID, 'Staff' as type
-                FROM staff
-                WHERE logged_at >= %s AND logged_at < %s
-                UNION ALL
-                SELECT roomID, logged_at, PicoID, 'Guard' as type
-                FROM guard
-                WHERE logged_at >= %s AND logged_at < %s
-            ) AS c
-            JOIN (
-                SELECT PicoID, MAX(logged_at) as max_time
-                FROM (
-                    SELECT PicoID, logged_at FROM users WHERE logged_at >= %s AND logged_at < %s
-                    UNION ALL
-                    SELECT PicoID, logged_at FROM luggage WHERE logged_at >= %s AND logged_at < %s
-                    UNION ALL
-                    SELECT PicoID, logged_at FROM staff WHERE logged_at >= %s AND logged_at < %s
-                    UNION ALL
-                    SELECT PicoID, logged_at FROM guard WHERE logged_at >= %s AND logged_at < %s
-                ) AS all_logs
-                GROUP BY PicoID
-            ) AS sub ON c.PicoID = sub.PicoID AND c.logged_at = sub.max_time
-            ORDER BY c.logged_at DESC;
+            SELECT roomID, picoID, logged_at as latest_log,
+                   DATE_FORMAT(logged_at, '%%Y-%%m-%%dT%%H:%%i:00Z') as bucket
+            FROM bluetooth_tracker_data
+            WHERE logged_at >= %s AND logged_at < %s
+            ORDER BY logged_at DESC;
             """
-            # We need to pass bucket and bucket_end for each occurrence.
-            params = [bucket, bucket_end, bucket, bucket_end, bucket, bucket_end, bucket, bucket_end,
-                      bucket, bucket_end, bucket, bucket_end, bucket, bucket_end, bucket, bucket_end]
-            cursor.execute(query, params)
+            cursor.execute(query, (bucket, bucket_end))
             results = cursor.fetchall()
-            
             if results:
-                # Group results by room.
                 bucket_data = {}
                 for row in results:
                     room_id = str(row['roomID'])
-                    pico_id = str(row['PicoID'])
-                    pico_type = row['type']
+                    tracker = map_tracker_type(row['picoID'])
                     if room_id not in bucket_data:
                         bucket_data[room_id] = {}
-                    bucket_data[room_id][pico_id] = pico_type
+                    bucket_data[room_id][row['picoID']] = tracker
                 bucket_key = bucket.isoformat() + "Z"
                 movement_summary[bucket_key] = bucket_data
 
