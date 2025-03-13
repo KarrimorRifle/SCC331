@@ -165,6 +165,7 @@ void BluetoothSensor::setCurrentTrackerGroup(String newTrackerGroup) {
   trackerGroup = newTrackerGroup;
 
   if (currentlySetUp) {
+    Serial.println("7");
     mqtt->removeSubscription(&warningSubscription);
   
     String specificWarningRoute = "";
@@ -173,7 +174,7 @@ void BluetoothSensor::setCurrentTrackerGroup(String newTrackerGroup) {
     }
   
     warningSubscription = MqttSubscription(specificWarningRoute);
-  
+      
     mqtt->addSubscription(&warningSubscription);
   }
 }

@@ -101,14 +101,20 @@ bool MqttConnection::addSubscription(MqttSubscription* sub) {
 
 bool MqttConnection::removeSubscription(MqttSubscription* sub) {
     for (int i = 0; i < currentSubscriptionAmount; i++) {
-        if (subscriptions[currentSubscriptionAmount]->getSubscriptionRoute().equals(sub->getSubscriptionRoute())) {
-            for (int j = currentSubscriptionAmount; j > i; j--) {
+        Serial.println("8");
+        Serial.println(currentSubscriptionAmount);
+        if (subscriptions[i]->getSubscriptionRoute().equals(sub->getSubscriptionRoute())) {
+            Serial.println("9");
+            for (int j = currentSubscriptionAmount - 1; j > i; j--) {
                 subscriptions[j-1] = subscriptions[j];
             }
+            currentSubscriptionAmount--;
+            Serial.println("10");
             return true;
         }
     }
 
+    Serial.println("11");
     return false;
 }
 

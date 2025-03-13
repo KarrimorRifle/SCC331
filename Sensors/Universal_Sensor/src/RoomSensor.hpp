@@ -27,6 +27,7 @@ class RoomSensor : public SensorType {
         MqttConnection* mqtt;
         String* readableID;
         bool currentlyActive;
+        bool hasBeenActive;
         Bsec iaqSensor; // Climate
         static short sampleBuffer[512]; // Sound
         static volatile int samplesRead;

@@ -15,33 +15,36 @@ RoomSensor::RoomSensor(Adafruit_SSD1306* Display, MqttConnection* Mqtt, uint16_t
     lastActionTime = millis();
     bluetoothID = BluetoothID;
     currentlyActive = false;
+    hasBeenActive = false;
 }
 
 
 void RoomSensor::setup() {
-  // Initialise Climate Sensors:
-  iaqSensor.begin(BME68X_I2C_ADDR_LOW, Wire);
-  bsec_virtual_sensor_t sensorList[13] = {
-	BSEC_OUTPUT_IAQ,
-	BSEC_OUTPUT_STATIC_IAQ,
-	BSEC_OUTPUT_CO2_EQUIVALENT,
-	BSEC_OUTPUT_BREATH_VOC_EQUIVALENT,
-	BSEC_OUTPUT_RAW_TEMPERATURE,
-	BSEC_OUTPUT_RAW_PRESSURE,
-	BSEC_OUTPUT_RAW_HUMIDITY,
-	BSEC_OUTPUT_RAW_GAS,
-	BSEC_OUTPUT_STABILIZATION_STATUS,
-	BSEC_OUTPUT_RUN_IN_STATUS,
-	BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE,
-	BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY,
-	BSEC_OUTPUT_GAS_PERCENTAGE
-  };
+  if (!hasBeenActive) {
+    // Initialise Climate Sensors:
+    iaqSensor.begin(BME68X_I2C_ADDR_LOW, Wire);
+    bsec_virtual_sensor_t sensorList[13] = {
+      BSEC_OUTPUT_IAQ,
+      BSEC_OUTPUT_STATIC_IAQ,
+      BSEC_OUTPUT_CO2_EQUIVALENT,
+      BSEC_OUTPUT_BREATH_VOC_EQUIVALENT,
+      BSEC_OUTPUT_RAW_TEMPERATURE,
+      BSEC_OUTPUT_RAW_PRESSURE,
+      BSEC_OUTPUT_RAW_HUMIDITY,
+      BSEC_OUTPUT_RAW_GAS,
+      BSEC_OUTPUT_STABILIZATION_STATUS,
+      BSEC_OUTPUT_RUN_IN_STATUS,
+      BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE,
+      BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY,
+      BSEC_OUTPUT_GAS_PERCENTAGE
+    };
 
-  iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
+    iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
 
-  // Light: 
-  bh1745nuc.begin(BH1745NUC_DEVICE_ADDRESS_38);
-  bh1745nuc.startMeasurement();
+    // Light: 
+    bh1745nuc.begin(BH1745NUC_DEVICE_ADDRESS_38);
+    bh1745nuc.startMeasurement();
+  }
 
   // Noise:
   PDM.onReceive(this->onPDMdata);

@@ -94,12 +94,15 @@ void setupMQTT() {
 void handleConfigMessage(String message) {
 	Serial.print("Message Recieved:");
 	Serial.println(message);
+	Serial.println("1");
 	String hardwareID = mqtt.getHardwareIdentifier();
 
 	StaticJsonDocument<1000> doc;
 
 	DeserializationError error = deserializeJson(doc, message);
   
+	Serial.println("2");
+
 	if (error) {
 		display.clearDisplay();
 		display.setCursor(0, 0);
@@ -109,6 +112,8 @@ void handleConfigMessage(String message) {
 		display.display(); 
 		return;
 	}
+
+	Serial.println("3");
 
 	if (doc.containsKey("PicoType")) {
 		int recievedPicoType = doc["PicoType"].as<int>();
@@ -148,9 +153,14 @@ void handleConfigMessage(String message) {
 		}
 	}
   
+	Serial.println("4");
+
 	if (doc.containsKey("ReadableID")) {
 		  readableID = doc["ReadableID"].as<String>();
 	}
+
+	Serial.println("5");
+
 
 	if (doc.containsKey("BluetoothID")) {
 		bluetoothID = doc["BluetoothID"].as<uint16_t>();
@@ -158,10 +168,15 @@ void handleConfigMessage(String message) {
 		roomSensorConfig.setBluetoothID(bluetoothID);
 	}
 
+	Serial.println("6");
+
 	if (doc.containsKey("TrackerGroup")) {
 		String bluetoothTrackerGroup = doc["TrackerGroup"].as<String>();
 		bluetoothSensorConfig.setCurrentTrackerGroup(bluetoothTrackerGroup);
 	}
+
+	Serial.println("7");
+
 }
 
 
@@ -231,5 +246,14 @@ void loop(void)
 	currentSensorConfig->loop();
 	if (configSubscription.hasMessage()) {
 		handleConfigMessage(configSubscription.getMessage());
+	}
+	if (currentSensorConfig->getSensorType() == UNASSIGNED_PICO) {
+		// Update display:
+		display.clearDisplay();
+		display.setCursor(0, 0);
+		display.println("Waiting for PicoType from Server");
+		display.println("Hardware ID: " +  mqtt.getHardwareIdentifier());
+		display.println("Device Name: " + readableID );
+		display.display(); 
 	}
 }
