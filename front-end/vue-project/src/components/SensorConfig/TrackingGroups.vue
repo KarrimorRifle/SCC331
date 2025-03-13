@@ -36,7 +36,7 @@ const newGroupName = ref("");
 // Fetch all tracking groups from /get/tracking/groups
 const loadTrackingGroups = async () => {
   try {
-    const res = await axios.get("http://localhost:5006/get/tracking/groups", {
+    const res = await axios.get("/api/hardware/get/tracking/groups", {
       withCredentials: true, // important for sending session_id cookie
     });
     groups.value = res.data.groups; // e.g. [{ groupID: 1, groupName: "Group A" }, ...]
@@ -52,7 +52,7 @@ const addGroup = async () => {
   try {
     // POST { groupName: "xxx" }
     const res = await axios.post(
-      "http://localhost:5006/add/tracking/group",
+      "/api/hardware/add/tracking/group",
       { groupName: trimmedName },
       { withCredentials: true }
     );
@@ -71,7 +71,7 @@ const addGroup = async () => {
 const updateGroup = async (group: { groupID: number; groupName: string }) => {
   try {
     await axios.patch(
-      `http://localhost:5006/patch/tracking/group/${group.groupID}`,
+      `/api/hardware/patch/tracking/group/${group.groupID}`,
       { groupName: group.groupName },
       { withCredentials: true }
     );
@@ -85,7 +85,7 @@ const updateGroup = async (group: { groupID: number; groupName: string }) => {
 const deleteGroup = async (group: { groupID: number; groupName: string }) => {
   try {
     await axios.post(
-      `http://localhost:5006/delete/tracking/group/${group.groupID}`,
+      `/api/hardware/delete/tracking/group/${group.groupID}`,
       {},
       { withCredentials: true }
     );

@@ -54,6 +54,13 @@ export default defineConfig(({ mode }) => {
         rewrite: path => path.replace(/^\/api\/messages/, '')
       },
 
+      // Sensor Config (port 5006)
+      '/api/hardware': {
+        target: 'http://localhost:5006',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/hardware/, '')
+      },
+
       // Data Reader (port 5003)
       '/api/reader': {
         target: 'http://localhost:5003',

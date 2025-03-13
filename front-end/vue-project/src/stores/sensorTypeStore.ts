@@ -101,18 +101,35 @@ function toSingular(word: string): string {
 
 /**
  * Utility: extract the canonical part of a sensor name.
- * For example, "luggage-01" becomes "luggage".
+ * Instead of simply splitting on '-', we check if the name contains one of the canonical keywords
+ * (e.g. "luggage", "user", etc.) and return that keyword.
  */
 function extractCanonicalName(name: string): string {
-  return name.split('-')[0];
+  const lowerName = name.toLowerCase();
+  // Check the domainOverrides first.
+  const overridesForDomain = domainOverrides[currentDomain.value] || {};
+  for (const canonicalKey in overridesForDomain) {
+    const allowedNames = overridesForDomain[canonicalKey].map(n => n.toLowerCase());
+    for (const allowed of allowedNames) {
+      if (lowerName.includes(allowed)) {
+        return canonicalKey;
+      }
+    }
+  }
+  // Fallback: check base sensor mapping keys.
+  for (const key in baseSensorMapping) {
+    if (lowerName.includes(key)) {
+      return key;
+    }
+  }
+  return name;
 }
 
 /**
  * Map an incoming readablePicoID to a canonical sensor key.
- * This ensures that names like "Passengers" or "Users" always map to "user".
+ * This ensures that names like "Passengers", "Users", or "luggage-01" always map to "user" or "luggage" respectively.
  */
 function mapReadablePicoID(readablePicoID: string): string {
-  // First, strip any suffix.
   const baseName = extractCanonicalName(readablePicoID);
   const normalizedInput = toSingular(baseName.toLowerCase());
   const domainMap = domainOverrides[currentDomain.value] || {};
@@ -121,7 +138,7 @@ function mapReadablePicoID(readablePicoID: string): string {
     const normalizedCanonical = toSingular(canonicalKey.toLowerCase());
     const normalizedOverrides = domainMap[canonicalKey].map(name => toSingular(name.toLowerCase()));
     if (normalizedInput === normalizedCanonical || normalizedOverrides.includes(normalizedInput)) {
-      return canonicalKey; // Return the canonical key
+      return canonicalKey;
     }
   }
   return normalizedInput;
@@ -144,10 +161,65 @@ const baseSensorMapping: Record<string, Sensor> = {
 };
 
 /**
- * Reactive sensor mapping and sensor list.
+ * Reactive sensor mapping (grouped) and sensor lists.
  */
 export const sensorMapping = ref<Record<string, Sensor>>({ ...baseSensorMapping });
-export const sensors = ref<Sensor[]>([]);
+export const sensors = ref<Sensor[]>([]);           // Grouped sensors list
+export const separatedSensors = ref<Sensor[]>([]);    // Separated (ungrouped) sensor list
+
+/**
+ * Group devices from API by canonical key.
+ */
+function groupDevicesByCanonicalKey(devices: DeviceConfig[]): Record<string, DeviceConfig[]> {
+  const groups: Record<string, DeviceConfig[]> = {};
+  devices.forEach(device => {
+    const baseName = extractCanonicalName(device.readablePicoID);
+    const key = mapReadablePicoID(baseName);
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(device);
+  });
+  return groups;
+}
+
+/**
+ * Merge grouped devices with the base sensor mapping.
+ * If more than one device exists in a group, append the count to the displayName.
+ */
+function updateSensorMappingWithGroups(groups: Record<string, DeviceConfig[]>): Record<string, Sensor> {
+  const newMapping: Record<string, Sensor> = { ...baseSensorMapping };
+  for (const key in groups) {
+    const devices = groups[key];
+    const count = devices.length;
+    const defaultName = domainOverrides[currentDomain.value]?.[key]?.[0] || baseSensorMapping[key]?.displayName || key;
+    // If count > 1, append count; otherwise, use the device's readablePicoID.
+    const displayName = count > 1 ? `${defaultName} (${count})` : devices[0].readablePicoID;
+    const icon = domainIcons[currentDomain.value]?.[key] || baseSensorMapping[key].icon;
+    const type = devices[0].picoType;
+    newMapping[key] = {
+      name: key,
+      displayName,
+      icon,
+      type,
+    };
+  }
+  return newMapping;
+}
+
+/**
+ * Map each device config individually (ungrouped) into a Sensor.
+ */
+function mapDeviceToSensor(device: DeviceConfig): Sensor {
+  const baseName = extractCanonicalName(device.readablePicoID);
+  const canonicalKey = mapReadablePicoID(baseName);
+  return {
+    name: canonicalKey,
+    displayName: device.readablePicoID,
+    icon: domainIcons[currentDomain.value]?.[canonicalKey] || faTowerBroadcast,
+    type: device.picoType,
+  };
+}
 
 /**
  * Apply domain overrides.
@@ -179,46 +251,32 @@ const applyDomainOverrides = async () => {
 
 /**
  * Fetch and update sensor mappings dynamically from API.
- * First apply domain overrides, then merge in API names.
- * We use extractCanonicalName() so that names like "user-01" become "user".
+ * We update two lists:
+ *  - "separatedSensors": each device mapped individually.
+ *  - "sensors": grouped by canonical key with counts appended.
  */
 export const updateSensorMappings = async () => {
   try {
-    await applyDomainOverrides();
-
-    const response = await axios.get("http://localhost:5006/get/device/configs", { withCredentials: true });
+    const response = await axios.get("/api/hardware/get/device/configs", { withCredentials: true });
     const data: { configs: DeviceConfig[] } = response.data;
     if (!data.configs) return;
-    console.log(data.configs);
+    console.log("Fetched configs:", data.configs);
 
-    // Start with current mapping.
-    const updatedMapping: Record<string, Sensor> = { ...sensorMapping.value };
+    // Build separatedSensors: one entry per device config (ungrouped)
+    separatedSensors.value = data.configs.map(device => mapDeviceToSensor(device));
+    console.log("Separated Sensors:", separatedSensors.value);
 
-    data.configs.forEach((device: DeviceConfig) => {
-      let { readablePicoID, picoType } = device;
-      // Normalize the API name by extracting its canonical part.
-      const canonicalAPIName = extractCanonicalName(readablePicoID);
-      const mappedKey = mapReadablePicoID(canonicalAPIName);
-      if (picoType === 0) return;
+    // Group devices by canonical key.
+    const groups = groupDevicesByCanonicalKey(data.configs);
+    console.log("Grouped Devices:", groups);
 
-      if (!updatedMapping[mappedKey]) {
-        updatedMapping[mappedKey] = {
-          name: mappedKey,
-          displayName: canonicalAPIName,
-          icon: domainIcons[currentDomain.value]?.[mappedKey] || faTowerBroadcast,
-          type: picoType,
-        };
-      } else {
-        const defaultOverride = domainOverrides[currentDomain.value]?.[mappedKey]?.[0] || baseSensorMapping[mappedKey]?.displayName;
-        if (updatedMapping[mappedKey].displayName === defaultOverride) {
-          updatedMapping[mappedKey].displayName = canonicalAPIName;
-        }
-      }
-    });
+    // Merge grouped devices with base mapping.
+    const newMapping = updateSensorMappingWithGroups(groups);
+    sensorMapping.value = newMapping;
 
-    sensorMapping.value = updatedMapping;
     await applyDomainOverrides();
 
+    // Build the grouped sensors array.
     sensors.value = Object.entries(sensorMapping.value).map(([key, sensor]) => ({
       name: key,
       displayName: sensor.displayName,
@@ -227,6 +285,8 @@ export const updateSensorMappings = async () => {
       disconnected: true,
       type: sensor.type
     }));
+
+    console.log("Final Grouped Sensors:", sensors.value);
   } catch (error) {
     console.error("Failed to fetch sensor mappings:", error);
   }
@@ -240,5 +300,6 @@ export const initializeSensors = async () => {
   currentDomain.value = domainConfig.value.config.domain.toLowerCase();
   await updateSensorMappings();
   console.log("Initialized Domain:", currentDomain.value);
-  console.log("Sensors:", sensors.value);
+  console.log("Grouped Sensors after initialization:", sensors.value);
+  console.log("Separated Sensors after initialization:", separatedSensors.value);
 };

@@ -56,7 +56,7 @@ const trackingGroups = ref([]);
 
 const loadData = async () => {
   try {
-    const configRes = await axios.get('http://localhost:5006/get/device/configs', {
+    const configRes = await axios.get('/api/hardware/get/device/configs', {
       withCredentials: true,
     });
     deviceConfigs.value = configRes.data.configs;
@@ -65,7 +65,7 @@ const loadData = async () => {
   }
 
   try {
-    const groupsRes = await axios.get('http://localhost:5006/get/tracking/groups', {
+    const groupsRes = await axios.get('/api/hardware/get/tracking/groups', {
       withCredentials: true,
     });
     trackingGroups.value = groupsRes.data.groups;
@@ -86,7 +86,7 @@ const updateDeviceConfig = async (config: any) => {
     }
 
     await axios.patch(
-      `http://localhost:5006/patch/device/config/${config.picoID}`,
+      `/api/hardware/patch/device/config/${config.picoID}`,
       patchData,
       { withCredentials: true }
     );
