@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faExclamationTriangle} from '@fortawesome/free-solid-svg-icons';
 import { handleWarningButtonPressed } from '@/utils/helper/warningUtils';
 import { usePresetLocalCache } from '../stores/presetLocalCache';
-import {sensorMapping, sensors} from "../stores/sensorTypeStore";
+import { sensors } from "../stores/sensorTypeStore";
 import PersonMarker from "./ObjectMarker/PersonMarker.vue"
 import LuggageMarker from "./ObjectMarker/LuggageMarker.vue";
 
@@ -273,6 +273,7 @@ const getSensorStyle = () => {
     <div class="d-flex flex-column">
       <span class="overlay-area-label">{{ label }}</span>
 
+      <!--
       <div class="sensor-container">
         <div
           v-for="sensor in displayedSensors"
@@ -283,12 +284,13 @@ const getSensorStyle = () => {
         >
           <font-awesome-icon
             v-if="sensor.name !== 'ellipsis'"
-            :icon="sensorMapping[sensor.name]?.icon || 'question'"
+            :icon="sensors[sensor.name]?.icon || 'question'"
             class="sensor-icon"
           />
           <span v-else class="ellipsis">...</span>
         </div>
       </div>
+      -->
     </div>
 
     <PersonMarker

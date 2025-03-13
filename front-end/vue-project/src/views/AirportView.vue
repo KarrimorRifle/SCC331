@@ -13,7 +13,7 @@ import { addNotification } from '@/stores/notificationStore';
 */
 import { usePresetStore } from "../utils/useFetchPresets";
 import { usePresetLocalCache } from '../stores/presetLocalCache';
-import {sensors, updateSensorMappings, separatedSensors} from "../stores/sensorTypeStore";
+import {sensors, updateSensorMappings, } from "../stores/sensorTypeStore";
 // Receive isMobile from App.vue
 const props = defineProps({
   isMobile: {
@@ -56,10 +56,10 @@ onMounted(async () => {
   await updateSensorMappings();
   enabledSensors.value = sensors.value.map(sensor => sensor.name);
   await presetStore.fetchPresets();
-  if (presetStore.presetList.presets.length > 0) {
+  if (presetStore?.presetList?.presets?.length > 0) {
     await presetStore.fetchPreset();
   }
-  console.log(separatedSensors.value)
+  console.log(sensors.value)
 });
 
 </script>
@@ -96,10 +96,12 @@ onMounted(async () => {
           @save="presetStore.uploadBoxes"
           @cancel="presetStore.cancelBoxEdit"
         />
+        <!--
         <FilterBar 
           class="filter-bar flex-grow-1"
           @updateFilters="updateEnabledSensors" 
         />
+        -->
       </div>
     </template>
 
@@ -148,7 +150,7 @@ onMounted(async () => {
       @save="presetStore.uploadBoxes"
       @cancel="presetStore.cancelBoxEdit"
     />
-    <FilterBar @updateFilters="updateEnabledSensors" />
+    <!--<FilterBar @updateFilters="updateEnabledSensors" />-->
     </div>
 
     <DashBoard
