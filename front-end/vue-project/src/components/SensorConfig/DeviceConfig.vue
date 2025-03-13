@@ -24,10 +24,15 @@
             </select>
           </td>
           <td>
+            <!-- Show tracking group only if picoType === 2 -->
             <div v-if="config.picoType === 2">
               <select v-model="config.trackingGroupID">
                 <option :value="-1">None</option>
-                <option v-for="group in trackingGroups" :key="group.groupID" :value="group.groupID">
+                <option
+                  v-for="group in trackingGroups"
+                  :key="group.groupID"
+                  :value="group.groupID"
+                >
                   {{ group.groupName }}
                 </option>
               </select>
@@ -46,25 +51,76 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
 
-// Dummy device config data (simulate GET /get/device/configs)
-const deviceConfigs = ref([
-  { picoID: '00:11:22:33:44:55', readablePicoID: 'Sensor 1', picoType: 1, trackingGroupID: -1 },
-  { picoID: 'AA:BB:CC:DD:EE:FF', readablePicoID: 'Sensor 2', picoType: 2, trackingGroupID: 1 },
-]);
+// Reactive arrays to store data
+const deviceConfigs = ref([]);
+const trackingGroups = ref([]);
 
-// Dummy tracking groups (simulate GET /get/tracking/groups)
-const trackingGroups = ref([
-  { groupID: 1, groupName: 'Group A' },
-  { groupID: 2, groupName: 'Group B' },
-]);
+/**
+ * Load device configs from /get/device/configs and tracking groups from /get/tracking/groups.
+ * Both endpoints are on port 5006 (Flask server).
+ */
+const loadData = async () => {
+  try {
+    // Fetch device configs
+    const configRes = await axios.get('http://localhost:5006/get/device/configs', {
+      withCredentials: true, // Important to send session_id cookie
+    });
+    deviceConfigs.value = configRes.data.configs;
+  } catch (err) {
+    console.error("Failed to load device configs:", err);
+  }
 
-const updateDeviceConfig = (config: any) => {
-  // Simulate PATCH /patch/device/config/<PicoID>
-  console.log("Updating device config:", config);
-  alert(`Device config for ${config.picoID} updated (dummy)`);
+  try {
+    // Fetch tracking groups
+    const groupsRes = await axios.get('http://localhost:5006/get/tracking/groups', {
+      withCredentials: true,
+    });
+    trackingGroups.value = groupsRes.data.groups;
+  } catch (err) {
+    console.error("Failed to load tracking groups:", err);
+  }
 };
+
+/**
+ * Send a PATCH request to update a single device config.
+ * Endpoint: /patch/device/config/<pico_id>
+ */
+const updateDeviceConfig = async (config: any) => {
+  try {
+    // Construct the PATCH data. We always send `readablePicoID` & `picoType`.
+    const patchData: any = {
+      readablePicoID: config.readablePicoID,
+      picoType: config.picoType,
+    };
+
+    // If it's a BT Tracker (picoType=2), also send trackingGroupID
+    if (config.picoType === 2) {
+      patchData.trackingGroupID = config.trackingGroupID;
+    }
+
+    // Make the PATCH request
+    await axios.patch(
+      `http://localhost:5006/patch/device/config/${config.picoID}`,
+      patchData,
+      { withCredentials: true }
+    );
+
+    alert(`Device config for ${config.picoID} updated!`);
+  } catch (err) {
+    console.error("Failed to patch device config:", err);
+    alert("Update failed. See console for details.");
+  }
+};
+
+/**
+ * onMounted: load data from the server as soon as this component is mounted.
+ */
+onMounted(() => {
+  loadData();
+});
 </script>
 
 <style scoped>
@@ -84,5 +140,6 @@ input[type="text"], select {
 }
 button {
   padding: 0.5rem;
+  cursor: pointer;
 }
 </style>

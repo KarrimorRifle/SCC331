@@ -12,10 +12,12 @@
       <TrackingGroups />
     </section>
 
+    <!--
     <section class="sensor-mapping-section">
       <h2>Sensor Mapping</h2>
       <SensorMappingEditor />
     </section>
+    -->
   </div>
 </template>
 

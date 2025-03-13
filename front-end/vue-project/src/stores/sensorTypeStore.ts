@@ -176,7 +176,8 @@ export const updateSensorMappings = async () => {
     // Apply domain overrides as baseline.
     await applyDomainOverrides();
 
-    const response = await axios.get("/data.json");
+    // const response = await axios.get("/data.json");
+    const response = await axios.get("http://localhost:5006/get/device/configs", {withCredentials: true})
     const data: { configs: DeviceConfig[] } = response.data;
     if (!data.configs) return;
 
@@ -186,6 +187,7 @@ export const updateSensorMappings = async () => {
     data.configs.forEach((device: DeviceConfig) => {
       let { readablePicoID, picoType } = device;
       const mappedKey = mapReadablePicoID(readablePicoID);
+      
       if (picoType === 0) return;
 
       if (!updatedMapping[mappedKey]) {
