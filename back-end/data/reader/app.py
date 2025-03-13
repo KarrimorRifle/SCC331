@@ -269,8 +269,13 @@ def summary():
 
     cursor = conn.cursor(dictionary=True)
     summary_data = {}
+    # We'll keep track of all discovered tracker types in a set.
+    discovered_types = set()
+
     try:
-        # 1) Occupancy Data from bluetooth_tracker_data (only if mode == "all" or "picos")
+        # -----------------------------
+        # 1) Occupancy Data (Bluetooth)
+        # -----------------------------
         if mode in ("all", "picos"):
             occ_query = """
                 SELECT t.roomID, t.picoID
@@ -287,25 +292,27 @@ def summary():
 
             for row in occ_rows:
                 room_id = str(row["roomID"])
-                tracker_type = map_tracker_type(row["picoID"])  # e.g. "users", "staff", "guard", etc.
+                tracker_type = map_tracker_type(row["picoID"])  # e.g. "users", "staff", "guard", "vip", etc.
                 if tracker_type == "unknown":
                     continue  # skip unrecognized trackers
+
+                discovered_types.add(tracker_type)  # track that we have seen this type
 
                 if room_id not in summary_data:
                     summary_data[room_id] = {}
 
-                # If this tracker type doesn't exist yet in this room, create it
                 if tracker_type not in summary_data[room_id]:
                     summary_data[room_id][tracker_type] = {
                         "count": 0,
                         "id": []
                     }
 
-                # Increment the count and add the picoID
                 summary_data[room_id][tracker_type]["count"] += 1
                 summary_data[room_id][tracker_type]["id"].append(row["picoID"])
 
-        # 2) Environment Data from environment_sensor_data (only if mode == "all" or "environment")
+        # -----------------------------
+        # 2) Environment Data
+        # -----------------------------
         if mode in ("all", "environment"):
             env_query = """
                 SELECT e.picoID AS roomID,
@@ -325,7 +332,6 @@ def summary():
                 room_id = str(row["roomID"])
                 if room_id not in summary_data:
                     summary_data[room_id] = {}
-                # Insert environment data under "environment"
                 summary_data[room_id]["environment"] = {
                     "temperature": row["temperature"],
                     "sound": row["sound"],
@@ -335,18 +341,21 @@ def summary():
                     "humidity": row["humidity"]
                 }
 
-        # 3) Ensure each room has all four occupancy types and an environment block
-        #    so the final structure always has the old format.
+        # --------------------------------------------------------
+        # 3) Fill in missing tracker types and environment block
+        # --------------------------------------------------------
+        # For each room, if a discovered tracker type is missing, fill with zero.
+        # Also ensure environment is present (empty if not found).
         for room_id in summary_data:
-            # If any type is missing, fill it with count=0, id=[]
-            for t in ["users", "luggage", "staff", "guard"]:
+            for t in discovered_types:
                 if t not in summary_data[room_id]:
                     summary_data[room_id][t] = {"count": 0, "id": []}
-            # If environment is missing, fill it with an empty dict
+
             if "environment" not in summary_data[room_id]:
                 summary_data[room_id]["environment"] = {}
 
         return jsonify(summary_data)
+
     except Error as e:
         print(f"Error in /summary: {e}")
         return jsonify({"error": "Error querying data", "message": str(e)}), 500
