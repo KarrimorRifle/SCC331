@@ -191,7 +191,7 @@ const getUnitSymbol = (key: string) => {
 
 const formatSensorName = (name: string): string => {
   const formattedName = name.replace(/\s*Sensor\s*/i, '').trim();
-  return formattedName.length > 4 ? formattedName.slice(0, 4) : formattedName;
+  return formattedName.length > 4 ? formattedName.slice(0, 11) : formattedName;
 };
 
 // ----------------------------
