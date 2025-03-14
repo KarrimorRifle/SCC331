@@ -145,7 +145,7 @@ const getIcon = (type: string) => {
 
   // Try to dynamically find the icon in FontAwesome imports
   const iconKey = `fa${type.charAt(0).toUpperCase()}${type.slice(1)}`; // "temperature" -> "faTemperature"
-  
+
   return SolidIcons[iconKey] || SolidIcons.faQuestion; // Return icon if found, else fallback
 };
 
@@ -212,11 +212,11 @@ onMounted(async () => {
     <div class="summary-container-header">
       <h1>Summary Table</h1>
       <!-- Toggle Filter Button -->
-      <button @click="toggleFilterVisibility" class="toggle-button">
+      <!-- <button @click="toggleFilterVisibility" class="toggle-button">
         {{ showFilterBar ? "Hide Filter" : "Show Filter" }}
-      </button>
+      </button> -->
     </div>
-    
+
     <!-- Filter Bar (optional) -->
     <!--
     <SummaryTableFilterBar
@@ -244,7 +244,7 @@ onMounted(async () => {
             <div v-for="([sensorKey, sensorData]) in getFilteredSensors(area.tracker)" :key="sensorKey" class="pico-data">
               <span class="pico-data-icon">
                 <FontAwesomeIcon :icon="getIcon(sensorKey)" />
-              </span> 
+              </span>
               <span class="pico-data-value">
                 {{ sensorKey }}: {{ sensorData.count }}
               </span>
@@ -256,7 +256,7 @@ onMounted(async () => {
             <div v-for="(value, key) in area.tracker.environment" :key="key" class="pico-data">
               <span class="pico-data-icon">
                 <FontAwesomeIcon :icon="getIcon(key)" />
-              </span> 
+              </span>
               <span class="pico-data-value">
                 {{ formatSensorName(key) }}: {{ value }}
               </span>

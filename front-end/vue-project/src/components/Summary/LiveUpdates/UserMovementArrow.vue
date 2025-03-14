@@ -54,17 +54,24 @@ const getArrowPosition = (from: string, to: string) => {
 
 <template>
   <svg class="movement-arrows" viewBox="0 0 300 300">
-    <line
-      v-for="arrow in movementArrows"
-      v-bind="getArrowPosition(arrow.from, arrow.to)"
-      :key="`${arrow.from}-${arrow.to}`"
-      stroke="black"
-      stroke-width="1"
-      marker-end="url(#arrowhead)"
-    />
+    <g v-for="arrow in movementArrows" :key="`${arrow.from}-${arrow.to}`">
+      <line
+        v-bind="getArrowPosition(arrow.from, arrow.to)"
+        stroke="white"
+        stroke-width="10"
+        stroke-linecap="round"
+      />
+      <line
+        v-bind="getArrowPosition(arrow.from, arrow.to)"
+        stroke="black"
+        stroke-width="5"
+        stroke-linecap="round"
+        marker-end="url(#arrowhead)"
+      />
+    </g>
     <defs>
-      <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-        <polygon points="0 0, 6 3, 0 6" fill="black" />
+      <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="2" refY="3" orient="auto">
+        <polygon points="0 0, 6 3, 0 6" fill="black" stroke="white" stroke-width="0.5" />
       </marker>
     </defs>
   </svg>

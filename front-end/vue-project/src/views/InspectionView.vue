@@ -211,7 +211,7 @@
                           }
                           return sortDirection === 'asc' ? comp : -comp;
                         })" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
-                        <td @click="userID = picoID + ''; showModal = true" style="color: blue; text-decoration: underline; cursor: pointer;">{{ configData[picoID]  }}</td>
+                        <td @click="userID = picoID + ''; showModal = true; fetchUserMovementData()" style="color: blue; text-decoration: underline; cursor: pointer;">{{ configData[picoID]  }}</td>
                         <td>
                           <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/> {{ type }}
                         </td>
@@ -651,7 +651,7 @@ const fetchUserMovementData = async () => {
 onMounted(async()=>{
   fetchUserMovementData();
 })
-watch([selectedTime, userID], fetchUserMovementData);
+watch([userID], fetchUserMovementData);
 
 const sortColumn = ref('cameFrom'); // options: 'picoID', 'type', 'cameFrom'
 const sortDirection = ref('asc'); // options: 'asc', 'desc'

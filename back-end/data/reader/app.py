@@ -16,7 +16,7 @@ CORS(app, supports_credentials=True)
 # -------------------------------
 connection_pool = pooling.MySQLConnectionPool(
     pool_name="mypool",
-    pool_size=10,
+    pool_size=32,
     pool_reset_session=True,
     host=os.getenv('DB_HOST'),
     user=os.getenv('DB_USER'),
@@ -391,18 +391,63 @@ def summary():
                 }
 
         # --------------------------------------------------------
-        # 3) Fill in missing tracker types and environment block
+        # 3) Merge historical attributes from the past day
         # --------------------------------------------------------
-        # For each room, if a discovered tracker type is missing, fill with zero.
-        # Also ensure environment is present (empty if not found).
+        past_day_start = now - timedelta(days=1)
+        # Historical occupancy: find distinct tracker types from the past day.
+        historical_occ_query = """
+            SELECT picoID
+            FROM bluetooth_tracker_data
+            WHERE logged_at BETWEEN %s AND %s
+        """
+        cursor.execute(historical_occ_query, (past_day_start, now))
+        hist_occ_rows = cursor.fetchall()
+        historical_tracker_types = set()
+        for row in hist_occ_rows:
+            t = map_tracker_type(row["picoID"])
+            if t != "unknown":
+                historical_tracker_types.add(t)
+        
+        # Historical environment: check which sensor columns were ever reported in the past day.
+        historical_env_query = """
+            SELECT 
+                SUM(CASE WHEN temperature IS NOT NULL THEN 1 ELSE 0 END) as cnt_temperature,
+                SUM(CASE WHEN sound IS NOT NULL THEN 1 ELSE 0 END) as cnt_sound,
+                SUM(CASE WHEN light IS NOT NULL THEN 1 ELSE 0 END) as cnt_light,
+                SUM(CASE WHEN IAQ IS NOT NULL THEN 1 ELSE 0 END) as cnt_IAQ,
+                SUM(CASE WHEN pressure IS NOT NULL THEN 1 ELSE 0 END) as cnt_pressure,
+                SUM(CASE WHEN humidity IS NOT NULL THEN 1 ELSE 0 END) as cnt_humidity
+            FROM environment_sensor_data
+            WHERE logged_at BETWEEN %s AND %s
+        """
+        cursor.execute(historical_env_query, (past_day_start, now))
+        hist_env = cursor.fetchone()
+        historical_env_attributes = set()
+        if hist_env:
+            if hist_env["cnt_temperature"] > 0:
+                historical_env_attributes.add("temperature")
+            if hist_env["cnt_sound"] > 0:
+                historical_env_attributes.add("sound")
+            if hist_env["cnt_light"] > 0:
+                historical_env_attributes.add("light")
+            if hist_env["cnt_IAQ"] > 0:
+                historical_env_attributes.add("IAQ")
+            if hist_env["cnt_pressure"] > 0:
+                historical_env_attributes.add("pressure")
+            if hist_env["cnt_humidity"] > 0:
+                historical_env_attributes.add("humidity")
+        
+        # For each room, add missing occupancy and environment keys based on historical data.
         for room_id in summary_data:
-            for t in discovered_types:
+            # Occupancy: merge historical tracker types.
+            for t in historical_tracker_types:
                 if t not in summary_data[room_id]:
                     summary_data[room_id][t] = {"count": 0, "id": []}
-
-            if "environment" not in summary_data[room_id]:
-                summary_data[room_id]["environment"] = {}
-
+            # Environment: if environment key exists, add missing sensor attributes with null.
+            if "environment" in summary_data[room_id]:
+                for attr in historical_env_attributes:
+                    if attr not in summary_data[room_id]["environment"]:
+                        summary_data[room_id]["environment"][attr] = None
         return jsonify(summary_data)
 
     except Error as e:
