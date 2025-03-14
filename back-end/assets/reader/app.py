@@ -130,7 +130,7 @@ def get_preset_details(preset_id):
         # Build image object from presets columns if present
         image = {}
         if preset_row.get("image_name") and preset_row.get("image_data"):
-            print(preset_row["image_data"])
+            # print(preset_row["image_data"])
             image = {
                 "name": preset_row["image_name"],
                 "data": preset_row["image_data"].decode('utf-8')

@@ -222,7 +222,7 @@ def upload_preset_image(preset_id):
     # Validate base64 encoding
     try:
         base64.b64decode(data["data"], validate=True)
-        print(data["data"])
+        # print(data["data"])
     except (binascii.Error, KeyError):
         return jsonify({"error": "Image data is not valid base64"}), 400
 
