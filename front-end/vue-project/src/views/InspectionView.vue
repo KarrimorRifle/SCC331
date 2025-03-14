@@ -591,12 +591,14 @@ const grabConfig = async() => {
   }
 }
 
+// ...existing code...
 onMounted(async () => {
   isLoading.value = true;
-  // Fetch initial data on mount
-  await fetchMovementData();
-  await grabConfig();
-  let presetData
+  // Call fetchMovementData and grabConfig nonblockingly (in background)
+  fetchMovementData();
+  grabConfig();
+
+  let presetData;
   try {
     const presetListData = (await axios.get<presetListType>("/api/assets-reader/presets", { withCredentials: true })).data;
     const defaultID = presetListData.default;
@@ -604,8 +606,7 @@ onMounted(async () => {
   } catch {
     console.error("Unable to fetch preset data");
   }
-
-  if(presetData?.boxes)
+  if (presetData?.boxes)
     presetData.boxes.forEach((box: boxType) => {
       boxes.value[box.roomID] = {
         label: box.label,
@@ -625,9 +626,9 @@ onMounted(async () => {
       }
     }
   });
-
   isLoading.value = false;
 });
+// ...existing code...
 
 const fetchUserMovementData = async () => {
   if (userID.value && selectedTime.value) {

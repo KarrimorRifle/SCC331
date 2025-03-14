@@ -43,6 +43,7 @@ services:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
 
   account_login:
     build: ./accounts/login
@@ -59,6 +60,7 @@ services:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
 
   account_messages:
     build: ./accounts/messages
@@ -75,6 +77,7 @@ services:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
 
 
   data_processor:
@@ -91,6 +94,7 @@ services:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
 
   data_reader:
     build: ./data/reader
@@ -108,6 +112,7 @@ services:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
 
   hardware_config:
     build: ./hardware/config
@@ -123,6 +128,7 @@ services:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
 
   hardware_editor:
     build: ./hardware/editing
@@ -140,6 +146,7 @@ services:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
 
   assets_editor:
     build: ./assets/editor
@@ -156,6 +163,7 @@ services:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
 
   assets_reader:
     build: ./assets/reader
@@ -172,6 +180,7 @@ services:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
 
   warning_editor:
     build: ./warning/editor
@@ -189,6 +198,7 @@ services:
         condition: service_healthy
     networks:
       - my_network
+    restart: unless-stopped
 
   warning_alert_node1:
     build: ./warning/alert
