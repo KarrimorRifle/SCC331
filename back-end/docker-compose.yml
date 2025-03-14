@@ -112,7 +112,6 @@ services:
         condition: service_healthy
     networks:
       - my_network
-    restart: unless-stopped
 
   hardware_config:
     build: ./hardware/config
