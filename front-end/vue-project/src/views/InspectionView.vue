@@ -54,9 +54,9 @@
         <h4 class="current-time me-2">{{ formatTime(selectedTime) }}</h4>
         <div class="selected-filters" v-if="selectedFilterPicoIDs.length || selectedFilterTypes.length || selectedFilterRooms.length" style="margin-bottom: 10px;">
           <div v-if="selectedFilterPicoIDs.length">
-            PicoIDs:
+            Picos:
             <span v-for="id in selectedFilterPicoIDs" :key="id" style="background: #eee; padding: 2px 5px; margin-right: 5px; border-radius: 3px;">
-              <button type="button" style="border:none; background:none;" @click="removeSelected('picoIDs', id)">{{ id }} X</button>
+              <button type="button" style="border:none; background:none;" @click="removeSelected('picoIDs', id)">{{ configData[id] }} X</button>
             </span>
           </div>
           <div v-if="selectedFilterTypes.length">
@@ -78,18 +78,18 @@
           <div v-if="showFilter" class="filter-popout card p-2" style="position: absolute; top: 100%; right: 0; z-index: 1000; width: 15rem;" ref="filterPopout">
             <div class="mb-2">
               <label>
-                PicoID:
+                Pico:
                 <input type="text" v-model="searchPico"
                        @focus="searchPicoFocus = true; searchPicoIndex = 0"
                        @blur="handleSearchBlur('picoIDs')"
                        @keydown="handleKeyDown('picoIDs', $event)"
-                       class="form-control form-control-sm" placeholder="Search PicoID">
+                       class="form-control form-control-sm" placeholder="Search Pico">
               </label>
               <ul data-category="picoIDs" v-if="searchPicoFocus && searchPico" class="dropdown-list">
                 <li v-for="(id, index) in picoSuggestions" :key="id"
                     :class="{ active: index === searchPicoIndex }"
                     @mousedown.prevent="selectSuggestion('picoIDs', id)">
-                  {{ id }}
+                  {{ configData[id] }}
                 </li>
               </ul>
             </div>
@@ -179,7 +179,7 @@
                         <th class="rounded-top-1 rounded-end-0"
                             @click="sortBy('picoID')"
                             style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
-                          picoID <span v-html="getArrows('picoID')"></span>
+                          Picos <span v-html="getArrows('picoID')"></span>
                         </th>
                         <th @click="sortBy('type')"
                             style="font-weight: 600; background-color: rgb(200, 200, 200); cursor: pointer;">
@@ -211,7 +211,7 @@
                           }
                           return sortDirection === 'asc' ? comp : -comp;
                         })" :key="picoID" :class="{ 'new-row': previousLocation[selectedTime][picoID] === 'NEW' }">
-                        <td @click="userID = picoID + ''; showModal = true" style="color: blue; text-decoration: underline; cursor: pointer;">{{ picoID }}</td>
+                        <td @click="userID = picoID + ''; showModal = true" style="color: blue; text-decoration: underline; cursor: pointer;">{{ configData[picoID]  }}</td>
                         <td>
                           <font-awesome-icon :icon="getIcon(type)" :style="{ color: getRoleColor(type) }"/> {{ type }}
                         </td>
@@ -266,7 +266,7 @@
               <table class="table" v-show="showTable['deactivated'] ?? true">
                 <thead>
                   <tr>
-                    <th>picoID</th>
+                    <th>Picos</th>
                     <th>Last Type</th>
                     <th>Last Seen</th>
                     <th>Last Room</th>
@@ -274,7 +274,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="([picoID, lastRoom]) in filteredDeactivatedDevices" :key="picoID">
-                    <td>{{ picoID }}</td>
+                    <td>{{ configData[picoID] }}</td>
                     <td>{{ movementData[dayTimeKeys[selectedDayTimeIndex - 1 > -1 ? selectedDayTimeIndex - 1 : 0]][lastRoom][picoID] }}</td>
                     <td>{{ formatTime(dayTimeKeys[selectedDayTimeIndex - 1 > -1 ? selectedDayTimeIndex - 1 : 0]) }}</td>
                     <td :style="{backgroundColor: boxes[lastRoom]?.colour || '#FFFFFF'}">{{ boxes[lastRoom]?.label || lastRoom }}</td>
@@ -320,6 +320,7 @@ import UserMovementModal from '@/components/Summary/LiveUpdates/UserMovementModa
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { getIcon, getRoleColor } from '@/utils/helper/colourIcon';
 import { faChevronLeft, faChevronRight, faChevronUp, faChevronDown, faL, faPlay, faPause } from '@fortawesome/free-solid-svg-icons';
+import { config } from '@fortawesome/fontawesome-svg-core';
 
 
 const showTable = ref<Record<string, boolean>>({});
@@ -558,7 +559,7 @@ const formatTime = (time: string) => {
 let labelIndex = 0;
 const generateTempLabel = () => {
   const callsigns = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"];
-  return `%${callsigns[labelIndex++]}`;
+  return `%${callsigns[labelIndex++]}%`;
 };
 
 let colorIndex = 0;
@@ -567,10 +568,34 @@ const generateMutedColor = () => {
   return mutedColors[colorIndex++ % mutedColors.length];
 };
 
+const configData = ref<Record<String,String>>({});
+
+interface configObject {
+  picoID: String,
+  picoType: number,
+  readablePicoID: String,
+  trackingGroupID: number
+}
+
+const grabConfig = async() => {
+  try {
+    const data = await axios.get<{configs: configObject[]}>("/api/hardware/get/device/configs");
+    console.log(data.data);
+    data.data.configs.forEach(object => {
+      configData.value[object.picoID] = object.readablePicoID
+    });
+    console.log(configData.value);
+  } catch (error){
+    console.log("Unable to retrieve config data");
+    console.log(error)
+  }
+}
+
 onMounted(async () => {
   isLoading.value = true;
   // Fetch initial data on mount
   await fetchMovementData();
+  await grabConfig();
   let presetData
   try {
     const presetListData = (await axios.get<presetListType>("/api/assets-reader/presets", { withCredentials: true })).data;
@@ -753,7 +778,10 @@ const searchRoomIndex = ref(0);
 
 const filteredPicoIDs = computed(() =>
   searchPico.value
-    ? availablePicoIDs.value.filter(i => i.toLowerCase().includes(searchPico.value.toLowerCase()))
+    ? availablePicoIDs.value.filter(i => {
+        const picoName = configData.value[i] || i;
+        return picoName.toLowerCase().includes(searchPico.value.toLowerCase());
+      })
     : []
 );
 const filteredPicoTypes = computed(() =>
