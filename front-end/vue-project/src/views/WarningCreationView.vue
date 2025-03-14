@@ -16,6 +16,7 @@ const isPresetDataAvailable = computed(() => presetData.value && Object.keys(pre
 
 const isWarningListCollapsed = ref(false);
 const selectedWarningName = computed(() => {
+  if (!Array.isArray(warningsList.value)) return null; // Ensure it's an array
   const selected = warningsList.value.find(warning => warning.id === selectedWarningId.value);
   return selected ? selected.name : null;
 });
@@ -54,6 +55,10 @@ const toggleWarningList = () => {
 };
 
 const toggleRoomSelection = (room: Object) => {
+   if (!Array.isArray(selectedRooms.value)) {
+    console.error("selectedRooms is not an array:", selectedRooms.value);
+    selectedRooms.value = []; // Ensure it is an array
+  }
   const existingIndex = selectedRooms.value.findIndex((r) => r.roomID === room.roomID);
   if (existingIndex !== -1) {
     selectedRooms.value.splice(existingIndex, 1); // Remove if already selected
@@ -66,6 +71,11 @@ const updateWarningConditions = (updatedConditions: Record<string, any>) => {
   Object.entries(updatedConditions).forEach(([roomID, newData]) => {
     if (!warningConditions.value[roomID]) {
       warningConditions.value[roomID] = { conditions: [], messages: [] };
+    }
+
+    if (!Array.isArray(warningConditions.value[roomID].conditions)) {
+      console.error(`warningConditions[${roomID}].conditions is not an array:`, warningConditions.value[roomID].conditions);
+      warningConditions.value[roomID].conditions = []; // Ensure it's an array
     }
 
     // Add new conditions while keeping the old ones
@@ -81,6 +91,11 @@ const updateWarningConditions = (updatedConditions: Record<string, any>) => {
         warningConditions.value[roomID].conditions.push(newCond);
       }
     });
+
+    if (!Array.isArray(warningConditions.value[roomID].messages)) {
+      console.error(`warningConditions[${roomID}].messages is not an array:`, warningConditions.value[roomID].messages);
+      warningConditions.value[roomID].messages = []; // Ensure it's an array
+    }
 
     // Add new messages if they don't exist
     newData.messages.forEach(newMsg => {

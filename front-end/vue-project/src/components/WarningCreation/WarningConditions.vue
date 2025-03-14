@@ -10,10 +10,9 @@ const props = defineProps({
   conditions: Object, 
   createWarning: Function, 
 });
-
 const emit = defineEmits(["updateConditions"]);
 
-// List of possible condition types
+// List of possible condition types, authorities, and severities
 const conditionTypes = ["Temperature", "Person", "Luggage", "Light Level"];
 const authorities = ["admin", "security", "staff", "users", "everyone"];
 const severities = ["danger", "warning", "notification"];
@@ -26,6 +25,8 @@ const editConditionIndex = ref<number | null>(null);
 const selectedAuthority = ref<{ [key: string]: string }>({});
 const selectedSeverity = ref<{ [key: string]: string }>({});
 const selectedConditionType = ref<{ [key: string]: string }>({});
+
+// Initialize pendingConditions with a default object if needed
 const pendingConditions = ref<Record<string, {
   conditions: { variable: string | null; lower_bound: number | null; upper_bound: number | null }[];
   messages: { Authority: string | null; Location: string | null; Severity: string | null; Summary: string | null; Title: string | null }[];
@@ -34,11 +35,13 @@ const pendingConditions = ref<Record<string, {
 
 const filteredConditions = computed(() => {
   const roomConditions: Record<string, any[]> = {};
-  
   if (!props.conditions) return roomConditions;
-
   Object.keys(props.conditions).forEach((roomID) => {
-    roomConditions[roomID] = props.conditions[roomID].conditions.filter(
+    // Ensure conditions array exists and is an array
+    const conditionsArray = Array.isArray(props.conditions[roomID].conditions)
+      ? props.conditions[roomID].conditions
+      : [];
+    roomConditions[roomID] = conditionsArray.filter(
       (condition) => condition.variable !== null
     );
   });
@@ -47,22 +50,24 @@ const filteredConditions = computed(() => {
 
 const isConditionValid = (roomID: string) => {
   const conditionType = selectedConditionType.value[roomID];
-  if (!conditionType) return false; // Condition type must be selected
-
-  const conditionEntry = pendingConditions.value[roomID]?.conditions.find(c => c.variable === conditionType);
-  if (!conditionEntry || conditionEntry.lower_bound === null || conditionEntry.upper_bound === null) return false; // Min and Max must be filled
-
-  const messageEntry = pendingConditions.value[roomID]?.messages[0];
-  if (!messageEntry || !messageEntry.Authority || !messageEntry.Severity || !messageEntry.Title || !messageEntry.Summary) return false; // All message fields must be filled
-
+  if (!conditionType) return false;
+  const roomPending = pendingConditions.value[roomID];
+  if (!roomPending || !Array.isArray(roomPending.conditions)) return false;
+  const conditionEntry = roomPending.conditions.find(c => c.variable === conditionType);
+  if (!conditionEntry || conditionEntry.lower_bound === null || conditionEntry.upper_bound === null) return false;
+  const messageEntry = roomPending.messages && roomPending.messages[0];
+  if (!messageEntry || !messageEntry.Authority || !messageEntry.Severity || !messageEntry.Title || !messageEntry.Summary)
+    return false;
   return true;
 };
 
 const updatePendingCondition = (roomID: string, conditionType: string, key: "min" | "max", value: number) => {
   if (!pendingConditions.value[roomID]) return;
-
+  // Ensure conditions array exists
+  if (!Array.isArray(pendingConditions.value[roomID].conditions)) {
+    pendingConditions.value[roomID].conditions = [];
+  }
   let conditionEntry = pendingConditions.value[roomID].conditions.find(c => c.variable === conditionType);
-
   if (!conditionEntry) {
     conditionEntry = { variable: conditionType, lower_bound: null, upper_bound: null };
     pendingConditions.value[roomID].conditions.push(conditionEntry);
@@ -76,10 +81,12 @@ const updatePendingCondition = (roomID: string, conditionType: string, key: "min
 };
 
 const updatePendingMessage = (roomID: string, key: "Authority" | "Severity" | "Title" | "Summary", value: string) => {
-  if (!pendingConditions.value[roomID]) {
-    return;
+  if (!pendingConditions.value[roomID]) return;
+  // Ensure messages array exists
+  if (!Array.isArray(pendingConditions.value[roomID].messages)) {
+    pendingConditions.value[roomID].messages = [];
   }
-  if (!pendingConditions.value[roomID].messages || pendingConditions.value[roomID].messages.length === 0) {
+  if (pendingConditions.value[roomID].messages.length === 0) {
     pendingConditions.value[roomID].messages = [{
       Authority: authorities[0],
       Location: roomID,
@@ -87,26 +94,28 @@ const updatePendingMessage = (roomID: string, key: "Authority" | "Severity" | "T
       Summary: null,
       Title: null,
     }];
-  }else {
+  } else {
     pendingConditions.value[roomID].messages[0].Location = roomID;
   }
-  pendingConditions.value[roomID].messages[0][key] = 
-  key === "Authority" ? value || authorities[0] :
-  key === "Severity" ? value || severities[0] :
-  value; 
+  pendingConditions.value[roomID].messages[0][key] =
+    key === "Authority" ? value || authorities[0] :
+    key === "Severity" ? value || severities[0] :
+    value;
   pendingConditions.value = { ...pendingConditions.value };
 };
 
 const setCondition = (roomID: string) => {
   const conditionType = selectedConditionType.value[roomID];
   if (!conditionType) return;
-  if (!isConditionValid(roomID)) return;  
+  if (!isConditionValid(roomID)) return;
   
+  // Ensure conditions array exists
+  if (!Array.isArray(pendingConditions.value[roomID].conditions)) {
+    pendingConditions.value[roomID].conditions = [];
+  }
   const existingConditionIndex = pendingConditions.value[roomID].conditions.findIndex(
     (c) => c.variable === conditionType
   );
-
-
   if (existingConditionIndex !== -1) {
     pendingConditions.value[roomID].conditions[existingConditionIndex] = {
       variable: conditionType,
@@ -120,11 +129,13 @@ const setCondition = (roomID: string) => {
       upper_bound: null,
     });
   }
-
+  // Ensure messages array exists
+  if (!Array.isArray(pendingConditions.value[roomID].messages)) {
+    pendingConditions.value[roomID].messages = [];
+  }
   const existingMessageIndex = pendingConditions.value[roomID].messages.findIndex(
     (m) => m.Title === conditionType
   );
-
   if (existingMessageIndex !== -1) {
     pendingConditions.value[roomID].messages[existingMessageIndex] = {
       Authority: selectedAuthority.value[roomID] || "admin",
@@ -142,13 +153,10 @@ const setCondition = (roomID: string) => {
       Summary: "",
     });
   }
-
   emit("updateConditions", { ...pendingConditions.value });
-
   selectedConditionType.value[roomID] = "";
-  selectedAuthority.value[roomID] = "";  
-  selectedSeverity.value[roomID] = "";    
-
+  selectedAuthority.value[roomID] = "";
+  selectedSeverity.value[roomID] = "";
   pendingConditions.value[roomID].messages = [{
     Authority: null,
     Location: null,
@@ -156,26 +164,25 @@ const setCondition = (roomID: string) => {
     Summary: "",
     Title: ""
   }];
-
   pendingConditions.value = { ...pendingConditions.value };
-
 };
 
 const removeCondition = (roomID: string, conditionIndex: number) => {
   if (props.conditions[roomID]) {
-    props.conditions[roomID].conditions.splice(conditionIndex, 1);
-
+    // Ensure conditions is an array
+    if (Array.isArray(props.conditions[roomID].conditions)) {
+      props.conditions[roomID].conditions.splice(conditionIndex, 1);
+    }
     if (props.conditions[roomID].conditions.length === 0) {
       delete props.conditions[roomID];
     }
-
     emit("updateConditions", { ...props.conditions });
   }
 };
 
 const openEditModal = (roomID: string, condition: any, index: number) => {
   editRoomID.value = roomID;
-  editCondition.value = { ...condition }; 
+  editCondition.value = { ...condition };
   editConditionIndex.value = index;
   isEditModalOpen.value = true;
 };
@@ -183,7 +190,6 @@ const openEditModal = (roomID: string, condition: any, index: number) => {
 const updateCondition = ({ roomID, index, updatedCondition }) => {
   if (!props.conditions[roomID]) return;
   props.conditions[roomID].conditions[index] = updatedCondition;
-  
   emit("updateConditions", { ...props.conditions });
   isEditModalOpen.value = false;
 };
@@ -194,17 +200,12 @@ watch(
     newRooms.forEach((room) => {
       if (!pendingConditions.value[room.roomID]) {
         pendingConditions.value[room.roomID] = {
-          conditions: [
-            { variable: null, lower_bound: null, upper_bound: null }
-          ],
-          messages: [
-            { Authority: null, Location: null, Severity: null, Summary: null, Title: null }
-          ],
+          conditions: [{ variable: null, lower_bound: null, upper_bound: null }],
+          messages: [{ Authority: null, Location: null, Severity: null, Summary: null, Title: null }],
           roomID: room.roomID,
         };
       }
     });
-
     // Cleanup: Remove rooms no longer selected
     Object.keys(pendingConditions.value).forEach((roomID) => {
       if (!newRooms.some((room) => room.roomID === roomID)) {
@@ -214,7 +215,6 @@ watch(
   },
   { deep: true, immediate: true }
 );
-
 </script>
 
 <template>  

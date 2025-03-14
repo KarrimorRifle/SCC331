@@ -11,15 +11,18 @@ const rooms = ref(props.presetData?.boxes || []);
 const selectedRooms = ref<string[]>([]);
 const emit = defineEmits(["updateRooms"]);
 
-// Function to handle room selection
 const toggleRoomSelection = (room: any) => {
-    const index = selectedRooms.value.findIndex(r => r === room.roomID);
-    if (index !== -1) {
-        selectedRooms.value.splice(index, 1); // Deselect room
-    } else {
-        selectedRooms.value.push(room.roomID); // Select room
-    }
-    emit("updateRooms", { label: room.label, roomID: room.roomID });
+  // Ensure selectedRooms.value is an array before using findIndex
+  if (!Array.isArray(selectedRooms.value)) {
+    selectedRooms.value = [];
+  }
+  const index = selectedRooms.value.findIndex((r) => r === room.roomID);
+  if (index !== -1) {
+    selectedRooms.value.splice(index, 1); // Deselect room
+  } else {
+    selectedRooms.value.push(room.roomID); // Select room
+  }
+  emit("updateRooms", { label: room.label, roomID: room.roomID });
 };
 </script>
 
