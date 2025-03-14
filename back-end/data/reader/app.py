@@ -161,8 +161,57 @@ def pico(PICO):
         picoType = device['picoType']
         if picoType == 2:
             data_table = "bluetooth_tracker_data"
-            # Use the lookup function for custom types
             device_label = get_tracker_type(PICO)
+            # New contiguous block selection using 2-minute gap
+            req_data = request.get_json(silent=True)
+            provided_time = None
+            if req_data and req_data.get("time"):
+                provided_time = datetime.fromisoformat(req_data.get("time"))
+            # Use provided_time as anchor if available; otherwise, use last log timestamp
+            anchor = provided_time
+            if anchor:
+                day_start = anchor.replace(hour=0, minute=0, second=0, microsecond=0)
+            else:
+                cursor.execute(f"""
+                    SELECT roomID, logged_at
+                    FROM {data_table}
+                    WHERE picoID = %s
+                    ORDER BY logged_at DESC
+                    LIMIT 1;
+                """, (PICO,))
+                last_log = cursor.fetchone()
+                if not last_log:
+                    return jsonify({"error": "No logs found for the specified Pico"}), 404
+                anchor = last_log['logged_at']
+                day_start = anchor.replace(hour=0, minute=0, second=0, microsecond=0)
+            day_end = day_start + timedelta(days=1)
+            # Retrieve all logs for the day
+            cursor.execute(f"""
+                SELECT roomID, logged_at
+                FROM {data_table}
+                WHERE picoID = %s AND logged_at BETWEEN %s AND %s
+                ORDER BY logged_at ASC;
+            """, (PICO, day_start, day_end))
+            logs = cursor.fetchall()
+            if not logs:
+                return jsonify({"error": "No logs found for the specified Pico"}), 404
+            for row in logs:
+                if not hasattr(row['logged_at'], 'isoformat'):
+                    row['logged_at'] = datetime.strptime(row['logged_at'], "%Y-%m-%d %H:%M:%S")
+            gap = timedelta(minutes=2)
+            # Locate index where log time is >= anchor
+            idx = next((i for i, row in enumerate(logs) if row['logged_at'] >= anchor), len(logs) - 1)
+            # Expand backwards
+            start_idx = idx
+            while start_idx - 1 >= 0 and (logs[start_idx]['logged_at'] - logs[start_idx - 1]['logged_at']) <= gap:
+                start_idx -= 1
+            # Expand forwards
+            end_idx = idx
+            while end_idx + 1 < len(logs) and (logs[end_idx + 1]['logged_at'] - logs[end_idx]['logged_at']) <= gap:
+                end_idx += 1
+            contiguous_logs = logs[start_idx:end_idx + 1]
+            movement = {row['logged_at'].isoformat(): row['roomID'] for row in contiguous_logs}
+            return jsonify({"type": device_label, "movement": movement})
         elif picoType == 1:
             data_table = "environment_sensor_data"
             device_label = "environment"
@@ -283,7 +332,7 @@ def summary():
                 JOIN (
                     SELECT picoID, MAX(logged_at) AS max_time
                     FROM bluetooth_tracker_data
-                    WHERE logged_at <= %s AND logged_at >= (%s - INTERVAL 1 MINUTE)
+                    WHERE logged_at <= %s AND logged_at >= (%s - INTERVAL 2 MINUTE)
                     GROUP BY picoID
                 ) latest ON t.picoID = latest.picoID AND t.logged_at = latest.max_time
             """
@@ -321,7 +370,7 @@ def summary():
                 JOIN (
                     SELECT picoID, MAX(logged_at) AS latest_time
                     FROM environment_sensor_data
-                    WHERE logged_at BETWEEN (%s - INTERVAL 1 MINUTE) AND %s
+                    WHERE logged_at BETWEEN (%s - INTERVAL 2 MINUTE) AND %s
                     GROUP BY picoID
                 ) latest ON e.picoID = latest.picoID AND e.logged_at = latest.latest_time
             """

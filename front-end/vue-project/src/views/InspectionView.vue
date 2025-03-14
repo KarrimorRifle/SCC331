@@ -308,7 +308,7 @@
 
   <!-- Modal -->
   </div>
-  <user-movement-modal class="text-dark" :show-modal="showModal" :selected-user-id="Number.parseInt(userID)" :user-room-history="userMovementHistory" @close="showModal = false"/>
+  <user-movement-modal class="text-dark" :show-modal="showModal" :selected-user-id="configData[userID]" :user-room-history="userMovementHistory" @close="showModal = false"/>
 </template>
 
 <script setup lang="ts">
@@ -632,6 +632,7 @@ onMounted(async () => {
 const fetchUserMovementData = async () => {
   if (userID.value && selectedTime.value) {
     try {
+      console.log(userID.value)
       const response = await axios.get(`/api/reader/pico/${userID.value}`, { data: {time: selectedTime.value},withCredentials: true });
       const picoMovementData = response.data.movement;
       // Add console.log to see the object
@@ -639,6 +640,8 @@ const fetchUserMovementData = async () => {
         roomLabel: boxes.value[roomID as string].label, // he hard coded the area names... bad coding practice- will bring this up
         loggedAt: timestamp,
       }));
+
+      console.log(picoMovementData)
       // console.log('Object:', movementData.value[new Date(new Date(selectedTime.value).getTime() - 60000).toISOString()][lastRoom][picoID]);
     } catch (error) {
       console.error('Error fetching user movement data:', error);

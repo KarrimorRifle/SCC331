@@ -14,7 +14,7 @@ const props = defineProps({
     required: true,
   },
 });
-console.log("jf: ", props.userRoomHistory);
+// console.log("jf: ", props.userRoomHistory);
 const emit = defineEmits(['close']);
 
 const presetStore = usePresetStore();
@@ -37,9 +37,28 @@ const convertToTimestamp = (date: string | Date | null): number => {
 };
 
 const getRoomColor = (roomLabel: string): string => {
+  console.log(presetData.value.find(room => room.label == roomLabel).box.colour)
+  let room = presetData.value.find(room => room.label == roomLabel)
+  if(room && room.box?.colour)
+    return room.box?.colour;
+
   return currentRoom.value === roomLabel
     ? props.userRoomHistory.find(entry => entry.roomLabel === roomLabel)?.roomColor || 'lightgray'
     : 'lightgray'; // Show lightgray if it's not the current room
+};
+
+const invertColor = (hex: string): string => {
+  if (hex.indexOf('#') === 0) {
+    hex = hex.slice(1);
+  }
+  if (hex.length === 3) {
+    hex = hex.split('').map(x => x + x).join('');
+  }
+  const num = parseInt(hex, 16);
+  const r = 255 - ((num >> 16) & 0xFF);
+  const g = 255 - ((num >> 8) & 0xFF);
+  const b = 255 - (num & 0xFF);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
 };
 
 /* COMPUTED PROPERTIES */
@@ -79,7 +98,7 @@ const areaPositions = computed(() => {
 
   presetData.value.forEach((area, index) => {
     if (positions[index]) {
-      mappedPositions[area.label] = positions[index]; 
+      mappedPositions[area.label] = positions[index];
     }
   });
 
@@ -106,6 +125,8 @@ const updateReplayFromTimeline = (event: Event) => {
     currentRoom.value = props.userRoomHistory[index]?.roomLabel || null;
     currentTime.value = props.userRoomHistory[index]?.loggedAt || '';
     timelinePosition.value = newTimestamp;
+
+  console.log(currentRoom.value)
 
     if (prevRoom.value && currentRoom.value && prevRoom.value !== currentRoom.value) {
       movementArrows.value = [{ from: prevRoom.value, to: currentRoom.value }];
@@ -137,6 +158,8 @@ const startReplay = () => {
       currentRoom.value = props.userRoomHistory[index]?.roomLabel || null;
       currentTime.value = timestamps.value[index] || '';
       timelinePosition.value = convertToTimestamp(props.userRoomHistory[index]?.loggedAt);
+
+      console.log(currentRoom.value)
 
       if (prevRoom.value && currentRoom.value && prevRoom.value !== currentRoom.value) {
         movementArrows.value = [{ from: prevRoom.value, to: currentRoom.value }];
@@ -189,17 +212,21 @@ watch(() => props.showModal, (newValue) => {
       <div class="flex-container">
         <!-- 4 Grid Area Layout -->
         <div class="grid-container">
-          <UserMovementArrow 
-            :movementArrows="movementArrows" 
-            :areaPositions="areaPositions" 
+          <UserMovementArrow
+            :movementArrows="movementArrows"
+            :areaPositions="areaPositions"
             :moveXPositionBy=20
             :moveYPositionBy=20
           />
           <div
-            v-for="area in presetData" 
+            v-for="area in presetData"
             :key="area.label"
-            :class="['grid-item', { active: currentRoom === area }]"
-            :style="{ backgroundColor: getRoomColor(area.label), color: getTextColour(getRoomColor(area.label)) }"
+            :class="['grid-item', { active: currentRoom === area.label }]"
+            :style="{
+              backgroundColor: getRoomColor(area.label),
+              color: getTextColour(getRoomColor(area.label)),
+              border: currentRoom === area.label ? '5px solid ' + invertColor(getRoomColor(area.label)) : undefined
+            }"
           >
             {{ area.label }}
           </div>
@@ -238,7 +265,7 @@ watch(() => props.showModal, (newValue) => {
             <button @click="resetReplay">🔄 Reset</button>
           </div>
         </div>
-        
+
       </div>
 
       <div class="timeline-container">
@@ -250,8 +277,8 @@ watch(() => props.showModal, (newValue) => {
           v-model="timelinePosition"
           class="timeline-slider"
           :disabled="
-            !timelineStart || 
-            !timelineEnd || 
+            !timelineStart ||
+            !timelineEnd ||
             convertToTimestamp(timelineStart) === convertToTimestamp(timelineEnd)"
           @input="updateReplayFromTimeline"
         />
@@ -348,7 +375,6 @@ watch(() => props.showModal, (newValue) => {
 .active {
   background: var(--primary-bg);
   color: var(--primary-light-text);
-  border: 3px solid #F18C8E;
 }
 
 /* Tools Container */
