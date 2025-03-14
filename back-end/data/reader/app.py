@@ -394,13 +394,35 @@ def summary():
         # 3) Merge historical attributes from the past day
         # --------------------------------------------------------
         past_day_start = now - timedelta(days=1)
-        # Historical occupancy: find distinct tracker types from the past day.
+
+        # Get historical occupancy tracker types based on the past day.
         historical_occ_query = """
-            SELECT picoID
+            SELECT DISTINCT roomID
             FROM bluetooth_tracker_data
             WHERE logged_at BETWEEN %s AND %s
         """
         cursor.execute(historical_occ_query, (past_day_start, now))
+        hist_occ_rooms = {str(row["roomID"]) for row in cursor.fetchall()}
+
+        # Get historical environment rooms.
+        historical_env_query_rooms = """
+            SELECT DISTINCT picoID AS roomID
+            FROM environment_sensor_data
+            WHERE logged_at BETWEEN %s AND %s
+        """
+        cursor.execute(historical_env_query_rooms, (past_day_start, now))
+        hist_env_rooms = {str(row["roomID"]) for row in cursor.fetchall()}
+
+        # Union all rooms that have historical data
+        historical_rooms = hist_occ_rooms.union(hist_env_rooms)
+
+        # Also, update historical occupancy tracker types from past day records.
+        historical_occ_types_query = """
+            SELECT picoID
+            FROM bluetooth_tracker_data
+            WHERE logged_at BETWEEN %s AND %s
+        """
+        cursor.execute(historical_occ_types_query, (past_day_start, now))
         hist_occ_rows = cursor.fetchall()
         historical_tracker_types = set()
         for row in hist_occ_rows:
@@ -437,17 +459,35 @@ def summary():
             if hist_env["cnt_humidity"] > 0:
                 historical_env_attributes.add("humidity")
         
-        # For each room, add missing occupancy and environment keys based on historical data.
+        # Fetch tracking groups from the tracking_groups table.
+        cursor.execute("SELECT groupName FROM tracking_groups")
+        tracking_groups = [row["groupName"] for row in cursor.fetchall()]
+
+        # Ensure every room that had any historical data is represented.
+        for room_id in historical_rooms:
+            if room_id not in summary_data:
+                summary_data[room_id] = {}
+        
+        # For each room, add missing occupancy and environment keys based on historical data,
+        # and include all tracking groups even if inactive.
         for room_id in summary_data:
-            # Occupancy: merge historical tracker types.
+            # Occupancy: add missing tracker types.
             for t in historical_tracker_types:
                 if t not in summary_data[room_id]:
                     summary_data[room_id][t] = {"count": 0, "id": []}
-            # Environment: if environment key exists, add missing sensor attributes with null.
-            if "environment" in summary_data[room_id]:
+            # Environment: ensure an "environment" key exists if any sensor data was ever reported.
+            if "environment" not in summary_data[room_id] and historical_env_attributes:
+                summary_data[room_id]["environment"] = {attr: None for attr in historical_env_attributes}
+            # If environment data exists, add missing sensor attributes with null.
+            elif "environment" in summary_data[room_id]:
                 for attr in historical_env_attributes:
                     if attr not in summary_data[room_id]["environment"]:
                         summary_data[room_id]["environment"][attr] = None
+            # Tracking groups: add each available tracking group as an attribute if not already present.
+            for group in tracking_groups:
+                if group not in summary_data[room_id]:
+                    summary_data[room_id][group] = {"count": 0, "id": []}
+
         return jsonify(summary_data)
 
     except Error as e:
