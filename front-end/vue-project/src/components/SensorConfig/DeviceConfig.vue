@@ -3,17 +3,38 @@
     <!-- Added global update & cancel buttons -->
       <button @click="updateAllDeviceConfigs" class="my-2 btn btn-primary me-2">Update</button>
       <button @click="cancelChanges" class="my-2 btn btn-secondary btn-secondary" style="background-color: rgb(205, 30, 30);">Cancel</button>
-    <table>
+    <div style="max-height: 40rem; overflow-y: scroll;">
+      <table>
       <thead>
         <tr>
-          <th>Pico ID</th>
-          <th>Readable Pico ID</th>
-          <th>Pico Type</th>
-          <th>Tracking Group</th>
+          <th style="cursor: pointer;">
+            <input type="text" v-model="filterPicoID" placeholder="Pico ID" />
+            <span @click="sortTable('picoID')">
+              {{ sortColumn==='picoID' ? (sortDirection==='asc' ? '▽▲' : '▼△') : '▽△' }}
+            </span>
+          </th>
+          <th style="cursor: pointer;">
+            <input type="text" v-model="filterReadablePicoID" placeholder="Readable Pico ID" />
+            <span @click="sortTable('readablePicoID')">
+              {{ sortColumn==='readablePicoID' ? (sortDirection==='asc' ? '▽▲' : '▼△') : '▽△' }}
+            </span>
+          </th>
+          <th style="cursor: pointer;">
+            <input type="text" v-model="filterPicoType" placeholder="Pico Type" />
+            <span @click="sortTable('picoType')">
+              {{ sortColumn==='picoType' ? (sortDirection==='asc' ? '▽▲' : '▼△') : '▽△' }}
+            </span>
+          </th>
+          <th style="cursor: pointer;">
+            <input type="text" v-model="filterTrackingGroupID" placeholder="Tracking Group" />
+            <span @click="sortTable('trackingGroupID')">
+              {{ sortColumn==='trackingGroupID' ? (sortDirection==='asc' ? '▽▲' : '▼△') : '▽△' }}
+            </span>
+          </th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="config in deviceConfigs" :key="config.picoID">
+        <tr v-for="config in filteredAndSortedDeviceConfigs" :key="config.picoID">
           <td>{{ config.picoID }}</td>
           <td>
             <input type="text" v-model="config.readablePicoID" @input="config.dirty = true" />
@@ -43,11 +64,12 @@
         </tr>
       </tbody>
     </table>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 
 interface DeviceConfig {
@@ -124,6 +146,84 @@ const cancelChanges = async () => {
   await loadData();
 };
 
+const filterPicoID = ref('');
+const filterReadablePicoID = ref('');
+const filterPicoType = ref('');
+const filterTrackingGroupID = ref('');
+
+const sortColumn = ref('');
+const sortDirection = ref<'asc' | 'desc'>('asc');
+
+function sortTable(column: string) {
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortColumn.value = column;
+    sortDirection.value = 'asc';
+  }
+}
+
+const picoTypeLabels: Record<number, string> = {
+	0: "Unassigned",
+	1: "Environment",
+	2: "BT Tracker"
+};
+
+const filteredAndSortedDeviceConfigs = computed(() => {
+  const filtered = deviceConfigs.value.filter(item => {
+    if (filterPicoID.value && item.picoID.toLowerCase().indexOf(filterPicoID.value.toLowerCase()) === -1) return false;
+    if (filterReadablePicoID.value && item.readablePicoID.toLowerCase().indexOf(filterReadablePicoID.value.toLowerCase()) === -1) return false;
+    const picoLabel = picoTypeLabels[item.picoType] || "";
+    if (filterPicoType.value && picoLabel.toLowerCase().indexOf(filterPicoType.value.toLowerCase()) === -1) return false;
+    let tgName = "";
+    const tgObj = trackingGroups.value.find(g => g.groupID === item.trackingGroupID);
+    if (tgObj) tgName = tgObj.groupName;
+    if (filterTrackingGroupID.value && tgName.toLowerCase().indexOf(filterTrackingGroupID.value.toLowerCase()) === -1) return false;
+    return true;
+  });
+
+  return filtered.sort((a, b) => {
+    const getScore = (item: any) => {
+      let score = 0;
+      if (filterPicoID.value)
+        score += item.picoID.toLowerCase().indexOf(filterPicoID.value.toLowerCase());
+      if (filterReadablePicoID.value)
+        score += item.readablePicoID.toLowerCase().indexOf(filterReadablePicoID.value.toLowerCase());
+      if (filterPicoType.value)
+        score += picoTypeLabels[item.picoType].toLowerCase().indexOf(filterPicoType.value.toLowerCase());
+      if (filterTrackingGroupID.value) {
+        let tgName = "";
+        const tgObj = trackingGroups.value.find(g => g.groupID === item.trackingGroupID);
+        if (tgObj) tgName = tgObj.groupName;
+        score += tgName.toLowerCase().indexOf(filterTrackingGroupID.value.toLowerCase());
+      }
+      return score;
+    };
+    const scoreA = getScore(a);
+    const scoreB = getScore(b);
+    if (scoreA !== scoreB) return scoreA - scoreB;
+    // If scores are equal and custom sorting is active, then apply that ordering.
+    if (sortColumn.value) {
+      let aVal = a[sortColumn.value];
+      let bVal = b[sortColumn.value];
+      // For picoType, use the label instead of the number.
+      if (sortColumn.value === "picoType") {
+        aVal = picoTypeLabels[a.picoType];
+        bVal = picoTypeLabels[b.picoType];
+      }
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection.value === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      aVal = aVal ? aVal.toString() : '';
+      bVal = bVal ? bVal.toString() : '';
+      return sortDirection.value === 'asc'
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    }
+    return 0;
+  });
+});
+
 onMounted(() => {
   loadData();
 });
@@ -172,6 +272,18 @@ button {
 
 button:hover {
   background-color: var(--primary-dark-bg-hover);
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 2;
+}
+
+tr > th > input {
+  max-width: 70%;
+  border: 0;
 }
 
 /* Mobile Styles */
