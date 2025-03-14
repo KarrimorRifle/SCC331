@@ -24,18 +24,23 @@ watch(() => props.conditions, (newConditions) => {
 
 
 const updateMessages = () => {
-  const formattedMessages = Object.entries(customMessages.value).map(([key, summary]) => {
-    // Extract room ID and title correctly
-    const existingMessage = Object.values(props.conditions)
-      .reduce((acc, room) => acc.concat(room.messages || []), []) // Flatten messages array
-      .find(m => m.Title.trim() === key.trim());
+  const flattenedMessages = Object.values(props.conditions || {}).reduce((acc, room) => {
+    const messagesArray = Array.isArray(room.messages) ? room.messages : [];
+    return acc.concat(messagesArray);
+  }, [] as any[]);
 
+  const formattedMessages = Object.entries(customMessages.value).map(([key, summary]) => {
+    const existingMessage = Array.isArray(flattenedMessages)
+      ? flattenedMessages.find(
+          m => typeof m.Title === "string" && m.Title.trim() === key.trim()
+        )
+      : null;
     return {
       Authority: existingMessage?.Authority || "everyone",
       Title: existingMessage?.Title || key.trim(),
       Location: existingMessage?.Location?.trim() || key.split("-")[0].trim(),
       Severity: existingMessage?.Severity || "warning",
-      Summary: summary // Use the updated custom message
+      Summary: summary
     };
   });
 

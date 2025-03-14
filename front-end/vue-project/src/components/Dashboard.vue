@@ -11,10 +11,7 @@ import LuggageMarker from './ObjectMarker/LuggageMarker.vue';
 import PersonMarker from './ObjectMarker/PersonMarker.vue';
 import LiveUpdates from './Summary/LiveUpdates/LiveUpdates.vue';
 import LoadingSpinner from "@/components/LoadingSpinner/LoadingSpinner.vue";
-import { 
-  faUser, faClipboardCheck, faShieldAlt, faSuitcase, 
-  faVolumeUp, faArrowDown, faLightbulb, faTint, faQuestion 
-} from '@fortawesome/free-solid-svg-icons';
+import * as SolidIcons from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
   modelValue: {
@@ -128,23 +125,69 @@ function formatSensorName(name: string): string {
 }
 
 // Add helper function to return icon mapping based on type using imported icons
+const iconMapping: Record<string, any> = {
+  // Airport-related icons
+  guard: SolidIcons.faShieldAlt,
+  luggage: SolidIcons.faSuitcase,
+  users: SolidIcons.faUser,
+  staff: SolidIcons.faClipboardCheck,
+  temperature: SolidIcons.faTemperatureFull,
+  iaq: SolidIcons.faAirFreshener,
+  sound: SolidIcons.faVolumeUp,
+  pressure: SolidIcons.faArrowDown,
+  light: SolidIcons.faLightbulb,
+  humidity: SolidIcons.faTint,
+
+  // Supermarket-related icons
+  checkout: SolidIcons.faCashRegister, // Checkout counter
+  basket: SolidIcons.faShoppingBasket, // Shopping basket
+  cart: SolidIcons.faShoppingCart, // Shopping cart
+  trolley: SolidIcons.faDolly, // Shopping trolley
+  barcode: SolidIcons.faBarcode, // Barcode scanner
+  payment: SolidIcons.faCreditCard, // Payment system
+  discounts: SolidIcons.faTag, // Discount tags
+  cash: SolidIcons.faMoneyBillWave, // Cash transactions
+  shelves: SolidIcons.faStore, // Store shelves
+  dairy: SolidIcons.faCheese, // Dairy section
+  fruits: SolidIcons.faAppleWhole, // Fruits section
+  vegetables: SolidIcons.faCarrot, // Vegetables section
+  bakery: SolidIcons.faBreadSlice, // Bakery section
+  meat: SolidIcons.faDrumstickBite, // Meat section
+  fish: SolidIcons.faFish, // Fish section
+  beverages: SolidIcons.faWineBottle, // Beverage section
+  frozen: SolidIcons.faSnowflake, // Frozen food section
+  pharmacy: SolidIcons.faPills, // Pharmacy section
+  electronics: SolidIcons.faTv, // Electronics section
+  customer: SolidIcons.faPerson, // Customer icon
+  customer_service: SolidIcons.faHeadset, // Customer service desk
+  staff_only: SolidIcons.faDoorClosed, // Staff-only area
+  restrooms: SolidIcons.faToilet, // Restrooms
+  security: SolidIcons.faCamera, // Security cameras
+  warehouse: SolidIcons.faWarehouse, // Warehouse storage
+  delivery: SolidIcons.faTruck, // Delivery services
+  promotions: SolidIcons.faPhone, // Announcements & promotions
+  receipts: SolidIcons.faReceipt, // Receipts & billing
+  scales: SolidIcons.faWeightScale, // Weighing items
+  inventory: SolidIcons.faClipboardList, // Stock & inventory tracking
+  self_checkout: SolidIcons.faQrcode, // Self-checkout kiosks
+  cleaning: SolidIcons.faBroom, // Cleaning & maintenance
+  parking: SolidIcons.faParking, // Parking lot
+  carts_return: SolidIcons.faUndo, // Cart return area
+};
+
+// Add helper function to return icon mapping based on type using imported icons
 const getIcon = (type: string) => {
-  if (!type) return faQuestion; // Default icon if undefined
+  if (!type) return SolidIcons.faQuestion; // Default icon
 
-  const iconMapping: Record<string, any> = {
-    guard: faShieldAlt,
-    luggage: faSuitcase,
-    users: faUser,
-    staff: faClipboardCheck,
-    temperature: faArrowDown,
-    IAQ: faClipboardCheck,
-    sound: faVolumeUp,
-    pressure: faArrowDown,
-    light: faLightbulb,
-    humidity: faTint,
-  };
+  // Check if the type exists in the predefined mapping
+  if (iconMapping[type.toLowerCase()]) {
+    return iconMapping[type.toLowerCase()];
+  }
 
-  return iconMapping[type.toLowerCase()] || faQuestion; // Return valid icon or default
+  // Try to dynamically find the icon in FontAwesome imports
+  const iconKey = `fa${type.charAt(0).toUpperCase()}${type.slice(1)}`; // "temperature" -> "faTemperature"
+  
+  return SolidIcons[iconKey] || SolidIcons.faQuestion; // Return icon if found, else fallback
 };
 
 
